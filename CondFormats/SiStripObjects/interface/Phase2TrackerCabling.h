@@ -30,6 +30,9 @@ public:
   // get the list of modules
   const std::vector<Phase2TrackerModule>& connections() const { return connections_; }
 
+  // get ordered collections
+  const cabling orderedConnections(int) const;
+
   // find a connection for a given fed channel
   const Phase2TrackerModule& findFedCh(std::pair<unsigned int, unsigned int> fedch) const;
 
@@ -44,6 +47,9 @@ public:
 
   // return all the modules connected to a given HV group
   Phase2TrackerCabling filterByPowerGroup(uint32_t powerGroup) const;
+
+  // return all fedids
+  std::vector<int> listFeds() const;
 
   // print a summary of the content
   std::string summaryDescription() const;

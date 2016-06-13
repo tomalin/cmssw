@@ -65,6 +65,19 @@ Phase2TrackerCabling::Phase2TrackerCabling(const Phase2TrackerCabling& src) {
   gbtCabling_ = src.gbtCabling_;
 }
 
+const Phase2TrackerCabling::cabling Phase2TrackerCabling::orderedConnections(int type) const {
+  switch (type) {
+    case 0:
+      return fedCabling_;
+    case 1:
+      return detCabling_;
+    case 2:
+      return gbtCabling_;
+    default:
+      return fedCabling_;
+  }
+}
+
 void Phase2TrackerCabling::initializeCabling() {
   // fill the cabling objects
   fedCabling_.reserve(connections_.size());
@@ -147,6 +160,17 @@ Phase2TrackerCabling Phase2TrackerCabling::filterByPowerGroup(uint32_t powerGrou
   Phase2TrackerCabling result(store(range.first, range.second));
   // return the new cabling object
   return result;
+}
+
+std::vector<int> Phase2TrackerCabling::listFeds() const {
+  std::vector<int> feds;
+  cabling tmp(fedCabling_);
+  cabling::iterator it = std::unique(tmp.begin(),tmp.end(),fedeq);
+  tmp.resize(std::distance(tmp.begin(),it));
+  for (it=tmp.begin(); it!=tmp.end(); it++) {
+    feds.push_back((*it)->getCh().first);
+  }
+  return feds;
 }
 
 std::string Phase2TrackerCabling::summaryDescription() const {
