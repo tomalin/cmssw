@@ -6,14 +6,16 @@
 #include <vector>
 #include <algorithm>
 
-class Phase2TrackerCabling {
-  typedef std::vector<Phase2TrackerModule> store;
-  typedef std::vector<Phase2TrackerModule>::const_iterator key;
-  typedef std::vector<key> cabling;
+class Phase2TrackerCabling
+{
+    typedef std::vector<Phase2TrackerModule> store;
 
-public:
-  // Constructor taking FED channel connection objects as input.
-  Phase2TrackerCabling(const std::vector<Phase2TrackerModule>& cons);
+  public:
+    typedef std::vector<Phase2TrackerModule>::const_iterator key;
+    typedef std::vector<key> cabling;
+
+    // Constructor taking FED channel connection objects as input.
+    Phase2TrackerCabling( const std::vector<Phase2TrackerModule>& cons );
 
   // Copy ocnstructor
   Phase2TrackerCabling(const Phase2TrackerCabling& src);

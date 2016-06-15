@@ -6,6 +6,7 @@
 #include <ostream>
 #include <iostream>
 #include <cstdint>
+#include <cstring>
 #include "DataFormats/FEDRawData/interface/FEDNumbering.h"
 
 namespace Phase2Tracker {

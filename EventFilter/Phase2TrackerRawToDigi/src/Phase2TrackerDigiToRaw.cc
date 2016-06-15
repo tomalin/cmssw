@@ -79,7 +79,7 @@ namespace Phase2Tracker
           digis_t.push_back(*digis);
           festatus[(*icon2)->getCh().second] = true;
         }
-        digis = digishandle_->find(tTopo_->PartnerDetId(detid));
+        digis = digishandle_->find(tTopo_->partnerDetId(detid));
         if (digis != digishandle_->end())
         {
           digis_t.push_back(*digis);
@@ -120,7 +120,7 @@ namespace Phase2Tracker
     {
       // get id of stack
       unsigned int detid = idigi->detId();
-      int det_type = tGeom_->getDetectorType(detid);
+      TrackerGeometry::ModuleType det_type = tGeom_->getDetectorType(detid);
       if ( det_type == TrackerGeometry::ModuleType::Ph2PSP or det_type == TrackerGeometry::ModuleType::Ph2PSS) {
         moduletype = 1;
       } else if ( det_type == TrackerGeometry::ModuleType::Ph2SS ) {
@@ -135,7 +135,7 @@ namespace Phase2Tracker
       if(tTopo_->isLower(idigi->detId()) == 1)
       {  
         // digis for inner plane (P in case of PS)
-        if( (idigi+1) != digis.end() and (int)(idigi+1)->detId() == (int)tTopo_->PartnerDetId(detid))
+        if( (idigi+1) != digis.end() and (int)(idigi+1)->detId() == (int)tTopo_->partnerDetId(detid))
         {
           // next digi is the corresponding outer plane : join them
           for (it = idigi->begin(); it != idigi->end(); it++)
@@ -213,7 +213,7 @@ namespace Phase2Tracker
     if(digi.getModuleType() == 0)
     {
       // 2S module
-      writeSCluster(buffer,bitpointer,digi);
+      writeSCluster(buffer,bitpointer,digi,false);
     } 
     else
     {
@@ -230,19 +230,19 @@ namespace Phase2Tracker
   }
 
 
-  void Phase2TrackerDigiToRaw::writeSCluster(std::vector<uint64_t> & buffer, uint64_t & bitpointer, stackedDigi digi, threshold=false)
+  void Phase2TrackerDigiToRaw::writeSCluster(std::vector<uint64_t> & buffer, uint64_t & bitpointer, stackedDigi digi, bool threshold)
   {
     int csize = 15;
     uint16_t scluster = (digi.getChipId() & 0x0F) << 11;
     scluster |= (digi.getRawX() & 0xFF) << 3;
     scluster |= ((digi.getSizeX()-1) & 0x07);
     if (threshold) {
-      size += 1;
+      csize += 1;
       scluster <<= 1;
       scluster |= (digi.getThreshold() & 0x01);
     } 
-    write_n_at_m(buffer,size,bitpointer,scluster);
-    bitpointer += size;
+    write_n_at_m(buffer,csize,bitpointer,scluster);
+    bitpointer += csize;
     // debug
     #ifdef EDM_ML_DEBUG
     std::ostringstream ss;

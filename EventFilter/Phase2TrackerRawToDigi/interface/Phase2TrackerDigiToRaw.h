@@ -31,7 +31,7 @@ namespace Phase2Tracker
       // determine if a P or S cluster should be written
       void writeCluster(std::vector<uint64_t>&,uint64_t&, stackedDigi);
       // write S cluster to buffer
-      void writeSCluster(std::vector<uint64_t>&,uint64_t&, stackedDigi);
+      void writeSCluster(std::vector<uint64_t>&,uint64_t&, stackedDigi, bool);
       // write P cluster to buffer
       void writePCluster(std::vector<uint64_t>&,uint64_t&, stackedDigi);
     private:

@@ -20,7 +20,7 @@ namespace Phase2Tracker
       inline int getDigiY()  const { return digiy_; }
       inline int getSizeX()  const { return sizex_; }
       inline int getSide()   const { return side_; }
-      inline int getThreshold const { return threshold_; }
+      inline int getThreshold() const { return threshold_; }
       // get side and type, to map to concentrators (0 = S-left, 1 = S-right, 2 = P-left, 3 = P-right)
       inline int getSideType()   const { return side_ + 2*(1-moduletype_) + 2*layer_*moduletype_; }
       inline int getChipId() const { return chipid_; }
@@ -31,10 +31,10 @@ namespace Phase2Tracker
     private:
       void calcchipid();
       int digix_, digiy_, sizex_;
+      int threshold_;
       STACK_LAYER layer_;
       int moduletype_;
       int rawx_, rawy_;
-      int threshold_;
       int side_;
       int chipid_;
   };
@@ -54,6 +54,7 @@ namespace Phase2Tracker
     digix_(digix),
     digiy_(digiy),
     sizex_(sizex),
+    threshold_(0),
     layer_(layer),
     moduletype_(moduletype)
   {
@@ -64,8 +65,8 @@ namespace Phase2Tracker
     digix_(digix),
     digiy_(digiy),
     sizex_(sizex),
-    layer_(layer),
     threshold_(threshold),
+    layer_(layer),
     moduletype_(moduletype)
   {
     calcchipid();
