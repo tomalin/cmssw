@@ -96,7 +96,7 @@ namespace Phase2Tracker {
 
     // FIXME: build map of stacks to compensate for missing trackertopology methods
     edm::ESHandle<TrackerTopology> tTopoHandle;
-    es.get<IdealGeometryRecord>().get(tTopoHandle);
+    es.get<TrackerTopologyRcd>().get(tTopoHandle);
     const TrackerTopology* tTopo = tTopoHandle.product();
 
     edm::ESHandle< TrackerGeometry > tGeomHandle;

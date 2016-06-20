@@ -35,6 +35,7 @@ def make_vpset_fromfile(filename):
 
     return psets
 
-my_psets = make_vpset_fromfile('detids_phase2.txt')
+my_psets = make_vpset_fromfile('detids_11200.txt')
+# my_psets = make_vpset_fromfile('detids_phase2.txt')
 
 Phase2TrackerCabling = cms.ESSource("Phase2TrackerCablingCfgESSource", modules = cms.VPSet( *my_psets ))

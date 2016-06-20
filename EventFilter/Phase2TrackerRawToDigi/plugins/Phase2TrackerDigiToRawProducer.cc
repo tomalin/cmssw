@@ -51,12 +51,12 @@ namespace Phase2Tracker {
 
     // retrieve tracker topology 
     edm::ESHandle<TrackerTopology> tTopoHandle;
-    es.get<IdealGeometryRecord>().get(tTopoHandle);
+    es.get<TrackerTopologyRcd>().get(tTopoHandle);
     tTopo_ = tTopoHandle.product();
 
     // retrieve tracker geometry to get list of detids for calbling 
-    edm::ESHandle< TrackerGeometry > tGeomHandle;
-    es.get< TrackerDigiGeometryRecord >().get( tGeomHandle );
+    edm::ESHandle<TrackerGeometry> tGeomHandle;
+    es.get<TrackerDigiGeometryRecord>().get(tGeomHandle);
     tGeom_ = tGeomHandle.product();
 
     // // Build list of detids for dummy cabling: this should go in another producer
@@ -68,7 +68,7 @@ namespace Phase2Tracker {
     //   DetId detId = DetId(detId_raw);
     //   if (detId.det() == DetId::Detector::Tracker) {
     //     if ( tTopo_->isLower(detId) != 0 ) {
-    //       std::cout << tTopo_->Stack(detId) << " " << fedid << " " << channel << std::endl;
+    //       std::cout << tTopo_->stack(detId) << " " << fedid << " " << channel << std::endl;
     //       channel += 1;
     //       if (channel == 72) {
     //         channel = 0;

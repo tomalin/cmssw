@@ -19,15 +19,15 @@ process.source = cms.Source("PoolSource",
 )
 
 
-process.load('Configuration.Geometry.GeometryExtended2023MuonReco_cff')
 process.load('DummyCablingTxt_cfi')
+process.load('Configuration.Geometry.GeometryExtended2023simReco_cff')
 process.load('EventFilter.Phase2TrackerRawToDigi.Phase2TrackerDigiToRawProducer_cfi')
 process.Phase2TrackerDigiToRawProducer.ProductLabel = cms.InputTag("siPhase2Clusters")
 
 # imported from runthematrix
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 from Configuration.AlCa.GlobalTag import GlobalTag
-process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:upgradePLS3', '')
+process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:run2_mc', '')
 
 process.out = cms.OutputModule(
     "PoolOutputModule",
@@ -41,10 +41,11 @@ process.out = cms.OutputModule(
 
 process.p = cms.Path(process.Phase2TrackerDigiToRawProducer)
 
-# Automatic addition of the customisation function from SLHCUpgradeSimulations.Configuration.combinedCustoms
-from SLHCUpgradeSimulations.Configuration.combinedCustoms import cust_2023Muon 
-#call to customisation function cust_2023Muon imported from SLHCUpgradeSimulations.Configuration.combinedCustoms
-process = cust_2023Muon(process)
-
 process.e = cms.EndPath(process.out)
+
+# customisation of the process.
+# Automatic addition of the customisation function from SLHCUpgradeSimulations.Configuration.combinedCustoms
+from SLHCUpgradeSimulations.Configuration.combinedCustoms import cust_2023GReco
+#call to customisation function cust_2023GReco imported from SLHCUpgradeSimulations.Configuration.combinedCustoms
+process = cust_2023GReco(process)
 
