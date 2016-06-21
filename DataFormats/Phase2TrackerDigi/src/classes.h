@@ -8,6 +8,13 @@
 #include <vector>
 
 #include "DataFormats/Phase2TrackerDigi/interface/Phase2TrackerCommissioningDigi.h"
+namespace {
+  struct dictionary4 {
+    edm::Wrapper<Phase2TrackerCommissioningDigi > pcom0;
+    edm::Wrapper<edm::DetSet<Phase2TrackerCommissioningDigi> > pcom1;
+    edm::Wrapper<std::vector< std::vector<Phase2TrackerCommissioningDigi> > > pcom2;
+  };
+}
 
 #include "DataFormats/Phase2TrackerDigi/interface/Phase2TrackerHeaderDigi.h"
 namespace {
