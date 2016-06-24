@@ -136,7 +136,7 @@ namespace Phase2Tracker {
           }
           for (int i=0; i<num_s; i++)
           {
-              iCBC = static_cast<uint8_t>(read_n_at_m_l2r(payloadPointer_,4,bitOffset+11));
+              iCBC = static_cast<uint8_t>(read_n_at_m_l2r(payloadPointer_,4,bitOffset+12));
               if(iCBC < 8)
               {
                 chansize_0 += s_cluster_size_bits;
