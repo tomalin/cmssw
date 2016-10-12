@@ -18,13 +18,11 @@ process.source = cms.Source("PoolSource",
     fileNames = cms.untracked.vstring( 'file://'+sys.argv[-1])
 )
 
-
 process.load('DummyCablingTxt_cfi')
-process.load('Configuration.Geometry.GeometryExtended2023simReco_cff')
 process.load('EventFilter.Phase2TrackerRawToDigi.Phase2TrackerDigiToRawProducer_cfi')
 process.Phase2TrackerDigiToRawProducer.ProductLabel = cms.InputTag("siPhase2Clusters")
 
-# imported from runthematrix
+process.load('Configuration.Geometry.GeometryExtended2023D4Reco_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 from Configuration.AlCa.GlobalTag import GlobalTag
 process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:run2_mc', '')
@@ -38,14 +36,12 @@ process.out = cms.OutputModule(
       )
     )
 
-
 process.p = cms.Path(process.Phase2TrackerDigiToRawProducer)
 
 process.e = cms.EndPath(process.out)
 
-# customisation of the process.
 # Automatic addition of the customisation function from SLHCUpgradeSimulations.Configuration.combinedCustoms
-from SLHCUpgradeSimulations.Configuration.combinedCustoms import cust_2023GReco
-#call to customisation function cust_2023GReco imported from SLHCUpgradeSimulations.Configuration.combinedCustoms
-process = cust_2023GReco(process)
+from SLHCUpgradeSimulations.Configuration.combinedCustoms import cust_2023tilted4021
+#call to customisation function cust_2023tilted4021 imported from SLHCUpgradeSimulations.Configuration.combinedCustoms
+process = cust_2023tilted4021(process)
 

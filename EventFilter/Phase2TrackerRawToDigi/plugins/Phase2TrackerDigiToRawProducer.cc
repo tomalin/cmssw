@@ -59,24 +59,24 @@ namespace Phase2Tracker {
     es.get<TrackerDigiGeometryRecord>().get(tGeomHandle);
     tGeom_ = tGeomHandle.product();
 
-    // Build list of detids for dummy cabling: this should go in another producer
-    // FIXME: remove this and replace by an external package 
-    int fedid = 0;
-    int channel = 0;
-    for (auto iu = tGeom_->detUnits().begin(); iu != tGeom_->detUnits().end(); ++iu) {
-      unsigned int detId_raw = (*iu)->geographicalId().rawId();
-      DetId detId = DetId(detId_raw);
-      if (detId.det() == DetId::Detector::Tracker) {
-        if ( tTopo_->isLower(detId) != 0 ) {
-          std::cout << tTopo_->stack(detId) << " " << fedid << " " << channel << std::endl;
-          channel += 1;
-          if (channel == 72) {
-            channel = 0;
-            fedid += 1;
-          }
-        }
-      }
-    }
+    // // Build list of detids for dummy cabling: this should go in another producer"
+    // // FIXME: remove this and replace by an external package 
+    // int fedid = 0;
+    // int channel = 0;
+    // for (auto iu = tGeom_->detUnits().begin(); iu != tGeom_->detUnits().end(); ++iu) {
+    //   unsigned int detId_raw = (*iu)->geographicalId().rawId();
+    //   DetId detId = DetId(detId_raw);
+    //   if (detId.det() == DetId::Detector::Tracker) {
+    //     if ( tTopo_->isLower(detId) != 0 ) {
+    //       std::cout << tTopo_->stack(detId) << " " << fedid << " " << channel << std::endl;
+    //       channel += 1;
+    //       if (channel == 72) {
+    //         channel = 0;
+    //         fedid += 1;
+    //       }
+    //     }
+    //   }
+    // }
 
     // build map of upper and lower for each module
     for (auto iu = tGeom_->detUnits().begin(); iu != tGeom_->detUnits().end(); ++iu) {
