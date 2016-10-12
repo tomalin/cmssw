@@ -52,7 +52,7 @@ namespace Phase2Tracker
     FedHeader_.setEventType((uint8_t)0x04);
   }
 
-  void Phase2TrackerDigiToRaw::buildFEDBuffers(std::auto_ptr<FEDRawDataCollection>& rcollection)
+  void Phase2TrackerDigiToRaw::buildFEDBuffers(std::unique_ptr<FEDRawDataCollection>& rcollection)
   {
     // store digis for a given fedid
     std::vector<edmNew::DetSet<Phase2TrackerCluster1D>> digis_t;

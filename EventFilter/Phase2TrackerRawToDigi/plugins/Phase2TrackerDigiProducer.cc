@@ -131,7 +131,7 @@ namespace Phase2Tracker {
     zs_work_digis_.clear();
 
     // NEW
-    std::auto_ptr<edmNew::DetSetVector<Phase2TrackerCluster1D>> clusters( new edmNew::DetSetVector<Phase2TrackerCluster1D>() ); 
+    std::unique_ptr<edmNew::DetSetVector<Phase2TrackerCluster1D>> clusters( new edmNew::DetSetVector<Phase2TrackerCluster1D>() ); 
 
     // Retrieve FEDRawData collection
     edm::Handle<FEDRawDataCollection> buffers;
@@ -406,6 +406,6 @@ namespace Phase2Tracker {
     event.put( pr_dsv, "Unsparsified" );
 
     // store Sparsified Digis
-    event.put(clusters, "Sparsified" );
+    event.put(std::move(clusters), "Sparsified" );
   } 
 }

@@ -23,7 +23,7 @@ namespace Phase2Tracker
       Phase2TrackerDigiToRaw(const Phase2TrackerCabling *, const TrackerGeometry* tGeom, const TrackerTopology* tTopo, std::map< int, std::pair<int,int> > stackMap, edm::Handle< edmNew::DetSetVector< Phase2TrackerCluster1D > >, int);
       ~Phase2TrackerDigiToRaw() {}
       // loop on FEDs to create buffers
-      void buildFEDBuffers(std::auto_ptr<FEDRawDataCollection>&);
+      void buildFEDBuffers(std::unique_ptr<FEDRawDataCollection>&);
       // builds a single FED buffer
       std::vector<uint64_t> makeBuffer(std::vector< edmNew::DetSet< Phase2TrackerCluster1D > >);
       // write FE Header to buffer

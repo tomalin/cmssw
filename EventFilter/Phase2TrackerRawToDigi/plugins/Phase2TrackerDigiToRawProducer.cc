@@ -59,24 +59,24 @@ namespace Phase2Tracker {
     es.get<TrackerDigiGeometryRecord>().get(tGeomHandle);
     tGeom_ = tGeomHandle.product();
 
-    // // Build list of detids for dummy cabling: this should go in another producer
-    // // FIXME: remove this and replace by an external package 
-    // int fedid = 0;
-    // int channel = 0;
-    // for (auto iu = tGeom_->detUnits().begin(); iu != tGeom_->detUnits().end(); ++iu) {
-    //   unsigned int detId_raw = (*iu)->geographicalId().rawId();
-    //   DetId detId = DetId(detId_raw);
-    //   if (detId.det() == DetId::Detector::Tracker) {
-    //     if ( tTopo_->isLower(detId) != 0 ) {
-    //       std::cout << tTopo_->stack(detId) << " " << fedid << " " << channel << std::endl;
-    //       channel += 1;
-    //       if (channel == 72) {
-    //         channel = 0;
-    //         fedid += 1;
-    //       }
-    //     }
-    //   }
-    // }
+    // Build list of detids for dummy cabling: this should go in another producer
+    // FIXME: remove this and replace by an external package 
+    int fedid = 0;
+    int channel = 0;
+    for (auto iu = tGeom_->detUnits().begin(); iu != tGeom_->detUnits().end(); ++iu) {
+      unsigned int detId_raw = (*iu)->geographicalId().rawId();
+      DetId detId = DetId(detId_raw);
+      if (detId.det() == DetId::Detector::Tracker) {
+        if ( tTopo_->isLower(detId) != 0 ) {
+          std::cout << tTopo_->stack(detId) << " " << fedid << " " << channel << std::endl;
+          channel += 1;
+          if (channel == 72) {
+            channel = 0;
+            fedid += 1;
+          }
+        }
+      }
+    }
 
     // build map of upper and lower for each module
     for (auto iu = tGeom_->detUnits().begin(); iu != tGeom_->detUnits().end(); ++iu) {
@@ -99,11 +99,11 @@ namespace Phase2Tracker {
   
   void Phase2TrackerDigiToRawProducer::produce( edm::Event& event, const edm::EventSetup& es)
   {
-    std::auto_ptr<FEDRawDataCollection> buffers( new FEDRawDataCollection );
+    std::unique_ptr<FEDRawDataCollection> buffers( new FEDRawDataCollection );
     edm::Handle< edmNew::DetSetVector<Phase2TrackerCluster1D> > digis_handle;
     event.getByToken( token_, digis_handle );
     Phase2TrackerDigiToRaw raw_producer(cabling_, tGeom_, tTopo_, stackMap_, digis_handle, 1);
     raw_producer.buildFEDBuffers(buffers);
-    event.put(buffers);
+    event.put(std::move(buffers));
   }
 }
