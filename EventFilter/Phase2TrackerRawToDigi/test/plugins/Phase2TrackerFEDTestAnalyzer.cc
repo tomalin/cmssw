@@ -113,17 +113,23 @@ void Phase2TrackerFEDTestAnalyzer::analyze(const edm::Event& event, const edm::E
         } else {
           LOGPRINT << "0";
         }
-      }
-      LOGPRINT << "\n";
-      LOGPRINT << " Nr CBC   : " << hex << setw(16) << (int)tr_header.getNumberOfCBC();
-      LOGPRINT << " CBC stat : ";
-      for (int i = 0; i < tr_header.getNumberOfCBC(); i++) {
-        LOGPRINT << hex << setw(2) << (int)tr_header.CBCStatus()[i] << " ";
-      }
-      LOGPRINT << "\n";
-      LOGPRINT << " -------------------------------------------- ";
-      LOGPRINT << " Payload  ----------------------------------- ";
-      LOGPRINT << " -------------------------------------------- ";
+        else
+        { 
+          cout << "0";
+        }
+      } 
+      cout << endl;
+      cout << " Nr CBC   : " << hex << setw(16)<< (int) tr_header.getNumberOfCBC() << endl;
+      cout << " CBC stat : ";
+      // TODO: add a debug display for new debug format
+      // for(int i=0; i<tr_header.getNumberOfCBC(); i++)
+      // {
+      //   cout << hex << setw(2) << (int) tr_header.CBCStatus()[i] << " ";
+      // }
+      cout << endl;
+      cout << " -------------------------------------------- " << endl;
+      cout << " Payload  ----------------------------------- " << endl;
+      cout << " -------------------------------------------- " << endl;
 
       // loop channels
       int ichan = 0;

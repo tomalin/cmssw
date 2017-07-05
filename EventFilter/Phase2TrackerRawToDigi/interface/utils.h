@@ -35,8 +35,12 @@ namespace Phase2Tracker {
   static const int P_CLUSTER_SIZE_BITS = 18;
   static const int Son2S_CLUSTER_SIZE_BITS = 15;
   static const int SonPS_CLUSTER_SIZE_BITS = 16;
-  static const int CBC_STATUS_SIZE_DEBUG = 10;
-  static const int CBC_STATUS_SIZE_ERROR = 2;
+  static const int CBC_STATUS_SIZE_DEBUG_UNSPARSIFIED = 20;
+  static const int CBC_STATUS_SIZE_DEBUG_SPARSIFIED = 1;
+  static const int FE_STATUS_SIZE_DEBUG_SPARSIFIED = 18;
+  static const int CBC_STATUS_SIZE_ERROR = 1;
+  static const int STUBS_SIZE_2S = 16;
+  static const int STUBS_SIZE_PS = 20;
 
   // definition
 

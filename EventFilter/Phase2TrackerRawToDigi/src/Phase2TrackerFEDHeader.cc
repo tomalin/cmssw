@@ -2,6 +2,7 @@
 #include "EventFilter/Phase2TrackerRawToDigi/interface/utils.h"
 #include "FWCore/Utilities/interface/Exception.h"
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
+#include <algorithm>
 
 namespace Phase2Tracker {
 
@@ -218,40 +219,77 @@ namespace Phase2Tracker {
     
   }
   
-  std::vector<uint16_t> Phase2TrackerFEDHeader::CBCStatus() const
+  std::vector<Phase2TrackerFEDFEDebug> Phase2TrackerFEDHeader::CBCStatus() const
   {
     // set offset and data to begining 
     int offset_bits = 128;
     // number of CBC:
     uint16_t cbc_num = numberOfCBC();
-    // size of data per CBC (in bits)
-    int status_size = 0;
-    if (debugMode_==FULL_DEBUG)
+    // get FE status
+    std::vector<bool> status = frontendStatus();
+    // check that #CBC = 16 x #FE
+    int fe_num = std::count(status.begin(), status.end(), true);
+    if (cbc_num != fe_num*16)
     {
-      status_size = CBC_STATUS_SIZE_DEBUG;
+      std::ostringstream ss;
+      ss << "[Phase2Tracker::Phase2TrackerFEDHeader::"<<__func__<<"] ";
+      ss << "Number of chips (" << cbc_num << ") should be 16 x #FE (" << fe_num << ")";
+      throw cms::Exception("Phase2TrackerFEDHeader") << ss.str();
     }
-    else if (debugMode_==CBC_ERROR)
+    // store status in list of Phase2TrackerFEDFEDebug
+    std::vector<Phase2TrackerFEDFEDebug> all_fe_debug;
+    std::vector<bool>::iterator FE_it;
+    for (FE_it = status.begin(); FE_it < status.end(); FE_it++)
     {
-      status_size = CBC_STATUS_SIZE_ERROR;
+      // create empty debug container
+      Phase2TrackerFEDFEDebug fe_debug_status;
+      if(*FE_it)
+      {
+        fe_debug_status.setOn();
+        if(debugMode_ == FULL_DEBUG)
+        {
+          if(readoutMode_ == READOUT_MODE_ZERO_SUPPRESSED)
+          { 
+            for(uint8_t i=0; i<16; i++)
+            {
+              fe_debug_status.setChipDebugStatus(i, static_cast<uint32_t>(read_n_at_m(trackerHeader_,CBC_STATUS_SIZE_DEBUG_SPARSIFIED,offset_bits)));
+              offset_bits += CBC_STATUS_SIZE_DEBUG_SPARSIFIED;
+            }
+            fe_debug_status.setFEDebugStatus(static_cast<uint32_t>(read_n_at_m(trackerHeader_,FE_STATUS_SIZE_DEBUG_SPARSIFIED,offset_bits)));
+            offset_bits += FE_STATUS_SIZE_DEBUG_SPARSIFIED;
+          } 
+          else if(readoutMode_ == READOUT_MODE_PROC_RAW)
+          {
+            for(uint8_t i=0; i<16; i++)
+            {
+              fe_debug_status.setChipDebugStatus(i, static_cast<uint32_t>(read_n_at_m(trackerHeader_,CBC_STATUS_SIZE_DEBUG_UNSPARSIFIED,offset_bits)));
+              offset_bits += CBC_STATUS_SIZE_DEBUG_UNSPARSIFIED;
+            }
+          }
+        }
+        else if(debugMode_ == CBC_ERROR)
+        {
+          for(uint8_t i=0; i<16; i++)
+          {
+            fe_debug_status.setChipDebugStatus(i, static_cast<uint32_t>(read_n_at_m(trackerHeader_,CBC_STATUS_SIZE_ERROR,offset_bits)));
+            offset_bits += CBC_STATUS_SIZE_ERROR;
+          }
+        }
+      }
+      all_fe_debug.push_back(fe_debug_status);
     }
-    // starting byte for CBC status bits
-    std::vector<uint16_t> cbc_status;
-    while(cbc_num>0)
-    {
-        cbc_status.push_back(static_cast<uint16_t>(read_n_at_m(trackerHeader_,status_size,offset_bits)));
-        cbc_num--;
-        offset_bits += status_size;
-    }
-    return cbc_status;
+    return all_fe_debug;
   }
-
-  const uint8_t* Phase2TrackerFEDHeader::pointerToData() {
+  
+  // TODO: update this for CBC3 debug format
+  const uint8_t* Phase2TrackerFEDHeader::pointerToData()
+  {
     int status_size = 0;
     int cbc_num = numberOfCBC();
     // all sizes in bits here
     if (debugMode_==FULL_DEBUG)
     {
-      status_size = CBC_STATUS_SIZE_DEBUG;
+      status_size = CBC_STATUS_SIZE_DEBUG_UNSPARSIFIED;
     }
     else if (debugMode_==CBC_ERROR)
     {

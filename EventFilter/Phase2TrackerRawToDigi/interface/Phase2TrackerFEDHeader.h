@@ -3,12 +3,13 @@
 
 #include "EventFilter/Phase2TrackerRawToDigi/interface/Phase2TrackerFEDDAQHeader.h"
 #include "EventFilter/Phase2TrackerRawToDigi/interface/Phase2TrackerFEDDAQTrailer.h"
+#include "EventFilter/Phase2TrackerRawToDigi/interface/Phase2TrackerFEDFEDebug.h"
 #include <cstdint>
 #include <vector>
 
 namespace Phase2Tracker {
 
-  // tracker headers for new CBC system
+  // tracker headers 
   class Phase2TrackerFEDHeader
   {
     public:
@@ -44,8 +45,8 @@ namespace Phase2Tracker {
 
       inline uint8_t getTrackerHeaderSize() const { return trackerHeaderSize_; }
       // CBC status bits, according to debug mode 
-      // (empty, 1bit per CBC, 8bits per CBC)
-      std::vector<uint16_t> CBCStatus() const;
+      // See dataformat for details
+      std::vector<Phase2TrackerFEDFEDebug> CBCStatus() const;
       void setCBCStatus();
 
       // get header raw data
@@ -93,22 +94,7 @@ namespace Phase2Tracker {
       uint16_t numberOfCBC_;       // Total number of connected CBC
       uint64_t header_first_word_;
 
-  private:
-    void init();
-    const uint8_t* trackerHeader_;  // pointer to the begining of Tracker Header
-    const uint8_t* pointerToData_;  // pointer next to end of Tracker Header
-    uint8_t trackerHeaderSize_;     // Tracker Header in bytes
-    uint64_t header_first_word_;
-    uint64_t header_second_word_;
-    uint8_t dataFormatVersion_;   // shoud be 1
-    READ_MODE debugMode_;         // debug, error, sumary ...
-    uint8_t eventType_;           // contains readoutMode_, conditionData_ and dataType_
-    FEDReadoutMode readoutMode_;  // proc raw or zero suppress
-    uint8_t conditionData_;       // condition data present or not
-    uint8_t dataType_;            // data fake or real
-    uint64_t glibStatusCode_;     // glib status registers
-    uint16_t numberOfCBC_;        // Total number of connected CBC
+  }; // end of Phase2TrackerFEDHeader class
 
-  };  // end of Phase2TrackerFEDHeader class
-}  // namespace Phase2Tracker
-#endif  // } end def EventFilter_Phase2TrackerRawToDigi_Phase2TrackerPhase2TrackerFEDHeader_H
+}
+#endif // } end def EventFilter_Phase2TrackerRawToDigi_Phase2TrackerPhase2TrackerFEDHeader_H
