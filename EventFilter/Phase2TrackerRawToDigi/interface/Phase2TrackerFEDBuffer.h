@@ -37,11 +37,17 @@ namespace Phase2Tracker {
     uint16_t daqBXID() const { return daqHeader_.bxID(); }
     uint16_t daqSourceID() const { return daqHeader_.sourceID(); }
 
-    //methods to get info from DAQ trailer from FEDDAQTrailer class
-    uint32_t daqEventLengthIn64bitWords() const { return daqTrailer_.eventLengthIn64BitWords(); }
-    uint32_t daqEventLengthInBytes() const { return daqTrailer_.eventLengthInBytes(); }
-    uint16_t daqCRC() const { return daqTrailer_.crc(); }
-    FEDTTSBits daqTTSState() const { return daqTrailer_.ttsBits(); }
+      //methods to get info from DAQ trailer from FEDDAQTrailer class
+      uint32_t daqEventLengthIn64bitWords() const { return daqTrailer_.eventLengthIn64BitWords(); }
+      uint32_t daqEventLengthInBytes() const { return daqTrailer_.eventLengthInBytes(); }
+      uint16_t daqCRC() const { return daqTrailer_.crc(); }
+      FEDTTSBits daqTTSState() const { return daqTrailer_.ttsBits(); }
+
+      //methods to get info from the tracker header using Phase2TrackerFEDHeader class
+      FEDReadoutMode readoutMode() const;
+      inline const uint8_t* getPointerToPayload()  const { return trackerHeader_.getPointerToData(); }
+      inline const uint8_t* getPointerToCondData() const { return condDataPointer_; }
+      inline const uint8_t* getPointerToTriggerData() const { return triggerPointer_; }
 
     //methods to get info from the tracker header using Phase2TrackerFEDHeader class
     FEDReadoutMode readoutMode() const;
@@ -53,12 +59,13 @@ namespace Phase2Tracker {
       const uint8_t* buffer_;
       const size_t bufferSize_;
       std::vector<Phase2TrackerFEDChannel> channels_;
+      std::vector<Phase2TrackerFEDChannel> stub_channels_;
       FEDDAQHeader daqHeader_;
       FEDDAQTrailer daqTrailer_;
       Phase2TrackerFEDHeader trackerHeader_;
       const uint8_t* payloadPointer_;
       const uint8_t* condDataPointer_;
-      const uint16_t* triggerPointer_;
+      const uint8_t* triggerPointer_;
       void findChannels();
       int valid_;
 

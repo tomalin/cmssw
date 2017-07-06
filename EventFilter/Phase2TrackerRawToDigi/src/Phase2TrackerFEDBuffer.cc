@@ -171,7 +171,40 @@ namespace Phase2Tracker {
     // round the offset to the next 64 bits word
     int words64 = (offsetBeginningOfChannel + 8 - 1)/8; // size in 64 bit
     int payloadSize = words64 * 8; // size in bytes
-    triggerPointer_ = (uint16_t*)(payloadPointer_ + payloadSize);
+    triggerPointer_ = (uint8_t*)(payloadPointer_ + payloadSize);
+
+    // register stub channels
+    // save current bit index
+    int bitOffset = 0;
+    for (FE_it = status.begin(); FE_it < status.end(); FE_it++)
+    {
+      // if the current fronted is on, fill channels and advance pointer to end of channel 
+      if(*FE_it)
+      {
+        // read FE stub header (6 bits)
+        uint8_t nstubs = static_cast<uint8_t>(read_n_at_m_l2r(triggerPointer_,5,bitOffset));
+        uint8_t modtype = static_cast<uint8_t>(read_n_at_m_l2r(triggerPointer_,1,bitOffset+5));
+        bitOffset += 6;
+        
+        // save channel position and size
+        int stub_size;
+        if ( modtype == 0) 
+        {
+          stub_size = STUBS_SIZE_2S;
+        }
+        else
+        {
+          stub_size = STUBS_SIZE_PS;
+        }
+        stub_channels_.push_back(Phase2TrackerFEDChannel(triggerPointer_,bitOffset/8,stub_size*nstubs,bitOffset%8));   
+        bitOffset += stub_size*nstubs; 
+      }
+      else
+      {
+        // else add a null channel, don't advance the channel pointer 
+        stub_channels_.push_back(Phase2TrackerFEDChannel(triggerPointer_,0,0));
+      }
+    }
 
     // get diff size in bytes:
     // fedBufferSize - (DAQHeader+TrackHeader+PayloadSize+TriggerSize+DAQTrailer)
