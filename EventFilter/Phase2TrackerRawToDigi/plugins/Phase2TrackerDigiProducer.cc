@@ -127,8 +127,6 @@ namespace Phase2Tracker {
     // empty vectors for the next event
     proc_work_registry_.clear();    
     proc_work_digis_.clear();
-    zs_work_registry_.clear();    
-    zs_work_digis_.clear();
 
     // NEW
     std::unique_ptr<edmNew::DetSetVector<Phase2TrackerCluster1D>> clusters( new edmNew::DetSetVector<Phase2TrackerCluster1D>() ); 
@@ -191,12 +189,24 @@ namespace Phase2Tracker {
 	  }
 	  ss << endl;
 	  ss << " Nr CBC   : " << hex << setw(16)<< (int) tr_header.getNumberOfCBC() << endl;
-	  ss << " CBC stat : ";
-	  for(int i=0; i<tr_header.getNumberOfCBC(); i++)
-	  {
-	    ss << hex << setw(2) << (int) tr_header.CBCStatus()[i] << " ";
-	  } 
-	  ss << endl;
+      ss << " FE/Chip status : ";
+      std::vector<Phase2TrackerFEDFEDebug> all_fe_debug = tr_header.CBCStatus();
+      std::vector<Phase2TrackerFEDFEDebug>::iterator FE_it;
+      for (FE_it = all_fe_debug.begin(); FE_it < all_fe_debug.end(); FE_it++)
+      {
+        if(FE_it->IsOn())
+        {
+          ss << " FE L1ID: " << endl; 
+          ss << "    " << hex << setw(4) << FE_it->getFEL1ID()[0] << dec << endl; 
+          ss << "    " << hex << setw(4) << FE_it->getFEL1ID()[1] << dec << endl;
+          for (int i=0; i<16; i++)
+          {
+            ss << " Chip Error" << hex << setw(1) << FE_it->getChipError(i) << dec << endl;
+            ss << " Chip L1ID " << hex << setw(4) << FE_it->getChipL1ID(i) << dec << endl;
+            ss << " Chip PA   " << hex << setw(4) << FE_it->getChipPipelineAddress(i) << dec << endl;
+          }
+        }
+      }
       LogTrace("Phase2TrackerDigiProducer") << ss.str(); ss.clear(); ss.str("");
 	  ss << " -------------------------------------------- " << endl;
 	  ss << " Payload  ----------------------------------- " << endl;
