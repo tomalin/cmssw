@@ -205,10 +205,13 @@ namespace Phase2Tracker {
         stub_channels_.push_back(Phase2TrackerFEDChannel(triggerPointer_,0,0));
       }
     }
+    // trigger size rounded up to 64 bit words
+    int triggerSize = (((bitOffset + 8 - 1)/8 + 8 - 1)/8)*8;
 
     // get diff size in bytes:
     // fedBufferSize - (DAQHeader+TrackHeader+PayloadSize+TriggerSize+DAQTrailer)
-    int bufferDiff = bufferSize_ - 8 - trackerHeader_.getTrackerHeaderSize() - payloadSize - TRIGGER_SIZE - 8;
+    int bufferDiff = bufferSize_ - 8 - trackerHeader_.getTrackerHeaderSize()
+                   - payloadSize - triggerSize - 8;
 
     // check if condition data is supposed to be there:
     if(trackerHeader_.getConditionData())
