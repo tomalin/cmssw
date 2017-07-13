@@ -1,4 +1,4 @@
-#include "EventFilter/Phase2TrackerRawToDigi/plugins/Phase2TrackerDigiProducer.h"
+#include "EventFilter/Phase2TrackerRawToDigi/plugins/Phase2TrackerStubsProducer.h"
 #include "DataFormats/Common/interface/DetSet.h"
 #include "DataFormats/FEDRawData/interface/FEDRawDataCollection.h"
 #include "DataFormats/FEDRawData/interface/FEDNumbering.h"
@@ -7,8 +7,7 @@
 #include "EventFilter/Phase2TrackerRawToDigi/interface/Phase2TrackerFEDBuffer.h"
 #include "EventFilter/Phase2TrackerRawToDigi/interface/Phase2TrackerFEDChannel.h"
 #include "EventFilter/Phase2TrackerRawToDigi/interface/Phase2TrackerFEDHeader.h"
-#include "EventFilter/Phase2TrackerRawToDigi/interface/Phase2TrackerFEDRawChannelUnpacker.h"
-#include "EventFilter/Phase2TrackerRawToDigi/interface/Phase2TrackerFEDZSChannelUnpacker.h"
+#include "EventFilter/Phase2TrackerRawToDigi/interface/Phase2TrackerFEDStubChannelUnpacker.h"
 #include "EventFilter/Phase2TrackerRawToDigi/interface/utils.h"
 #include "CondFormats/DataRecord/interface/Phase2TrackerCablingRcd.h"
 #include "Geometry/TrackerGeometryBuilder/interface/TrackerGeometry.h"
@@ -28,12 +27,10 @@ using namespace std;
 namespace Phase2Tracker {
 
   Phase2TrackerStubProducer::Phase2TrackerStubProducer( const edm::ParameterSet& pset ) :
-    runNumber_(0),
-    cabling_(0),
-    cacheId_(0)
+    cabling_(0)
   {
     // define product
-    produces< edm::DetSetVector<TTStub> >("Unsparsified");
+    produces< edmNew::DetSetVector<Phase2TrackerStub> >("Unsparsified");
     token_ = consumes<FEDRawDataCollection>(pset.getParameter<edm::InputTag>("ProductLabel"));
   }
   
@@ -82,7 +79,7 @@ namespace Phase2Tracker {
   
   void Phase2TrackerStubProducer::produce( edm::Event& event, const edm::EventSetup& es)
   {
-    std::unique_ptr<edmNew::DetSetVector<TTStub>> stubs( new edmNew::DetSetVector<TTStub>() ); 
+    std::unique_ptr<edmNew::DetSetVector<Phase2TrackerStub>> stubs( new edmNew::DetSetVector<Phase2TrackerStub>() ); 
 
     // Retrieve FEDRawData collection
     edm::Handle<FEDRawDataCollection> buffers;
@@ -114,8 +111,7 @@ namespace Phase2Tracker {
         const Phase2TrackerModule mod = cabling_->findFedCh(std::make_pair(*fedIndex, ife));
         uint32_t detid = mod.getDetid();
         // container for this module's digis
-        std::vector<TTStub> stubsTop;
-        std::vector<TTStub> stubsBottom;
+        std::vector<Phase2TrackerStub> festubs;
         const Phase2TrackerFEDChannel& channel = buffer.channel(ichan);
         if(channel.length() > 0)
         {
@@ -125,32 +121,16 @@ namespace Phase2Tracker {
             Phase2TrackerFEDStubSon2SChannelUnpacker unpacker = Phase2TrackerFEDStubSon2SChannelUnpacker(channel);
             while (unpacker.hasData())
             {
-              if (unpacker.rawX()%2) 
-              {
-                stubsTop.push_back(TTStub());
-              }
-              else 
-              {
-                stubsBottom.push_back(TTStub());
-              }
+              festubs.push_back(Phase2TrackerStub(unpacker.stubX(),unpacker.Bend()));
               unpacker++;
             }
           } 
-          else if (channel.dettype() == DET_SonPS)
-          {
-            Phase2TrackerFEDStubSonPSChannelUnpacker unpacker = Phase2TrackerFEDStubSonPSChannelUnpacker(channel);
-            while (unpacker.hasData())
-            {
-              stubsTop.push_back(TTStub());
-              unpacker++;
-            }
-          }
           else if (channel.dettype() == DET_PonPS)
           {
             Phase2TrackerFEDStubPonPSChannelUnpacker unpacker = Phase2TrackerFEDStubPonPSChannelUnpacker(channel);
             while (unpacker.hasData())
             {
-              stubsBottom.push_back(TTStub());
+              festubs.push_back(Phase2TrackerStub(unpacker.stubX(),unpacker.Bend(),unpacker.stubY()));
               unpacker++;
             }
           }
@@ -158,21 +138,11 @@ namespace Phase2Tracker {
         ichan++;
         if(detid > 0)
         {
-          std::vector<TTStub>::iterator it;
+          std::vector<Phase2TrackerStub>::iterator it;
+          edmNew::DetSetVector<Phase2TrackerStub>::FastFiller spct(*stubs, stackMap_[detid].second);
+          for(it=festubs.begin();it!=festubs.end();it++)
           {
-            // outer detid is defined as inner detid + 1 or module detid + 2
-            edmNew::DetSetVector<TTStub>::FastFiller spct(*stubs, stackMap_[detid].second);
-            for(it=stubsTop.begin();it!=stubsTop.end();it++)
-            {
-              spct.push_back(*it);
-            }
-          }
-          {
-            edmNew::DetSetVector<TTStub>::FastFiller spcb(*stubs, stackMap_[detid].first);
-            for(it=stubsBottom.begin();it!=stubsBottom.end();it++)
-            {
-              spcb.push_back(*it);
-            }
+            spct.push_back(*it);
           }
         } // end if detid > 0 (?)
       } // end loop on FE

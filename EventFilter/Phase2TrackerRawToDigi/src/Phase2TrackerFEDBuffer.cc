@@ -185,18 +185,11 @@ namespace Phase2Tracker {
         uint8_t nstubs = static_cast<uint8_t>(read_n_at_m_l2r(triggerPointer_,5,bitOffset));
         uint8_t modtype = static_cast<uint8_t>(read_n_at_m_l2r(triggerPointer_,1,bitOffset+5));
         bitOffset += 6;
-        
-        // save channel position and size
-        int stub_size;
-        if ( modtype == 0) 
-        {
-          stub_size = STUBS_SIZE_2S;
-        }
-        else
-        {
-          stub_size = STUBS_SIZE_PS;
-        }
-        stub_channels_.push_back(Phase2TrackerFEDChannel(triggerPointer_,bitOffset/8,stub_size*nstubs,bitOffset%8));   
+        // set module type and data size
+        DET_TYPE det_type = (modtype == 0) ? DET_Son2S : DET_PonPS;
+        int stub_size = (modtype == 0) ? STUBS_SIZE_2S : STUBS_SIZE_PS;
+        // add channel
+        stub_channels_.push_back(Phase2TrackerFEDChannel(triggerPointer_,bitOffset/8,stub_size*nstubs,bitOffset%8,det_type));   
         bitOffset += stub_size*nstubs; 
       }
       else

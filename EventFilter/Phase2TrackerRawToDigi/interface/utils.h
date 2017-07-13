@@ -30,8 +30,8 @@ namespace Phase2Tracker {
   static const int PS_COLS = 32;
   static const int STRIPS_PADDING = 2;
   static const int TRIGGER_SIZE = 0; 
-	// size = 32 for testbeam
-	// static const int TRIGGER_SIZE = 32;
+  // size = 32 for testbeam
+  // static const int TRIGGER_SIZE = 32;
   static const int P_CLUSTER_SIZE_BITS = 18;
   static const int Son2S_CLUSTER_SIZE_BITS = 15;
   static const int SonPS_CLUSTER_SIZE_BITS = 16;
@@ -41,6 +41,26 @@ namespace Phase2Tracker {
   static const int CBC_STATUS_SIZE_ERROR = 1;
   static const int STUBS_SIZE_2S = 16;
   static const int STUBS_SIZE_PS = 20;
+
+  // stub bend codes to actual binary values
+  static const float STUB_BEND_MAP[16] = {
+    0,    // -0.5,0,0.5
+    1,    // 1
+    2,    // 1.5,2,2.5
+    3.5,  // 3,3.5,4
+    4.5,  // 4.5, 5
+    5.5,  // 5.5
+    6,    // 6
+    6.5,  // 6.5, 7
+    15,   // NOT USED
+    -6.5, // -6.5, -7
+    -6,   // -6
+    -5.5, // -5.5
+    -4.5, // -4.5, -5
+    -3.5, // -3,-3.5,-4
+    -2,   // -1.5,-2,-2.5
+    -1,   // -1
+  };
 
   // definition
 
