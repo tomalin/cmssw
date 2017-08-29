@@ -30,7 +30,7 @@ namespace Phase2Tracker {
     cabling_(0)
   {
     // define product
-    produces< edmNew::DetSetVector<Phase2TrackerStub> >("Unsparsified");
+    produces< edmNew::DetSetVector<Phase2TrackerStub> >("Stubs");
     token_ = consumes<FEDRawDataCollection>(pset.getParameter<edm::InputTag>("ProductLabel"));
   }
   

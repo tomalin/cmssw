@@ -50,7 +50,7 @@ namespace Phase2Tracker {
      event.getByToken( token_, buffers );
 
      // fill collection
-     std::unique_ptr<header_map> hdigis( new header_map ); /* switch to unique_ptr in CMSSW 7 */
+     std::unique_ptr<header_map> hdigis( new header_map );
 
      size_t fedIndex;
      for( fedIndex = Phase2Tracker::FED_ID_MIN; fedIndex < Phase2Tracker::CMS_FED_ID_MAX; ++fedIndex )

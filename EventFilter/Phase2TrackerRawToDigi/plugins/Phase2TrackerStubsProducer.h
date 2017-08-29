@@ -1,5 +1,5 @@
-#ifndef EventFilter_Phase2TrackerRawToStub_Phase2TrackerStubProducer_H
-#define EventFilter_Phase2TrackerRawToStub_Phase2TrackerStubProducer_H
+#ifndef EventFilter_Phase2TrackerRawToDigi_Phase2TrackerStubProducer_H
+#define EventFilter_Phase2TrackerRawToDigi_Phase2TrackerStubProducer_H
 
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/Framework/interface/EDProducer.h"
@@ -38,4 +38,4 @@ namespace Phase2Tracker {
     DetIdCollection detids_;
   };
 }
-#endif // EventFilter_Phase2TrackerRawToStub_Phase2TrackerStubProducer_H
+#endif // EventFilter_Phase2TrackerRawToDigi_Phase2TrackerStubProducer_H

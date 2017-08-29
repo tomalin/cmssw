@@ -286,17 +286,25 @@ namespace Phase2Tracker {
   {
     int status_size = 0;
     int cbc_num = numberOfCBC();
+
     // all sizes in bits here
-    if (debugMode_==FULL_DEBUG)
+    if (debugMode_ == FULL_DEBUG)
     {
-      status_size = CBC_STATUS_SIZE_DEBUG_UNSPARSIFIED;
+      if (readoutMode_ == READOUT_MODE_PROC_RAW) 
+      {
+        status_size = cbc_num * CBC_STATUS_SIZE_DEBUG_UNSPARSIFIED;
+      } 
+      else 
+      {
+        status_size =  cbc_num * CBC_STATUS_SIZE_DEBUG_SPARSIFIED + 72 * FE_STATUS_SIZE_DEBUG_SPARSIFIED; // TODO : check this !
+      }
     }
-    else if (debugMode_==CBC_ERROR)
+    else if (debugMode_ == CBC_ERROR)
     {
-      status_size = CBC_STATUS_SIZE_ERROR;
+      status_size = cbc_num * CBC_STATUS_SIZE_ERROR;
     }
     // compute number of additional 64 bit words before payload
-    int num_add_words64 = (cbc_num * status_size + 64 - 1) / 64 ;
+    int num_add_words64 = (status_size + 64 - 1) / 64 ;
     // back to bytes
     trackerHeaderSize_ = (2 + num_add_words64) * 8;
     return &trackerHeader_[trackerHeaderSize_];
