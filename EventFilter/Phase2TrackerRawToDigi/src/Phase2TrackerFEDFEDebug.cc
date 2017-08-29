@@ -59,8 +59,10 @@ namespace Phase2Tracker
     }
     else 
     {
+      #ifdef EDM_ML_DEBUG
       LogTrace("Phase2TrackerFEDFEDebug") << "[Phase2Tracker::Phase2TrackerFEDFEDebug::"<<__func__<<"]: \n";
       LogTrace("Phase2TrackerFEDFEDebug") << "Warning : Chip L1Id only present in Sparsified, Full debug mode" << std::endl;
+      #endif
     }
     return 0;
   }
@@ -75,8 +77,10 @@ namespace Phase2Tracker
     }
     else 
     {
+      #ifdef EDM_ML_DEBUG
       LogTrace("Phase2TrackerFEDFEDebug") << "[Phase2Tracker::Phase2TrackerFEDFEDebug::"<<__func__<<"]: \n";
       LogTrace("Phase2TrackerFEDFEDebug") << "Warning : FE L1Id only present in Unsparsified, Full debug mode" << std::endl;
+      #endif
     }
     return l1id;
    
@@ -90,8 +94,10 @@ namespace Phase2Tracker
     }
     else 
     {
+      #ifdef EDM_ML_DEBUG
       LogTrace("Phase2TrackerFEDFEDebug") << "[Phase2Tracker::Phase2TrackerFEDFEDebug::"<<__func__<<"]: \n";
       LogTrace("Phase2TrackerFEDFEDebug") << "Warning : Chip Pipeline Address only present in Unsparsified, Full debug mode" << std::endl;
+      #endif
     }
     return 0;
   }

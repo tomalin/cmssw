@@ -32,6 +32,7 @@ namespace Phase2Tracker {
       void setReadoutMode(FEDReadoutMode);
       void setDebugMode(READ_MODE);
       inline void setOn() { _is_on = true; }
+
     private:
       uint32_t _fedebugstatus;
       uint32_t _chipdebugstatus[16];
@@ -40,6 +41,8 @@ namespace Phase2Tracker {
       READ_MODE _debugmode;
   }; // end of Phase2TrackerFEDFEDebug class
 
+  // Dummy comparator to be able to store in DetSetVector
+  inline bool operator<( const Phase2TrackerFEDFEDebug& one, const Phase2TrackerFEDFEDebug& other) { return true; }
 }
 
 #endif // } 

@@ -45,4 +45,15 @@ namespace {
   };
 }
 
+#include "EventFilter/Phase2TrackerRawToDigi/interface/Phase2TrackerFEDFEDebug.h"
+namespace {
+  struct dictionary6 {
+    edm::Wrapper<Phase2Tracker::Phase2TrackerFEDFEDebug> zs0;
+    edm::Wrapper< std::vector<Phase2Tracker::Phase2TrackerFEDFEDebug>  > zs1;
+    edm::Wrapper< edm::DetSet<Phase2Tracker::Phase2TrackerFEDFEDebug> > zs2;
+    edm::Wrapper< std::vector<edm::DetSet<Phase2Tracker::Phase2TrackerFEDFEDebug> > > zs3;
+    edm::Wrapper< edm::DetSetVector<Phase2Tracker::Phase2TrackerFEDFEDebug> > zs4;
+  };
+}
+
 #endif // PHASE2TRACKERDIGI_CLASSES_H
