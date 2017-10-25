@@ -1,5 +1,5 @@
-#ifndef EventFilter_Phase2TrackerRawToDigi_Phase2TrackerDigiProducer_testbeam_H
-#define EventFilter_Phase2TrackerRawToDigi_Phase2TrackerDigiProducer_testbeam_H
+#ifndef EventFilter_Phase2TrackerRawToDigi_Phase2TrackerDigiProducerTestBeam_H
+#define EventFilter_Phase2TrackerRawToDigi_Phase2TrackerDigiProducerTestBeam_H
 
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/Framework/interface/EDProducer.h"
@@ -22,13 +22,13 @@
 
 namespace Phase2Tracker {
 
-  class Phase2TrackerDigiProducer_testbeam : public edm::EDProducer
+  class Phase2TrackerDigiProducerTestBeam : public edm::EDProducer
   {
   public:
     /// constructor
-    Phase2TrackerDigiProducer_testbeam( const edm::ParameterSet& pset );
+    Phase2TrackerDigiProducerTestBeam( const edm::ParameterSet& pset );
     /// default constructor
-    ~Phase2TrackerDigiProducer_testbeam();
+    ~Phase2TrackerDigiProducerTestBeam();
     virtual void beginJob() override;
     virtual void beginRun(edm::Run const&, edm::EventSetup const&) override;
     virtual void produce(edm::Event&, const edm::EventSetup&) override;
@@ -59,4 +59,4 @@ namespace Phase2Tracker {
     std::vector<Phase2TrackerCluster1D>    zs_work_digis_;
   };
 }
-#endif // EventFilter_Phase2TrackerRawToDigi_Phase2TrackerDigiProducer_testbeam_H
+#endif // EventFilter_Phase2TrackerRawToDigi_Phase2TrackerDigiProducerTestBeam_H

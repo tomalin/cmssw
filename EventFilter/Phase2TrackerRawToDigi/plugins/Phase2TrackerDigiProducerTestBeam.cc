@@ -1,4 +1,4 @@
-#include "EventFilter/Phase2TrackerRawToDigi/plugins/Phase2TrackerDigiProducer_testbeam.h"
+#include "EventFilter/Phase2TrackerRawToDigi/plugins/Phase2TrackerDigiProducerTestBeam.h"
 #include "DataFormats/Common/interface/DetSet.h"
 #include "DataFormats/FEDRawData/interface/FEDRawDataCollection.h"
 #include "DataFormats/FEDRawData/interface/FEDNumbering.h"
@@ -27,7 +27,7 @@ using namespace std;
 
 namespace Phase2Tracker {
 
-  Phase2TrackerDigiProducer_testbeam::Phase2TrackerDigiProducer_testbeam( const edm::ParameterSet& pset ) :
+  Phase2TrackerDigiProducerTestBeam::Phase2TrackerDigiProducerTestBeam( const edm::ParameterSet& pset ) :
     runNumber_(0),
     cabling_(0),
     cacheId_(0)
@@ -38,15 +38,15 @@ namespace Phase2Tracker {
     token_ = consumes<FEDRawDataCollection>(pset.getParameter<edm::InputTag>("ProductLabel"));
   }
   
-  Phase2TrackerDigiProducer_testbeam::~Phase2TrackerDigiProducer_testbeam()
+  Phase2TrackerDigiProducerTestBeam::~Phase2TrackerDigiProducerTestBeam()
   {
   }
   
-  void Phase2TrackerDigiProducer_testbeam::beginJob( )
+  void Phase2TrackerDigiProducerTestBeam::beginJob( )
   {
   }
   
-  void Phase2TrackerDigiProducer_testbeam::beginRun( edm::Run const& run, edm::EventSetup const& es)
+  void Phase2TrackerDigiProducerTestBeam::beginRun( edm::Run const& run, edm::EventSetup const& es)
   {
     // fetch cabling from event setup
     edm::ESHandle<Phase2TrackerCabling> c;
@@ -54,11 +54,11 @@ namespace Phase2Tracker {
     cabling_ = c.product();
   }
   
-  void Phase2TrackerDigiProducer_testbeam::endJob()
+  void Phase2TrackerDigiProducerTestBeam::endJob()
   {
   }
   
-  void Phase2TrackerDigiProducer_testbeam::produce( edm::Event& event, const edm::EventSetup& es)
+  void Phase2TrackerDigiProducerTestBeam::produce( edm::Event& event, const edm::EventSetup& es)
   {
     // empty vectors for the next event
     proc_work_registry_.clear();    
@@ -83,8 +83,8 @@ namespace Phase2Tracker {
       // Skip FED if buffer is not a valid tracker FEDBuffer
       if(buffer.isValid() == 0) 
       { 
-        LogTrace("Phase2TrackerDigiProducer_testbeam") << "[Phase2Tracker::Phase2TrackerDigiProducer_testbeam::"<<__func__<<"]: \n";
-        LogTrace("Phase2TrackerDigiProducer_testbeam") << "Skipping invalid buffer for FED nr " << *fedIndex << endl;
+        LogTrace("Phase2TrackerDigiProducerTestBeam") << "[Phase2Tracker::Phase2TrackerDigiProducerTestBeam::"<<__func__<<"]: \n";
+        LogTrace("Phase2TrackerDigiProducerTestBeam") << "Skipping invalid buffer for FED nr " << *fedIndex << endl;
         continue; 
       }
 
@@ -98,7 +98,7 @@ namespace Phase2Tracker {
 	  ss << " -------------------------------------------- " << endl;
 	  ss << " tracker header debug ------------------------" << endl;
 	  ss << " -------------------------------------------- " << endl;
-      LogTrace("Phase2TrackerDigiProducer_testbeam") << ss.str(); ss.clear(); ss.str("");
+      LogTrace("Phase2TrackerDigiProducerTestBeam") << ss.str(); ss.clear(); ss.str("");
       #endif 
 
 	  Phase2TrackerFEDHeader tr_header = buffer.trackerHeader();
@@ -143,7 +143,7 @@ namespace Phase2Tracker {
           }
         }
       }
-      LogTrace("Phase2TrackerDigiProducer_testbeam") << ss.str(); ss.clear(); ss.str("");
+      LogTrace("Phase2TrackerDigiProducerTestBeam") << ss.str(); ss.clear(); ss.str("");
 	  ss << " -------------------------------------------- " << endl;
 	  ss << " Payload  ----------------------------------- " << endl;
 	  ss << " -------------------------------------------- " << endl;
@@ -205,7 +205,7 @@ namespace Phase2Tracker {
 	          }
               #ifdef EDM_ML_DEBUG
 	          ss << endl;
-              LogTrace("Phase2TrackerDigiProducer_testbeam") << ss.str(); ss.clear(); ss.str("");
+              LogTrace("Phase2TrackerDigiProducerTestBeam") << ss.str(); ss.clear(); ss.str("");
 	          #endif
 
               // store beginning and end of this digis for this detid and add this registry to the list
@@ -294,7 +294,7 @@ namespace Phase2Tracker {
               }
               #ifdef EDM_ML_DEBUG
 	          ss << endl;
-              LogTrace("Phase2TrackerDigiProducer_testbeam") << ss.str(); ss.clear(); ss.str("");
+              LogTrace("Phase2TrackerDigiProducerTestBeam") << ss.str(); ss.clear(); ss.str("");
 	          #endif
             } // end reading CBC's channel
             ichan++;
