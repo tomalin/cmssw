@@ -103,7 +103,6 @@ namespace Phase2Tracker {
       }
       // loop on channels
       // TODO : check loops consistency
-      // TODO : use proper TTStub constructor
       int ichan = 0;
       for ( int ife = 0; ife < MAX_FE_PER_FED; ife++ )
       {
