@@ -48,6 +48,30 @@ namespace Phase2Tracker {
     edm::ESHandle<Phase2TrackerCabling> c;
     es.get<Phase2TrackerCablingRcd>().get( c );
     cabling_ = c.product();
+
+    // FIXME: build map of stacks to compensate for missing trackertopology methods
+    edm::ESHandle<TrackerTopology> tTopoHandle;
+    es.get<TrackerTopologyRcd>().get(tTopoHandle);
+    const TrackerTopology* tTopo = tTopoHandle.product();
+
+    edm::ESHandle< TrackerGeometry > tGeomHandle;
+    es.get< TrackerDigiGeometryRecord >().get( tGeomHandle );
+    const TrackerGeometry* const theTrackerGeom = tGeomHandle.product();
+
+    for (auto iu = theTrackerGeom->detUnits().begin(); iu != theTrackerGeom->detUnits().end(); ++iu) {
+      unsigned int detId_raw = (*iu)->geographicalId().rawId();
+      DetId detId = DetId(detId_raw);
+      if (detId.det() == DetId::Detector::Tracker) {
+          // build map of upper and lower for each module
+          if ( tTopo->isLower(detId) != 0 ) {
+              stackMap_[tTopo->stack(detId)].first = detId;
+          }
+          if ( tTopo->isUpper(detId) != 0 ) {
+              stackMap_[tTopo->stack(detId)].second = detId;
+          }
+      }
+    } // end loop on detunits
+
   }
   
   void Phase2TrackerStubProducer::endJob()
