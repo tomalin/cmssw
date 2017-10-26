@@ -227,13 +227,14 @@ namespace Phase2Tracker {
     uint16_t cbc_num = numberOfCBC();
     // get FE status
     std::vector<bool> status = frontendStatus();
-    // check that #CBC = 16 x #FE
+    // check that #CBC = CBC_PER_FE_DEBUG x #FE
+    int ncbc = CBC_PER_FE_DEBUG;
     int fe_num = std::count(status.begin(), status.end(), true);
-    if (cbc_num != fe_num*16)
+    if (cbc_num != fe_num*ncbc)
     {
       std::ostringstream ss;
       ss << "[Phase2Tracker::Phase2TrackerFEDHeader::"<<__func__<<"] ";
-      ss << "Number of chips (" << cbc_num << ") should be 16 x #FE (" << fe_num << ")";
+      ss << "Number of chips (" << cbc_num << ") should be CBC_PER_FE_DEBUG (default 16) x #FE (" << fe_num << ")";
       throw cms::Exception("Phase2TrackerFEDHeader") << ss.str();
     }
     // store status in list of Phase2TrackerFEDFEDebug
@@ -250,7 +251,7 @@ namespace Phase2Tracker {
         {
           if(readoutMode_ == READOUT_MODE_ZERO_SUPPRESSED)
           { 
-            for(uint8_t i=0; i<16; i++)
+            for(uint8_t i=0; i<ncbc; i++)
             {
               fe_debug_status.setChipDebugStatus(i, static_cast<uint32_t>(read_n_at_m(trackerHeader_,CBC_STATUS_SIZE_DEBUG_SPARSIFIED,offset_bits)));
               offset_bits += CBC_STATUS_SIZE_DEBUG_SPARSIFIED;
@@ -260,7 +261,7 @@ namespace Phase2Tracker {
           } 
           else if(readoutMode_ == READOUT_MODE_PROC_RAW)
           {
-            for(uint8_t i=0; i<16; i++)
+            for(uint8_t i=0; i<ncbc; i++)
             {
               fe_debug_status.setChipDebugStatus(i, static_cast<uint32_t>(read_n_at_m(trackerHeader_,CBC_STATUS_SIZE_DEBUG_UNSPARSIFIED,offset_bits)));
               offset_bits += CBC_STATUS_SIZE_DEBUG_UNSPARSIFIED;
@@ -269,7 +270,7 @@ namespace Phase2Tracker {
         }
         else if(debugMode_ == CBC_ERROR)
         {
-          for(uint8_t i=0; i<16; i++)
+          for(uint8_t i=0; i<ncbc; i++)
           {
             fe_debug_status.setChipDebugStatus(i, static_cast<uint32_t>(read_n_at_m(trackerHeader_,CBC_STATUS_SIZE_ERROR,offset_bits)));
             offset_bits += CBC_STATUS_SIZE_ERROR;
