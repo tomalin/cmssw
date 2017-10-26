@@ -125,21 +125,21 @@ namespace Phase2Tracker {
 	  }
 	  ss << endl;
 	  ss << " Nr CBC   : " << hex << setw(16)<< (int) tr_header.getNumberOfCBC() << endl;
-      ss << " FE/Chip status : ";
+      ss << " FE/Chip status : " << endl;
       std::vector<Phase2TrackerFEDFEDebug> all_fe_debug = tr_header.CBCStatus();
       std::vector<Phase2TrackerFEDFEDebug>::iterator FE_it;
       for (FE_it = all_fe_debug.begin(); FE_it < all_fe_debug.end(); FE_it++)
       {
         if(FE_it->IsOn())
         {
-          ss << " FE L1ID: " << endl; 
-          ss << "    " << hex << setw(4) << FE_it->getFEL1ID()[0] << dec << endl; 
-          ss << "    " << hex << setw(4) << FE_it->getFEL1ID()[1] << dec << endl;
-          for (int i=0; i<16; i++)
+          ss << "     FE L1ID "; 
+          ss << hex << setw(4) << FE_it->getFEL1ID()[0] << " " << FE_it->getFEL1ID()[1] << dec << endl; 
+          // DEBUG : 2 -> 16
+          for (int i=0; i<2; i++)
           {
-            ss << " Chip Error" << hex << setw(1) << FE_it->getChipError(i) << dec << endl;
-            ss << " Chip L1ID " << hex << setw(4) << FE_it->getChipL1ID(i) << dec << endl;
-            ss << " Chip PA   " << hex << setw(4) << FE_it->getChipPipelineAddress(i) << dec << endl;
+            ss << "     Chip Error" << hex << setw(4) << FE_it->getChipError(i) << dec << endl;
+            ss << "     Chip L1ID " << hex << setw(4) << FE_it->getChipL1ID(i) << dec << endl;
+            ss << "     Chip PA   " << hex << setw(4) << FE_it->getChipPipelineAddress(i) << dec << endl;
           }
         }
       }
