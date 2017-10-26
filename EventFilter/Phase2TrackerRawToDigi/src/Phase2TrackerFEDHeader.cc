@@ -243,7 +243,7 @@ namespace Phase2Tracker {
     for (FE_it = status.begin(); FE_it < status.end(); FE_it++)
     {
       // create empty debug container
-      Phase2TrackerFEDFEDebug fe_debug_status;
+      Phase2TrackerFEDFEDebug fe_debug_status(readoutMode_,debugMode_);
       if(*FE_it)
       {
         fe_debug_status.setOn();

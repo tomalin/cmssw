@@ -53,7 +53,7 @@ namespace Phase2Tracker
 
   uint16_t Phase2TrackerFEDFEDebug::getChipL1ID(uint8_t chip_id) const 
   {
-    if (_readoutmode == READOUT_MODE_PROC_RAW || _debugmode == FULL_DEBUG)
+    if (_readoutmode == READOUT_MODE_PROC_RAW && _debugmode == FULL_DEBUG)
     {
       return getChipDebugStatus(chip_id)&(0x01FF);
     }
@@ -61,7 +61,7 @@ namespace Phase2Tracker
     {
       #ifdef EDM_ML_DEBUG
       LogTrace("Phase2TrackerFEDFEDebug") << "[Phase2Tracker::Phase2TrackerFEDFEDebug::"<<__func__<<"]: \n";
-      LogTrace("Phase2TrackerFEDFEDebug") << "Warning : Chip L1Id only present in Sparsified, Full debug mode" << std::endl;
+      LogTrace("Phase2TrackerFEDFEDebug") << "Warning : Chip L1Id only present in Unsparsified, Full debug mode" << std::endl;
       #endif
     }
     return 0;
@@ -89,7 +89,7 @@ namespace Phase2Tracker
 
   uint16_t Phase2TrackerFEDFEDebug::getChipPipelineAddress(uint8_t chip_id) const 
   {
-    if (_readoutmode == READOUT_MODE_PROC_RAW || _debugmode == FULL_DEBUG)
+    if (_readoutmode == READOUT_MODE_PROC_RAW && _debugmode == FULL_DEBUG)
     {
       return (getChipDebugStatus(chip_id)>>9)&(0x01FF);
     }
