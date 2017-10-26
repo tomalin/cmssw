@@ -80,23 +80,30 @@ namespace Phase2Tracker {
       }
       // loop on channels
       // TODO : check loops consistency
-      int ichan = 0;
       for ( int ife = 0; ife < MAX_FE_PER_FED; ife++ )
       {
-        // get fedid from cabling
-        const Phase2TrackerModule mod = cabling_->findFedCh(std::make_pair(*fedIndex, ife));
-        uint32_t detid = mod.getDetid();
         // container for this module's digis
         std::vector<Phase2TrackerStub> festubs;
-        const Phase2TrackerFEDChannel& channel = buffer.channel(ichan);
+        const Phase2TrackerFEDChannel& channel = buffer.stubchannel(ife);
         if(channel.length() > 0)
         {
+          #ifdef EDM_ML_DEBUG
+          LogTrace("Phase2TrackerStubProducer") << "[Phase2Tracker::Phase2TrackerStubProducer::"<<__func__<<"]: \n";
+          LogTrace("Phase2TrackerStubProducer") << "Reading stubs for FED: " << *fedIndex << ", FE: " << ife << endl; 
+          #endif
+
+          // get fedid from cabling
+          const Phase2TrackerModule mod = cabling_->findFedCh(std::make_pair(*fedIndex, ife));
+          uint32_t detid = mod.getDetid();
           // create appropriate unpacker
           if (channel.dettype() == DET_Son2S) 
           {
             Phase2TrackerFEDStubSon2SChannelUnpacker unpacker = Phase2TrackerFEDStubSon2SChannelUnpacker(channel);
             while (unpacker.hasData())
             {
+              #ifdef EDM_ML_DEBUG
+              LogTrace("Phase2TrackerStubProducer") << "Stub X: " << unpacker.stubX() << endl; 
+              #endif
               festubs.push_back(Phase2TrackerStub(unpacker.stubX(),unpacker.Bend()));
               unpacker++;
             }
@@ -106,21 +113,23 @@ namespace Phase2Tracker {
             Phase2TrackerFEDStubPonPSChannelUnpacker unpacker = Phase2TrackerFEDStubPonPSChannelUnpacker(channel);
             while (unpacker.hasData())
             {
+              #ifdef EDM_ML_DEBUG
+              LogTrace("Phase2TrackerStubProducer") << "Stub X: " << unpacker.stubX() << ", Stub Y: " << unpacker.stubY() << endl; 
+              #endif
               festubs.push_back(Phase2TrackerStub(unpacker.stubX(),unpacker.Bend(),unpacker.stubY()));
               unpacker++;
             }
           }
-        } // end reading stubs channel
-        ichan++;
-        if(detid > 0)
-        {
-          std::vector<Phase2TrackerStub>::iterator it;
-          edmNew::DetSetVector<Phase2TrackerStub>::FastFiller spct(*stubs, detid+1);
-          for(it=festubs.begin();it!=festubs.end();it++)
+          if(detid > 0)
           {
-            spct.push_back(*it);
-          }
-        } // end if detid > 0 (?)
+            std::vector<Phase2TrackerStub>::iterator it;
+            edmNew::DetSetVector<Phase2TrackerStub>::FastFiller spct(*stubs, detid+1);
+            for(it=festubs.begin();it!=festubs.end();it++)
+            {
+              spct.push_back(*it);
+            }
+          } // end if detid > 0 (?)
+        } // end reading stubs channel
       } // end loop on FE
     } // en loop on FED   
     // store stubs
