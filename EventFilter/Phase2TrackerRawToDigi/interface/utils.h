@@ -42,6 +42,9 @@ namespace Phase2Tracker {
   static const int STUBS_SIZE_2S = 16;
   static const int STUBS_SIZE_PS = 20;
 
+  // Current dataformat does not allow to know how many CBC there are per FE, set it here 
+  static const int CBC_PER_FE_DEBUG = 2;
+
   // stub bend codes to actual binary values
   static const float STUB_BEND_MAP[16] = {
     0,    // -0.5,0,0.5
