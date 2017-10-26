@@ -49,10 +49,10 @@ namespace {
 namespace {
   struct dictionary6 {
     edm::Wrapper<Phase2Tracker::Phase2TrackerFEDFEDebug> zs0;
-    edm::Wrapper< std::vector<Phase2Tracker::Phase2TrackerFEDFEDebug>  > zs1;
-    edm::Wrapper< edm::DetSet<Phase2Tracker::Phase2TrackerFEDFEDebug> > zs2;
-    edm::Wrapper< std::vector<edm::DetSet<Phase2Tracker::Phase2TrackerFEDFEDebug> > > zs3;
-    edm::Wrapper< edm::DetSetVector<Phase2Tracker::Phase2TrackerFEDFEDebug> > zs4;
+    edm::Wrapper<std::vector<Phase2Tracker::Phase2TrackerFEDFEDebug>  > zs1;
+    edm::Wrapper<edm::DetSet<Phase2Tracker::Phase2TrackerFEDFEDebug> > zs2;
+    edm::Wrapper<std::vector<edm::DetSet<Phase2Tracker::Phase2TrackerFEDFEDebug> > > zs3;
+    edm::Wrapper<edmNew::DetSetVector<Phase2Tracker::Phase2TrackerFEDFEDebug> > zs4;
   };
 }
 

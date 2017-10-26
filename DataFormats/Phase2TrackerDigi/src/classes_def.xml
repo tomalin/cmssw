@@ -25,4 +25,11 @@
    <class name="std::vector<edm::DetSet<Phase2TrackerStub>>"/>
    <class name="edmNew::DetSetVector<Phase2TrackerStub>"/>
    <class name="edm::Wrapper<edmNew::DetSetVector<Phase2TrackerStub>>"/>
+   <class name="Phase2Tracker::Phase2TrackerFEDFEDebug"/>
+   <class name="std::vector<Phase2Tracker::Phase2TrackerFEDFEDebug>"/>
+   <class name="edm::DetSet<Phase2Tracker::Phase2TrackerFEDFEDebug>"/>
+   <class name="std::vector<edm::DetSet<Phase2Tracker::Phase2TrackerFEDFEDebug>>"/>
+   <class name="edmNew::DetSetVector<Phase2Tracker::Phase2TrackerFEDFEDebug>"/>
+   <class name="edm::Wrapper<edmNew::DetSetVector<Phase2Tracker::Phase2TrackerFEDFEDebug>>"/>
+
 </lcgdict>
