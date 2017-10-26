@@ -24,7 +24,7 @@ namespace {
     edm::Wrapper< std::vector<Phase2TrackerStub>  > zs1;
     edm::Wrapper< edm::DetSet<Phase2TrackerStub> > zs2;
     edm::Wrapper< std::vector<edm::DetSet<Phase2TrackerStub> > > zs3;
-    edm::Wrapper< edm::DetSetVector<Phase2TrackerStub> > zs4;
+    edm::Wrapper< edmNew::DetSetVector<Phase2TrackerStub> > zs4;
   };
 }
 

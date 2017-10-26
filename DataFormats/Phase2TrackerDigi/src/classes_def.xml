@@ -19,4 +19,10 @@
    <class name="Phase2TrackerHeaderDigi" />
    <class name="std::vector<Phase2TrackerHeaderDigi>"/>
    <class name="edm::Wrapper<std::vector<Phase2TrackerHeaderDigi> >"/>
+   <class name="Phase2TrackerStub"/>
+   <class name="std::vector<Phase2TrackerStub>"/>
+   <class name="edm::DetSet<Phase2TrackerStub>"/>
+   <class name="std::vector<edm::DetSet<Phase2TrackerStub>>"/>
+   <class name="edmNew::DetSetVector<Phase2TrackerStub>"/>
+   <class name="edm::Wrapper<edmNew::DetSetVector<Phase2TrackerStub>>"/>
 </lcgdict>
