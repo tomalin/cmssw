@@ -48,29 +48,6 @@ namespace Phase2Tracker {
     edm::ESHandle<Phase2TrackerCabling> c;
     es.get<Phase2TrackerCablingRcd>().get( c );
     cabling_ = c.product();
-
-    // FIXME: build map of stacks to compensate for missing trackertopology methods
-    edm::ESHandle<TrackerTopology> tTopoHandle;
-    es.get<TrackerTopologyRcd>().get(tTopoHandle);
-    const TrackerTopology* tTopo = tTopoHandle.product();
-
-    edm::ESHandle< TrackerGeometry > tGeomHandle;
-    es.get< TrackerDigiGeometryRecord >().get( tGeomHandle );
-    const TrackerGeometry* const theTrackerGeom = tGeomHandle.product();
-
-    for (auto iu = theTrackerGeom->detUnits().begin(); iu != theTrackerGeom->detUnits().end(); ++iu) {
-      unsigned int detId_raw = (*iu)->geographicalId().rawId();
-      DetId detId = DetId(detId_raw);
-      if (detId.det() == DetId::Detector::Tracker) {
-          // build map of upper and lower for each module
-          if ( tTopo->isLower(detId) != 0 ) {
-              stackMap_[tTopo->stack(detId)].first = detId;
-          }
-          if ( tTopo->isUpper(detId) != 0 ) {
-              stackMap_[tTopo->stack(detId)].second = detId;
-          }
-      }
-    } // end loop on detunits
   }
   
   void Phase2TrackerDebugProducer::endJob()
@@ -102,15 +79,22 @@ namespace Phase2Tracker {
         continue; 
       }
       std::vector<Phase2TrackerFEDFEDebug> all_fed_debugs = buffer.trackerHeader().CBCStatus();
+      std::vector<bool> fe_status = buffer.trackerHeader().frontendStatus();
       // loop on FE
       for ( int ife = 0; ife < MAX_FE_PER_FED; ife++ )
       {
-        // get fedid from cabling
-        const Phase2TrackerModule mod = cabling_->findFedCh(std::make_pair(*fedIndex, ife));
-        uint32_t detid = mod.getDetid();
-        // fill one debug using fastfiller
-        edmNew::DetSetVector<Phase2TrackerFEDFEDebug>::FastFiller spct(*debugs, detid);
-        spct.push_back(all_fed_debugs[ife]);
+        if ( fe_status[ife] )
+        {
+          // get fedid from cabling
+          const Phase2TrackerModule mod = cabling_->findFedCh(std::make_pair(*fedIndex, ife));
+          uint32_t detid = mod.getDetid();
+          // DEBUG
+          std::cout << "FE: " << ife << ", DetID: " <<  detid << std::endl;
+          // END of debug
+          // fill one debug using fastfiller
+          edmNew::DetSetVector<Phase2TrackerFEDFEDebug>::FastFiller spct(*debugs, detid);
+          spct.push_back(all_fed_debugs[ife]);
+        }
       } // end loop on FE
     } // en loop on FED   
     // store debugs
