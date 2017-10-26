@@ -1,4 +1,4 @@
-#include "EventFilter/Phase2TrackerRawToDigi/plugins/Phase2TrackerStubsProducer.h"
+#include "EventFilter/Phase2TrackerRawToDigi/plugins/Phase2TrackerStubProducer.h"
 #include "DataFormats/Common/interface/DetSet.h"
 #include "DataFormats/FEDRawData/interface/FEDRawDataCollection.h"
 #include "DataFormats/FEDRawData/interface/FEDNumbering.h"
