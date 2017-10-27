@@ -253,17 +253,17 @@ namespace Phase2Tracker {
           { 
             for(uint8_t i=0; i<ncbc; i++)
             {
-              fe_debug_status.setChipDebugStatus(i, static_cast<uint32_t>(read_n_at_m(trackerHeader_,CBC_STATUS_SIZE_DEBUG_SPARSIFIED,offset_bits)));
+              fe_debug_status.setChipDebugStatus(i, static_cast<uint32_t>(read_n_at_m_l2r(trackerHeader_,CBC_STATUS_SIZE_DEBUG_SPARSIFIED,offset_bits)));
               offset_bits += CBC_STATUS_SIZE_DEBUG_SPARSIFIED;
             }
-            fe_debug_status.setFEDebugStatus(static_cast<uint32_t>(read_n_at_m(trackerHeader_,FE_STATUS_SIZE_DEBUG_SPARSIFIED,offset_bits)));
+            fe_debug_status.setFEDebugStatus(static_cast<uint32_t>(read_n_at_m_l2r(trackerHeader_,FE_STATUS_SIZE_DEBUG_SPARSIFIED,offset_bits)));
             offset_bits += FE_STATUS_SIZE_DEBUG_SPARSIFIED;
           } 
           else if(readoutMode_ == READOUT_MODE_PROC_RAW)
           {
             for(uint8_t i=0; i<ncbc; i++)
             {
-              fe_debug_status.setChipDebugStatus(i, static_cast<uint32_t>(read_n_at_m(trackerHeader_,CBC_STATUS_SIZE_DEBUG_UNSPARSIFIED,offset_bits)));
+              fe_debug_status.setChipDebugStatus(i, static_cast<uint32_t>(read_n_at_m_l2r(trackerHeader_,CBC_STATUS_SIZE_DEBUG_UNSPARSIFIED,offset_bits)));
               offset_bits += CBC_STATUS_SIZE_DEBUG_UNSPARSIFIED;
             }
           }
@@ -272,7 +272,7 @@ namespace Phase2Tracker {
         {
           for(uint8_t i=0; i<ncbc; i++)
           {
-            fe_debug_status.setChipDebugStatus(i, static_cast<uint32_t>(read_n_at_m(trackerHeader_,CBC_STATUS_SIZE_ERROR,offset_bits)));
+            fe_debug_status.setChipDebugStatus(i, static_cast<uint32_t>(read_n_at_m_l2r(trackerHeader_,CBC_STATUS_SIZE_ERROR,offset_bits)));
             offset_bits += CBC_STATUS_SIZE_ERROR;
           }
         }
