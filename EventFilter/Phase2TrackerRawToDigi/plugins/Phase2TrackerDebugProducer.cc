@@ -88,9 +88,6 @@ namespace Phase2Tracker {
           // get fedid from cabling
           const Phase2TrackerModule mod = cabling_->findFedCh(std::make_pair(*fedIndex, ife));
           uint32_t detid = mod.getDetid();
-          // DEBUG
-          std::cout << "FE: " << ife << ", DetID: " <<  detid << std::endl;
-          // END of debug
           // fill one debug using fastfiller
           edmNew::DetSetVector<Phase2TrackerFEDFEDebug>::FastFiller spct(*debugs, detid);
           spct.push_back(all_fed_debugs[ife]);
