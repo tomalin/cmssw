@@ -6,21 +6,13 @@ namespace Phase2Tracker {
     : data_(channel.data()),
       currentOffset_(channel.offset()),
       currentStrip_(0),
-      valuesLeft_((channel.length())*8 - STRIPS_PADDING),
-      currentWord_(channel.data()[currentOffset_]),
-      bitInWord_(0)
+      valuesLeft_((channel.length())*8 - STRIPS_PADDING) 
   {
   }
 
   Phase2TrackerFEDRawChannelUnpacker& Phase2TrackerFEDRawChannelUnpacker::operator ++ ()
   {
-    bitInWord_++;
     currentStrip_++;
-    if (bitInWord_ > 7) {
-      bitInWord_ = 0;
-      currentOffset_++;
-      currentWord_ = data_[currentOffset_];
-    }
     valuesLeft_--;
     return (*this);
   }
