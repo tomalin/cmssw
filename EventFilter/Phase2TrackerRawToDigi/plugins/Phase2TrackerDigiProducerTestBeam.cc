@@ -137,6 +137,7 @@ namespace Phase2Tracker {
           // DEBUG : 2 -> 16
           for (int i=0; i<2; i++)
           {
+            ss << "     Full chip debug" << hex << setw(8) << FE_it->getChipDebugStatus(i) << dec << endl;
             ss << "     Chip Error" << hex << setw(4) << FE_it->getChipError(i) << dec << endl;
             ss << "     Chip L1ID " << hex << setw(4) << FE_it->getChipL1ID(i) << dec << endl;
             ss << "     Chip PA   " << hex << setw(4) << FE_it->getChipPipelineAddress(i) << dec << endl;
