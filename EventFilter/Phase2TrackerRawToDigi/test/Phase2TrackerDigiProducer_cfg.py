@@ -7,9 +7,9 @@ process.load("FWCore.MessageService.MessageLogger_cfi")
 process.MessageLogger = cms.Service("MessageLogger",
         destinations  = cms.untracked.vstring('logtrace' ),
         logtrace      = cms.untracked.PSet( threshold  = cms.untracked.string('DEBUG') ),
-        debugModules  = cms.untracked.vstring( 'Phase2TrackerDigiProducer', 'Phase2TrackerFEDBuffer', 'Phase2TrackerDigiProducerTestBeam', 'Phase2TrackerFEDFEDebug' )
+        debugModules  = cms.untracked.vstring( 'Phase2TrackerDigiProducer', 'Phase2TrackerFEDBuffer', 'Phase2TrackerDigiProducerTestBeam', 'Phase2TrackerFEDFEDebug', 'Phase2TrackerStubProducer' )
 )
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(10))
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1))
 
 
 process.source = cms.Source("PoolSource",
@@ -51,7 +51,7 @@ process.out = cms.OutputModule(
 )
 
 # process.p = cms.Path(process.Phase2TrackerDigiProducer*process.Phase2TrackerCommissioningDigiProducer)
-process.p = cms.Path(process.Phase2TrackerDigiProducerTestBeam*process.Phase2TrackerStubProducer)
+process.p = cms.Path(process.Phase2TrackerDigiProducerTestBeam*process.Phase2TrackerDebugProducer*process.Phase2TrackerStubProducer)
 
 process.e = cms.EndPath(process.out)
 
