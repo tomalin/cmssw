@@ -135,7 +135,7 @@ namespace Phase2Tracker {
           ss << "     FE L1ID "; 
           ss << hex << setw(4) << FE_it->getFEL1ID()[0] << " " << FE_it->getFEL1ID()[1] << dec << endl; 
           // DEBUG : 2 -> 16
-          for (int i=0; i<2; i++)
+          for (int i=0; i<CBC_PER_FE_DEBUG; i++)
           {
             ss << "     Full chip debug" << hex << setw(8) << FE_it->getChipDebugStatus(i) << dec << endl;
             ss << "     Chip Error" << hex << setw(4) << FE_it->getChipError(i) << dec << endl;
