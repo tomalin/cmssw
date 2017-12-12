@@ -319,11 +319,15 @@ namespace Phase2Tracker {
       cdata[0x0011] = 0x0001;
       cdata[0x0012] = 0x0002;
       */
-    // add trigger data
-    cdata[0x0B0000FF] = (TRIGGER_SIZE > 0) ? (*triggerPointer_) : 0x00000000;
-    return cdata;
-  }
+      // add trigger data (TEST ONLY)
+      // cdata[0x0B0000FF] = (TRIGGER_SIZE>0) ? (*triggerPointer_) : 0x00000000;
+      return cdata;
 
-  FEDReadoutMode Phase2TrackerFEDBuffer::readoutMode() const { return trackerHeader_.getReadoutMode(); }
+  }
+  
+  FEDReadoutMode Phase2TrackerFEDBuffer::readoutMode() const
+  {
+    return trackerHeader_.getReadoutMode();
+  }
 
 }  // namespace Phase2Tracker
