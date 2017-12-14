@@ -64,7 +64,7 @@ namespace Phase2Tracker {
   {
     uint8_t id = chipId();
     if(id>7) id -= 8;
-    return (STRIPS_PER_CBC/2*id + rawX());
+    return (STRIPS_PER_CBC*id + rawX() - 2);
   }
 
   int Phase2TrackerFEDStubSon2SChannelUnpacker::stubY() const
