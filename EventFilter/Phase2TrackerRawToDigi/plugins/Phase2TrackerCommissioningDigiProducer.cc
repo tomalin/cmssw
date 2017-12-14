@@ -35,7 +35,7 @@ using namespace std;
 
 namespace Phase2Tracker {
 
-  typedef std::vector< std::vector<Phase2TrackerCommissioningDigi> > condata_map;  
+  typedef edm::DetSet<Phase2TrackerCommissioningDigi> condata_map;  
 
   Phase2Tracker::Phase2TrackerCommissioningDigiProducer::Phase2TrackerCommissioningDigiProducer( const edm::ParameterSet& pset )
   {
@@ -53,36 +53,35 @@ namespace Phase2Tracker {
     edm::Handle<FEDRawDataCollection> buffers;
     event.getByToken( token_, buffers );
 
-     // fill collection
-     std::unique_ptr<condata_map> cdigis( new condata_map ); 
+    size_t fedIndex;
+    for( fedIndex = Phase2Tracker::FED_ID_MIN; fedIndex < Phase2Tracker::CMS_FED_ID_MAX; ++fedIndex )
+    {
+      // reading
+      const FEDRawData& fed = buffers->FEDData(fedIndex);
+      if(fed.size()==0) continue;
+      Phase2Tracker::Phase2TrackerFEDBuffer buffer(fed.data(),fed.size());
+      std::map<uint32_t,uint32_t> cond_data = buffer.conditionData();
 
-     size_t fedIndex;
-     for( fedIndex = Phase2Tracker::FED_ID_MIN; fedIndex < Phase2Tracker::CMS_FED_ID_MAX; ++fedIndex )
-     {
-       // reading
-       const FEDRawData& fed = buffers->FEDData(fedIndex);
-       if(fed.size()==0) continue;
-       Phase2Tracker::Phase2TrackerFEDBuffer buffer(fed.data(),fed.size());
-       std::map<uint32_t,uint32_t> cond_data = buffer.conditionData();
-
-       // DEBUG
+       // print cond data for debug
        LogTrace("Phase2TrackerCommissioningDigiProducer") << "--- Condition data debug ---" << std::endl;
-       for(auto it = cond_data.begin(); it != cond_data.end(); it++)
+       std::map<uint32_t,uint32_t>::const_iterator it;
+       for(it = cond_data.begin(); it != cond_data.end(); it++)
        {
-         LogTrace("Phase2TrackerCommissioningDigiProducer") << std::hex << "key: " << it->first
-                                                            << std::hex << " value: " << it->second << " (hex) "
-                                                            << std::dec               << it->second << " (dec) " << std::endl;
+         LogTrace("Phase2TrackerCommissioningDigiProducer") << "key: " 
+                                                            << std::hex << std::setw(8) << std::setfill('0') << it->first
+                                                            << " value: " 
+                                                            << std::hex << std::setw(8) << std::setfill('0')<< it->second 
+                                                            << " (hex) " << std::dec << it->second << " (dec) " << std::endl;
        }
        LogTrace("Phase2TrackerCommissioningDigiProducer") << "----------------------------" << std::endl;
-
-       // storage
-       std::vector<Phase2TrackerCommissioningDigi> fed_com;
-       for(auto it = cond_data.begin(); it != cond_data.end(); it++)
+       // store it into digis
+       condata_map *cond_data_digi = new condata_map(fedIndex);
+       for(it = cond_data.begin(); it != cond_data.end(); it++)
        {
-         fed_com.push_back(Phase2TrackerCommissioningDigi(it->first,it->second)); 
+         cond_data_digi->push_back(Phase2TrackerCommissioningDigi(it->first,it->second));
        }
-       cdigis->push_back(fed_com);
-     }
-     event.put(cdigis, "ConditionData");
+       std::unique_ptr<condata_map> cdd(cond_data_digi);
+       event.put(std::move(cdd), "ConditionData");
+    }
   }
 } // end of Phase2Tracker namespace

@@ -14,6 +14,8 @@
    <class name="Phase2TrackerCommissioningDigi" />
    <class name="std::vector<Phase2TrackerCommissioningDigi>"/>
    <class name="std::vector<std::vector<Phase2TrackerCommissioningDigi> >"/>
+   <class name="edm::DetSet<Phase2TrackerCommissioningDigi>" />
+   <class name="edm::Wrapper<edm::DetSet<Phase2TrackerCommissioningDigi> >" />
    <class name="edm::Wrapper<std::vector<Phase2TrackerCommissioningDigi> >"/>
    <class name="edm::Wrapper<std::vector<std::vector<Phase2TrackerCommissioningDigi> > >"/>
    <class name="Phase2TrackerHeaderDigi" />
