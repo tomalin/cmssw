@@ -29,9 +29,6 @@ namespace Phase2Tracker {
   static const int PS_ROWS = 120;
   static const int PS_COLS = 32;
   static const int STRIPS_PADDING = 2;
-  static const int TRIGGER_SIZE = 0; 
-  // size = 32 for testbeam
-  // static const int TRIGGER_SIZE = 32;
   static const int P_CLUSTER_SIZE_BITS = 18;
   static const int Son2S_CLUSTER_SIZE_BITS = 15;
   static const int SonPS_CLUSTER_SIZE_BITS = 16;
