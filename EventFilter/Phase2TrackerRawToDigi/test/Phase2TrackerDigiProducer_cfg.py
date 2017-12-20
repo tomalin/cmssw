@@ -7,7 +7,7 @@ process.load("FWCore.MessageService.MessageLogger_cfi")
 process.MessageLogger = cms.Service("MessageLogger",
         destinations  = cms.untracked.vstring('logtrace' ),
         logtrace      = cms.untracked.PSet( threshold  = cms.untracked.string('DEBUG') ),
-        debugModules  = cms.untracked.vstring( 'Phase2TrackerDigiProducer', 'Phase2TrackerFEDBuffer', 'Phase2TrackerDigiProducerTestBeam', 'Phase2TrackerFEDFEDebug', 'Phase2TrackerStubProducer' )
+        debugModules  = cms.untracked.vstring( 'Phase2TrackerDigiProducer', 'Phase2TrackerFEDBuffer', 'Phase2TrackerFEDFEDebug', 'Phase2TrackerStubProducer' )
 )
 process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1))
 
@@ -26,7 +26,7 @@ process.load('TestbeamCabling_cfi')
 # process.load('Configuration.Geometry.GeometryExtended2023D4Reco_cff')
 # process.load('EventFilter.Phase2TrackerRawToDigi.Phase2TrackerCommissioningDigiProducer_cfi')
 # process.load('EventFilter.Phase2TrackerRawToDigi.Phase2TrackerDigiProducer_cfi')
-process.load('EventFilter.Phase2TrackerRawToDigi.Phase2TrackerDigiProducerTestBeam_cfi')
+process.load('EventFilter.Phase2TrackerRawToDigi.Phase2TrackerDigiProducer_cfi')
 process.load('EventFilter.Phase2TrackerRawToDigi.Phase2TrackerDebugProducer_cfi')
 process.load('EventFilter.Phase2TrackerRawToDigi.Phase2TrackerStubProducer_cfi')
 
@@ -36,7 +36,7 @@ process.load('EventFilter.Phase2TrackerRawToDigi.Phase2TrackerStubProducer_cfi')
 # process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:run2_mc', '')
 
 # use these labels instead to run on raw data
-process.Phase2TrackerDigiProducerTestBeam.ProductLabel = cms.InputTag("rawDataCollector")
+process.Phase2TrackerDigiProducer.ProductLabel = cms.InputTag("rawDataCollector")
 process.Phase2TrackerDebugProducer.ProductLabel = cms.InputTag("rawDataCollector")
 process.Phase2TrackerStubProducer.ProductLabel = cms.InputTag("rawDataCollector")
 # process.Phase2TrackerDigiProducer.ProductLabel = cms.InputTag("rawDataCollector")
@@ -51,7 +51,7 @@ process.out = cms.OutputModule(
 )
 
 # process.p = cms.Path(process.Phase2TrackerDigiProducer*process.Phase2TrackerCommissioningDigiProducer)
-process.p = cms.Path(process.Phase2TrackerDigiProducerTestBeam*process.Phase2TrackerDebugProducer*process.Phase2TrackerStubProducer)
+process.p = cms.Path(process.Phase2TrackerDigiProducer*process.Phase2TrackerDebugProducer*process.Phase2TrackerStubProducer)
 
 process.e = cms.EndPath(process.out)
 
