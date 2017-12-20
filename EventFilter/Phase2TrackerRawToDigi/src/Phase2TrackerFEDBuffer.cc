@@ -305,11 +305,10 @@ namespace Phase2Tracker {
         if(cdata.size()!=size) {
           std::ostringstream ss;
           ss << "[Phase2Tracker::Phase2TrackerFEDBuffer::"<<__func__<<"] " << "\n";
-          ss << "WARNING: Skipping FED buffer: " << "\n";
-          ss << "Cause: Number of condition data does not match the announced value!"<< "\n";
+          ss << "Number of condition data does not match the announced value"<< "\n";
           ss << "Expected condition data Size " << size << " entries" << "\n";
           ss << "Computed condition data Size " << cdata.size() << " entries" << "\n";
-					LogTrace("Phase2TrackerFEDBuffer") << ss.str() << std::endl;
+          LogTrace("Phase2TrackerFEDBuffer") << ss.str() << std::endl;
           valid_ = 0;
         }
       }
