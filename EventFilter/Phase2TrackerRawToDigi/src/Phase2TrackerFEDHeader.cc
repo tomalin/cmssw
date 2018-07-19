@@ -155,13 +155,13 @@ namespace Phase2Tracker {
     std::vector<bool> status(72,false);
     for(int i = 0; i < 72; i++)
     {
-      if(i<8) 
+      if(i<64) 
       { 
-        status[i] = (fe_status_0>>i)&0x1; 
+        status[i] = (fe_status_1>>i)&0x1; 
       }
       else
       {
-        status[i] = (fe_status_1>>(i-8))&0x1;
+        status[i] = (fe_status_0>>(i-64))&0x1;
       }
     }
     return status;
