@@ -7,7 +7,7 @@
 
 using namespace std;
 
-namespace TMTT {
+namespace tmtt {
 
   //=== Store useful info about this tracking particle
 
@@ -79,7 +79,7 @@ namespace TMTT {
     const float ptMin = min(settings_->genMinPt(), 0.7 * settings_->houghMinPt());
     const float etaMax = max(settings_->genMaxAbsEta(), 0.2 + fabs(settings_->etaRegions()[0]));
 
-    static TrackingParticleSelector trackingParticleSelector(ptMin,
+    static thread_local TrackingParticleSelector trackingParticleSelector(ptMin,
                                                              9999999999,
                                                              -etaMax,
                                                              etaMax,
@@ -103,7 +103,7 @@ namespace TMTT {
     if (use_) {
       const bool useOnlyInTimeParticles = true;
       const bool useOnlyTPfromPhysicsCollision = true;
-      static TrackingParticleSelector trackingParticleSelector(settings_->genMinPt(),
+      static thread_local TrackingParticleSelector trackingParticleSelector(settings_->genMinPt(),
                                                                9999999999,
                                                                -settings_->genMaxAbsEta(),
                                                                settings_->genMaxAbsEta(),
@@ -186,4 +186,4 @@ namespace TMTT {
     nearestJetPt_ = ptOfNearestJet;
   }
 
-}  // namespace TMTT
+}  // namespace tmtt

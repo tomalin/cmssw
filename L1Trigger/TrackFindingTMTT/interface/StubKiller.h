@@ -1,8 +1,8 @@
 // Copied from https://raw.githubusercontent.com/EmyrClement/StubKiller/master/StubKiller.cc
 // on 9th May 2018.
 
-#ifndef __STUBKILLER_H__
-#define __STUBKILLER_H__
+#ifndef L1Trigger_TrackFindingTMTT_StubKiller_h
+#define L1Trigger_TrackFindingTMTT_StubKiller_h
 
 #include "DataFormats/L1TrackTrigger/interface/TTTypes.h"
 #include "Geometry/TrackerGeometryBuilder/interface/TrackerGeometry.h"
@@ -13,6 +13,8 @@
 #include "TMath.h"
 
 using namespace std;
+
+namespace tmtt {
 
 class StubKiller {
 public:
@@ -25,12 +27,12 @@ public:
 
   bool killStub(const TTStub<Ref_Phase2TrackerDigi_>* stub,
                 const vector<int> layersToKill,
-                const int minPhiToKill,
-                const int maxPhiToKill,
-                const int minZToKill,
-                const int maxZToKill,
-                const int minRToKill,
-                const int maxRToKill,
+                const double minPhiToKill,
+                const double maxPhiToKill,
+                const double minZToKill,
+                const double maxZToKill,
+                const double minRToKill,
+                const double maxRToKill,
                 const double fractionOfStubsToKillInLayers,
                 const double fractionOfStubsToKillEverywhere);
 
@@ -49,17 +51,19 @@ private:
   const TrackerGeometry* trackerGeometry_;
 
   vector<int> layersToKill_;
-  int minPhiToKill_;
-  int maxPhiToKill_;
-  int minZToKill_;
-  int maxZToKill_;
-  int minRToKill_;
-  int maxRToKill_;
+  double minPhiToKill_;
+  double maxPhiToKill_;
+  double minZToKill_;
+  double maxZToKill_;
+  double minRToKill_;
+  double maxRToKill_;
   double fractionOfStubsToKillInLayers_;
   double fractionOfStubsToKillEverywhere_;
   double fractionOfModulesToKillEverywhere_;
 
   map<DetId, float> deadModules_;
+};
+
 };
 
 #endif

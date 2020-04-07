@@ -7,8 +7,10 @@
 
 using namespace std;
 
-StubKiller::StubKiller()
-    : killScenario_(0),
+namespace tmtt {
+
+StubKiller::StubKiller() :
+      killScenario_(0),
       trackerTopology_(0),
       trackerGeometry_(0),
       layersToKill_(vector<int>()),
@@ -170,12 +172,12 @@ bool StubKiller::killStub(const TTStub<Ref_Phase2TrackerDigi_>* stub) {
 
 bool StubKiller::killStub(const TTStub<Ref_Phase2TrackerDigi_>* stub,
                           const vector<int> layersToKill,
-                          const int minPhiToKill,
-                          const int maxPhiToKill,
-                          const int minZToKill,
-                          const int maxZToKill,
-                          const int minRToKill,
-                          const int maxRToKill,
+                          const double minPhiToKill,
+                          const double maxPhiToKill,
+                          const double minZToKill,
+                          const double maxZToKill,
+                          const double minRToKill,
+                          const double maxRToKill,
                           const double fractionOfStubsToKillInLayers,
                           const double fractionOfStubsToKillEverywhere) {
   // Only kill stubs in specified layers
@@ -215,7 +217,7 @@ bool StubKiller::killStub(const TTStub<Ref_Phase2TrackerDigi_>* stub,
         if (fractionOfStubsToKillInLayers == 1) {
           return true;
         } else {
-          static TRandom randomGenerator;
+          static thread_local TRandom randomGenerator;
           if (randomGenerator.Rndm() < fractionOfStubsToKillInLayers) {
             return true;
           }
@@ -226,7 +228,7 @@ bool StubKiller::killStub(const TTStub<Ref_Phase2TrackerDigi_>* stub,
 
   // Kill fraction of stubs throughout tracker
   if (fractionOfStubsToKillEverywhere > 0) {
-    static TRandom randomGenerator;
+    static thread_local TRandom randomGenerator;
     if (randomGenerator.Rndm() < fractionOfStubsToKillEverywhere) {
       return true;
     }
@@ -245,3 +247,5 @@ bool StubKiller::killStubInDeadModule(const TTStub<Ref_Phase2TrackerDigi_>* stub
 
   return false;
 }
+
+};
