@@ -80,17 +80,17 @@ namespace tmtt {
     const float etaMax = max(settings_->genMaxAbsEta(), 0.2 + fabs(settings_->etaRegions()[0]));
 
     static thread_local TrackingParticleSelector trackingParticleSelector(ptMin,
-                                                             9999999999,
-                                                             -etaMax,
-                                                             etaMax,
-                                                             max(10.0, settings_->genMaxVertR()),
-                                                             max(35.0, settings_->genMaxVertZ()),
-                                                             0,
-                                                             useOnlyTPfromPhysicsCollisionFalse,
-                                                             useOnlyInTimeParticles,
-                                                             true,
-                                                             false,
-                                                             genPdgIdsAll);
+                                                                          9999999999,
+                                                                          -etaMax,
+                                                                          etaMax,
+                                                                          max(10.0, settings_->genMaxVertR()),
+                                                                          max(35.0, settings_->genMaxVertZ()),
+                                                                          0,
+                                                                          useOnlyTPfromPhysicsCollisionFalse,
+                                                                          useOnlyInTimeParticles,
+                                                                          true,
+                                                                          false,
+                                                                          genPdgIdsAll);
 
     const TrackingParticlePtr tp_ptr(*this);  // cast to base class.
     use_ = trackingParticleSelector(*tp_ptr);
@@ -104,17 +104,17 @@ namespace tmtt {
       const bool useOnlyInTimeParticles = true;
       const bool useOnlyTPfromPhysicsCollision = true;
       static thread_local TrackingParticleSelector trackingParticleSelector(settings_->genMinPt(),
-                                                               9999999999,
-                                                               -settings_->genMaxAbsEta(),
-                                                               settings_->genMaxAbsEta(),
-                                                               settings_->genMaxVertR(),
-                                                               settings_->genMaxVertZ(),
-                                                               0,
-                                                               useOnlyTPfromPhysicsCollision,
-                                                               useOnlyInTimeParticles,
-                                                               true,
-                                                               false,
-                                                               settings_->genPdgIds());
+                                                                            9999999999,
+                                                                            -settings_->genMaxAbsEta(),
+                                                                            settings_->genMaxAbsEta(),
+                                                                            settings_->genMaxVertR(),
+                                                                            settings_->genMaxVertZ(),
+                                                                            0,
+                                                                            useOnlyTPfromPhysicsCollision,
+                                                                            useOnlyInTimeParticles,
+                                                                            true,
+                                                                            false,
+                                                                            settings_->genPdgIds());
 
       const TrackingParticlePtr tp_ptr(*this);  // cast to base class.
       useForEff_ = trackingParticleSelector(*tp_ptr);

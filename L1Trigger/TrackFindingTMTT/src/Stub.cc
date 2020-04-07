@@ -451,7 +451,7 @@ namespace tmtt {
     }
 
     static std::atomic<bool> firstErr = true;
-    if (trackerGeometryVersion_ < 5) { 
+    if (trackerGeometryVersion_ < 5) {
       if (firstErr) {
         cout << "Stub: WARNING - Stub windows in DegradeBend class have not been tuned for flat tracker geometry, so "
                 "may need retuning "
@@ -716,7 +716,7 @@ namespace tmtt {
     // Note module ring in endcap
     endcapRing_ = barrel_ ? 0 : trackerTopology->tidRing(detId);
 
-    if (trackerGeometryVersion_ >= 5) { // Tilted geometry
+    if (trackerGeometryVersion_ >= 5) {  // Tilted geometry
       if (!barrel_) {
         // Apply bodge, since Topology class annoyingly starts ring count at 1, even in endcap wheels where
         // inner rings are absent.

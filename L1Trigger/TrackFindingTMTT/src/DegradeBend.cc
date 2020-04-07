@@ -17,14 +17,14 @@ namespace tmtt {
   //--- Stub window sizes copied from L1Trigger/TrackTrigger/python/TTStubAlgorithmRegister_cfi.py
 
   const std::vector<double> DegradeBend::barrelCut_ = {0, 2.0, 2.0, 3.5, 4.5, 5.5, 6.5};
-  const std::vector<std::vector<double> > DegradeBend::ringCut_ = { // EndcapCutSet
+  const std::vector<std::vector<double> > DegradeBend::ringCut_ = {  // EndcapCutSet
       {0},
       {0, 1, 2.5, 2.5, 3, 2.5, 3, 3.5, 4, 4, 4.5, 3.5, 4, 4.5, 5, 5.5},
       {0, 0.5, 2.5, 2.5, 3, 2.5, 3, 3, 3.5, 3.5, 4, 3.5, 3.5, 4, 4.5, 5},
       {0, 1, 3, 3, 2.5, 3.5, 3.5, 3.5, 4, 3.5, 3.5, 4, 4.5},
       {0, 1, 2.5, 3, 2.5, 3.5, 3, 3, 3.5, 3.5, 3.5, 4, 4},
       {0, 0.5, 1.5, 3, 2.5, 3.5, 3, 3, 3.5, 4, 3.5, 4, 3.5}};
-  const std::vector<std::vector<double> > DegradeBend::tiltedCut_ = { // TiltedBarrelCutSet
+  const std::vector<std::vector<double> > DegradeBend::tiltedCut_ = {  // TiltedBarrelCutSet
       {0},
       {0, 3, 3, 2.5, 3, 3, 2.5, 2.5, 2, 1.5, 1.5, 1, 1},
       {0, 3.5, 3, 3, 3, 3, 2.5, 2.5, 3, 3, 2.5, 2.5, 2.5},

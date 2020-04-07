@@ -32,7 +32,7 @@ namespace tmtt {
     // Values set according to L1Trigger/TrackTrigger/python/TTStubAlgorithmRegister_cfi.py
     // parameter NTiltedRings for whichever tracker geometry (T3, T4, T5 ...) is used..
     const vector<double> barrelNTilt_init = {0., 12., 12., 12., 0., 0., 0.};
-    if (stub->trackerGeometryVersion() >= 5) { // Tilted barrel
+    if (stub->trackerGeometryVersion() >= 5) {  // Tilted barrel
       barrelNTilt_ = barrelNTilt_init;
     } else {
       throw cms::Exception(
