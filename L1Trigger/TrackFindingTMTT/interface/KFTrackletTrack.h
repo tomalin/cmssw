@@ -17,8 +17,6 @@
 #include <utility>
 #include <string>
 
-using namespace std;
-
 //=== This is used uniquely for HYBRID TRACKING.
 //=== It is the equivalent of class L1fittedTrack.
 //===
@@ -38,7 +36,7 @@ namespace tmtt {
     // Also specify phi sector and eta region used by track-finding code that this track was in.
     // And if track fit declared this to be a valid track (enough stubs left on track after fit etc.).
     KFTrackletTrack(const L1track3D& l1track3D,
-                    const vector<const Stub*>& stubs,
+                    const std::vector<const Stub*>& stubs,
                     unsigned int hitPattern,
                     float qOverPt,
                     float d0,
@@ -83,11 +81,11 @@ namespace tmtt {
       // htRphiTmp_.init(settings, iPhiSec, iEtaReg, secTmp_.etaMin(), secTmp_.etaMax(), secTmp_.phiCentre()); // HT class used to identify HT cell that corresponds to fitted helix parameters.
     }
 
-    KFTrackletTrack(){};  // Creates track object, but doesn't set any variables.
+    KFTrackletTrack(){};  // Creates track object, but doesn't std::set any variables.
 
     ~KFTrackletTrack() {}
 
-    //--- Optionally set track helix params & chi2 if beam-spot constraint is used (for 5-parameter fit).
+    //--- Optionally std::set track helix params & chi2 if beam-spot constraint is used (for 5-parameter fit).
     void setBeamConstr(float qOverPt_bcon, float phi0_bcon, float chi2rphi_bcon) {
       done_bcon_ = true;
       qOverPt_bcon_ = qOverPt_bcon;
@@ -111,7 +109,7 @@ namespace tmtt {
     const L1track3D& getL1track3D() const { return l1track3D_; }
 
     // Get stubs on fitted track (can differ from those on HT track if track fit kicked out stubs with bad residuals)
-    const vector<const Stub*>& getStubs() const { return stubs_; }
+    const std::vector<const Stub*>& getStubs() const { return stubs_; }
     // Get number of stubs on fitted track.
     unsigned int getNumStubs() const { return stubs_.size(); }
     // Get number of tracker layers these stubs are in.
@@ -212,7 +210,7 @@ namespace tmtt {
     }
 
     // Digitize track and degrade helix parameter resolution according to effect of digitisation.
-    void digitizeTrack(const string& fitterName);
+    void digitizeTrack(const std::string& fitterName);
 
     // Access to detailed info about digitized track
     const DigitalTrack& digitaltrack() const { return digitalTrack_; }
@@ -225,7 +223,7 @@ namespace tmtt {
     L1track3D l1track3D_;
 
     //--- The stubs on the fitted track (can differ from those on HT track if fit kicked off stubs with bad residuals)
-    vector<const Stub*> stubs_;
+    std::vector<const Stub*> stubs_;
     unsigned int nLayers_;
 
     //--- Bit-encoded hit pattern (where layer number assigned by increasing distance from origin, according to layers track expected to cross).
@@ -258,7 +256,7 @@ namespace tmtt {
 
     //--- Information about its association (if any) to a truth Tracking Particle.
     const TP* matchedTP_;
-    vector<const Stub*> matchedStubs_;
+    std::vector<const Stub*> matchedStubs_;
     unsigned int nMatchedLayers_;
 
     //--- Has the track fit declared this to be a valid track?

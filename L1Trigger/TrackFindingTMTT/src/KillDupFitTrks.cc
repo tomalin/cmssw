@@ -3,6 +3,8 @@
 #include "FWCore/Utilities/interface/Exception.h"
 #include <map>
 
+using namespace std;
+
 namespace tmtt {
 
   //=== Make available cfg parameters & specify which algorithm is to be used for duplicate track removal.

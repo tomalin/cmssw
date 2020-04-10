@@ -11,6 +11,8 @@
 #include <limits>
 #include <atomic>
 
+using namespace std;
+
 namespace tmtt {
 
   //=== The r-phi Hough Transform array for a single (eta,phi) sector.
@@ -107,9 +109,9 @@ namespace tmtt {
     // would require correcting the code after each called to mergedCell() below, since
     //  "if (i%2 == 1) iStore = i - 1" not correct in this case).
     if (enableMerge2x2_ && (nBinsQoverPtAxis_ % 2 != 0 || nBinsPhiTrkAxis_ % 2 != 0))
-      throw cms::Exception(
+      throw cms::Exception("BadConfig")<<
           "HTrphi: You are not allowed to set EnableMerge2x2 or MiniHTstage = True if you have an odd number of bins "
-          "in r-phi HT array ")
+          "in r-phi HT array "
           << nBinsQoverPtAxis_ << " " << nBinsPhiTrkAxis_ << endl;
 
     //--- Other options used when filling the HT.
@@ -147,7 +149,7 @@ namespace tmtt {
       rescaleMbins = (nTotalBins != nBinsQoverPtAxis_);
       // No rescaling allowed with MBinOrder option.
       if (rescaleMbins && busySectorUseMbinOrder_)
-        throw cms::Exception("HTrphi: BusySectorUserMbin error");
+        throw cms::Exception("BadConfig")<<"HTrphi: BusySectorUserMbin error"<<endl;
       float rescaleFactor = rescaleMbins ? float(nBinsQoverPtAxis_) / float(nTotalBins) : 1.;
       // Find lower and upper inclusive limits of each m bin range to be sent to a separate optical link.
       busySectorMbinLow_.resize(busySectorMbinRanges_.size());
@@ -353,7 +355,7 @@ namespace tmtt {
             mBinOrder = k;
         }
         if (mBinOrder == 99999)
-          throw cms::Exception("HTrphi::getMbinRange() mBinOrder calculation wrong.");
+          throw cms::Exception("LogicError")<<"HTrphi::getMbinRange() mBinOrder calculation wrong."<<endl;
       } else {
         // User grouping bins in numerical order 0,1,2,3,4,5...
         mBinOrder = mBin;
@@ -362,7 +364,7 @@ namespace tmtt {
         if (mBinOrder >= busySectorMbinLow_[i] && mBinOrder <= busySectorMbinHigh_[i])
           return i;
       }
-      throw cms::Exception("HTrphi::getMbinRange() messed up");
+      throw cms::Exception("LogicError")<<"HTrphi::getMbinRange() messed up"<<endl;
     } else {
       return 0;
     }
@@ -637,7 +639,7 @@ namespace tmtt {
 
     if (enableMerge2x2_) {
       unsigned int i = iQoverPtBin;
-      unsigned int j = jPhiTrkBin;
+      //unsigned int j = jPhiTrkBin;
 
       // Calculate number of merged bins on each q/Pt side of array.
       float fMergeBins = (maxAbsQoverPtAxis_ - minInvPtToMerge2x2_) / (2. * binSizeQoverPtAxis_);

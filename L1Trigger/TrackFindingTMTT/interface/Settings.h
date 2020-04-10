@@ -2,11 +2,11 @@
 #define L1Trigger_TrackFindingTMTT_Settings_h
 
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
+#include "FWCore/Utilities/interface/InputTag.h"
+#include "FWCore/Utilities/interface/ESInputTag.h"
 #include "FWCore/Utilities/interface/Exception.h"
 #include <vector>
 #include <iostream>
-
-using namespace std;
 
 // Stores all configuration parameters + some hard-wired constants.
 
@@ -21,6 +21,16 @@ namespace tmtt {
     Settings(const edm::ParameterSet& iConfig);
 
     ~Settings() {}
+
+    // Input tags for ES & ED data.
+    edm::ESInputTag magneticFieldInputTag() const { return magneticFieldInputTag_;}
+    edm::ESInputTag trackerGeometryInputTag() const { return trackerGeometryInputTag_;}
+    edm::ESInputTag trackerTopologyInputTag() const { return trackerTopologyInputTag_;}
+    edm::InputTag stubInputTag() const { return stubInputTag_;}
+    edm::InputTag tpInputTag() const { return tpInputTag_;}
+    edm::InputTag stubTruthInputTag() const { return stubTruthInputTag_;}
+    edm::InputTag clusterTruthInputTag() const { return clusterTruthInputTag_;}
+    edm::InputTag genJetInputTag() const { return genJetInputTag_;}
 
     //=== General settings.
 
@@ -37,7 +47,7 @@ namespace tmtt {
     double genMaxVertZ() const { return genMaxVertZ_; }
     double genMaxD0() const { return genMaxD0_; }
     double genMaxZ0() const { return genMaxZ0_; }
-    vector<int> genPdgIds() const { return genPdgIds_; }
+    std::vector<int> genPdgIds() const { return genPdgIds_; }
     // Additional cut on MC truth tracks for algorithmic tracking efficiency measurements.
     unsigned int genMinStubLayers() const { return genMinStubLayers_; }  // Min. number of layers TP made stub in.
 
@@ -108,7 +118,7 @@ namespace tmtt {
 
     //=== Definition of eta sectors.
 
-    vector<double> etaRegions() const { return etaRegions_; }  // Boundaries of eta regions de
+    std::vector<double> etaRegions() const { return etaRegions_; }  // Boundaries of eta regions de
     unsigned int numEtaRegions() const { return (etaRegions_.size() - 1); }
     double chosenRofZ() const {
       return chosenRofZ_;
@@ -143,7 +153,7 @@ namespace tmtt {
       return numSubSecsEta_;
     }  // Subdivide each sector into this number of subsectors in eta within r-phi HT.
     unsigned int shape() const { return shape_; }  // define cell shape (0 square, 1 diamond, 2 hexagon)
-    // Run 2nd stage HT with mini cells inside each 1st stage normal HT cell. N.B. This automatically sets EnableMerge2x2 = True & MaxPtToMerge = 999999.
+    // Run 2nd stage HT with mini cells inside each 1st stage normal HT cell. N.B. This automatically std::sets EnableMerge2x2 = True & MaxPtToMerge = 999999.
     bool miniHTstage() const { return miniHTstage_; }
     // Number of mini cells along q/Pt & phi axes inside each normal HT cell.
     unsigned int miniHoughNbinsPt() const { return miniHoughNbinsPt_; }
@@ -174,11 +184,11 @@ namespace tmtt {
     // the excess tracks are killed, with lowest Pt ones killed first. This is because hardware has finite readout time.
     bool busySectorKill() const { return busySectorKill_; }
     unsigned int busySectorNumStubs() const { return busySectorNumStubs_; }
-    // If this returns a non-empty vector, then the BusySectorNumStubs cut is instead applied to the subset of tracks appearing in the following m bin ranges (q/Pt) of the HT array. The sum of the entries in the vector should equal the number of m bins in the HT, although the entries will be rescaled if this is not the case. If the vector is empty, this option is disabled. (P.S. If the HT includes "merged" cells, then the m bin ranges specified here should correspond to the bins before merging).
-    vector<unsigned int> busySectorMbinRanges() const { return busySectorMbinRanges_; }
+    // If this returns a non-empty std::vector, then the BusySectorNumStubs cut is instead applied to the subset of tracks appearing in the following m bin ranges (q/Pt) of the HT array. The sum of the entries in the std::vector should equal the number of m bins in the HT, although the entries will be rescaled if this is not the case. If the std::vector is empty, this option is disabled. (P.S. If the HT includes "merged" cells, then the m bin ranges specified here should correspond to the bins before merging).
+    std::vector<unsigned int> busySectorMbinRanges() const { return busySectorMbinRanges_; }
     // If BusySecMbinOrder is empty, then the groupings specified in BusySectorMbinRanges are applied to the m bins in the order
     // 0,1,2,3,4,5 ... . If it is not empty, then they are grouped in the order specified here.
-    vector<unsigned int> busySectorMbinOrder() const { return busySectorMbinOrder_; }
+    std::vector<unsigned int> busySectorMbinOrder() const { return busySectorMbinOrder_; }
     // If this is True, and more than BusyInputSectorNumStubs() are input to the HT array from the GP, then
     // the excess stubs are killed. This is because HT hardware has finite readin time.
     bool busyInputSectorKill() const { return busyInputSectorKill_; }
@@ -193,7 +203,7 @@ namespace tmtt {
     //=== Options controlling r-z track filters (or any other track filters run after the Hough transform, as opposed to inside it).
 
     // Specify preferred r-z filter (from those available inside TrkRZfilter.cc) - currently only "SeedFilter".
-    string rzFilterName() const { return rzFilterName_; }
+    std::string rzFilterName() const { return rzFilterName_; }
     // --- Options relevant for Seed filter, (so only relevant if rzFilterName()="SeedFilter").
     // Added resolution beyond that estimated from hit resolution.
     double seedResolution() const { return seedResolution_; }
@@ -215,10 +225,10 @@ namespace tmtt {
     // Min. number of layers in HT cell that must have stubs for track to be declared found.
     unsigned int minStubLayers() const { return minStubLayers_; }
     // Change min. number of layers cut to (MinStubLayers - 1) for tracks with Pt exceeding this cut.
-    // If this is set to > 10000, this option is disabled.
+    // If this is std::set to > 10000, this option is disabled.
     double minPtToReduceLayers() const { return minPtToReduceLayers_; }
     // Change min. number of layers cut to (MinStubLayers - 1) for tracks in these rapidity sectors.
-    vector<unsigned int> etaSecsReduceLayers() const { return etaSecsReduceLayers_; }
+    std::vector<unsigned int> etaSecsReduceLayers() const { return etaSecsReduceLayers_; }
     // Define layers using layer ID (true) or by bins in radius of 5 cm width (false)?
     bool useLayerID() const { return useLayerID_; }
     //Reduce this layer ID, so that it takes no more than 8 different values in any eta region (simplifies firmware)?
@@ -238,7 +248,7 @@ namespace tmtt {
 
     //=== Rules for deciding when a reconstructed L1 track matches a MC truth particle (i.e. tracking particle).
 
-    //--- Three different ways to define if a tracking particle matches a reco track candidate. (Usually, set two of them to ultra loose).
+    //--- Three different ways to define if a tracking particle matches a reco track candidate. (Usually, std::set two of them to ultra loose).
     // Min. fraction of matched stubs relative to number of stubs on reco track.
     double minFracMatchStubsOnReco() const { return minFracMatchStubsOnReco_; }
     // Min. fraction of matched stubs relative to number of stubs on tracking particle.
@@ -254,10 +264,10 @@ namespace tmtt {
     //--- Options applicable to all track fitters ---
 
     // Track fitting algorithms to use. You can run several in parallel.
-    vector<string> trackFitters() const { return trackFitters_; }
+    std::vector<std::string> trackFitters() const { return trackFitters_; }
     // Indicate subset of fitters wanting r-z track filter to be run before them.
     // (Excludes fitters that are not run).
-    vector<string> useRZfilter() const { return useRZfilter_; }
+    std::vector<std::string> useRZfilter() const { return useRZfilter_; }
     // Print detailed summary of track fit performance at end of job (as opposed to a brief one)?
     bool detailedFitOutput() const { return detailedFitOutput_; }
     // Use MC truth to eliminate all fake tracks & all incorrect stubs assigned to tracks before doing fit.
@@ -279,8 +289,6 @@ namespace tmtt {
 
     // Max allowed iterations.
     unsigned int maxIterationsLR() const { return maxIterationsLR_; }
-    // Internal histograms are filled if it is True
-    bool LRFillInternalHists() const { return LRFillInternalHists_; }
     bool combineResiduals() const { return combineResiduals_; }
     bool lineariseStubPosition() const { return lineariseStubPosition_; }
     bool checkSectorConsistency() const { return checkSectorConsistency_; }
@@ -323,8 +331,6 @@ namespace tmtt {
 
     // Larger number has more debugging printout.
     unsigned kalmanDebugLevel() const { return kalmanDebugLevel_; }
-    // Internal histograms are filled if it is True
-    bool kalmanFillInternalHists() const { return kalmanFillInternalHists_; }
     // Fit will reject fitted tracks unless it can assign at least this number of stubs to them.
     unsigned int kalmanMinNumStubs() const { return kalmanMinNumStubs_; }
     // Fit will attempt to add up to this nummber of stubs to each fitted tracks, but won't bother adding more.
@@ -363,7 +369,7 @@ namespace tmtt {
     // The sectors affected are hard-wired in DeadModuleDB::defineDeadTrackerRegions().
     bool deadReduceLayers() const { return deadReduceLayers_; }
     // Emulate dead modules by killing fraction of stubs given by DeadSimulateFrac in certain layers & angular regions of
-    // the tracker that are hard-wired in DeadModuleDB::defineDeadSectors(). Disable by setting <= 0. Fully enable by setting to 1.
+    // the tracker that are hard-wired in DeadModuleDB::defineDeadSectors(). Disable by std::setting <= 0. Fully enable by std::setting to 1.
     // Do not use if KillScenario > 0.
     double deadSimulateFrac() const { return deadSimulateFrac_; }
     //
@@ -404,7 +410,7 @@ namespace tmtt {
     double kf_tanlambdaRange() const { return kf_tanlambdaRange_; }
     unsigned int kf_chisquaredBits() const { return kf_chisquaredBits_; }
     double kf_chisquaredRange() const { return kf_chisquaredRange_; }
-    vector<double> kf_chisquaredBinEdges() const { return kf_chisquaredBinEdges_; }
+    std::vector<double> kf_chisquaredBinEdges() const { return kf_chisquaredBinEdges_; }
     // Skip track digitisation when fitted is not SimpleLR or KF?
     bool other_skipTrackDigi() const { return other_skipTrackDigi_; }
 
@@ -425,16 +431,6 @@ namespace tmtt {
 
     //=== Hard-wired constants
 
-    double pitchPS() const {
-      cout << "ERROR: Use Stub::stripPitch instead of Settings::pitchPS!";
-      exit(1);
-      return 0.;
-    }  // pitch of PS modules - OBSOLETE
-    double pitch2S() const {
-      cout << "ERROR: Use Stub::stripPitch instead of Settings::pitch2S!";
-      exit(1);
-      return 0.;
-    }                                                // pitch of 2S modules - OBSOLETE
     double cSpeed() const { return 2.99792458e10; }  // Speed of light (cm/s)
     double invPtToInvR() const {
       return (this->getBfield()) * (this->cSpeed()) / 1.0E13;
@@ -445,11 +441,6 @@ namespace tmtt {
     double trackerOuterRadius() const { return 112.7; }  // max. occuring stub radius.
     double trackerInnerRadius() const { return 21.8; }   // min. occuring stub radius.
     double trackerHalfLength() const { return 270.; }    // half-length of tracker.
-    double stripLength2S() const {
-      cout << "ERROR: Use Stub::stripLength instead of Settings::stripLength2S!" << endl;
-      exit(1);
-      return 0.;
-    }  // Strip length of 2S modules. - OBSOLETE
     double layerIDfromRadiusBin() const {
       return 6.;
     }  // When counting stubs in layers, actually histogram stubs in distance from beam-line with this bin size.
@@ -458,11 +449,11 @@ namespace tmtt {
     }  // Stubs differing from TP trajectory by more than this in phi are assumed to come from delta rays etc.
 
     //=== Set and get B-field value in Tesla.
-    // N.B. This must bet set for each event, and can't be initialized at the beginning of the job.
+    // N.B. This must bet std::set for each event, and can't be initialized at the beginning of the job.
     void setBfield(float bField) { bField_ = bField; }
     float getBfield() const {
       if (bField_ == 0.)
-        throw cms::Exception("Settings.h:You attempted to access the B field before it was initialized");
+        throw cms::Exception("LogicError")<<"Settings: You attempted to access the B field before it was initialized"<<std::endl;
       return bField_;
     }
 
@@ -485,7 +476,18 @@ namespace tmtt {
     }
 
   private:
-    // Parameter sets for differents types of configuration parameter.
+
+    // Input tags for ES & ED data.
+    const edm::ESInputTag magneticFieldInputTag_;
+    const edm::ESInputTag trackerGeometryInputTag_;
+    const edm::ESInputTag trackerTopologyInputTag_;
+    const edm::InputTag stubInputTag_;
+    const edm::InputTag tpInputTag_;
+    const edm::InputTag stubTruthInputTag_;
+    const edm::InputTag clusterTruthInputTag_;
+    const edm::InputTag genJetInputTag_;
+
+    // Parameter std::sets for differents types of configuration parameter.
     edm::ParameterSet genCuts_;
     edm::ParameterSet stubCuts_;
     edm::ParameterSet stubDigitize_;
@@ -513,7 +515,7 @@ namespace tmtt {
     double genMaxVertZ_;
     double genMaxD0_;
     double genMaxZ0_;
-    vector<int> genPdgIds_;
+    std::vector<int> genPdgIds_;
     unsigned int genMinStubLayers_;
 
     // Cuts applied to stubs before arriving in L1 track finding board.
@@ -554,7 +556,7 @@ namespace tmtt {
     bool handleStripsPhiSec_;
 
     // Definition of eta sectors.
-    vector<double> etaRegions_;
+    std::vector<double> etaRegions_;
     double chosenRofZ_;
     double beamWindowZ_;
     bool handleStripsEtaSec_;
@@ -585,15 +587,15 @@ namespace tmtt {
     unsigned int maxStubsInCellMiniHough_;
     bool busySectorKill_;
     unsigned int busySectorNumStubs_;
-    vector<unsigned int> busySectorMbinRanges_;
-    vector<unsigned int> busySectorMbinOrder_;
+    std::vector<unsigned int> busySectorMbinRanges_;
+    std::vector<unsigned int> busySectorMbinOrder_;
     bool busyInputSectorKill_;
     unsigned int busyInputSectorNumStubs_;
     unsigned int muxOutputsHT_;
-    vector<unsigned int> etaRegWhitelist_;
+    std::vector<unsigned int> etaRegWhitelist_;
 
     // Options controlling r-z track filters (or any other track filters run after the Hough transform, as opposed to inside it).
-    string rzFilterName_;
+    std::string rzFilterName_;
     double seedResolution_;
     bool keepAllSeed_;
     unsigned int maxSeedCombinations_;
@@ -605,7 +607,7 @@ namespace tmtt {
     // Rules for deciding when the track-finding has found an L1 track candidate
     unsigned int minStubLayers_;
     double minPtToReduceLayers_;
-    vector<unsigned int> etaSecsReduceLayers_;
+    std::vector<unsigned int> etaSecsReduceLayers_;
     bool useLayerID_;
     bool reduceLayerID_;
 
@@ -623,8 +625,8 @@ namespace tmtt {
     bool stubMatchStrict_;
 
     // Track Fitting Settings
-    vector<string> trackFitters_;
-    vector<string> useRZfilter_;
+    std::vector<std::string> trackFitters_;
+    std::vector<std::string> useRZfilter_;
     double chi2OverNdfCut_;
     bool detailedFitOutput_;
     bool trackFitCheat_;
@@ -635,7 +637,6 @@ namespace tmtt {
     double killingResidualCut_;
     //
     unsigned int maxIterationsLR_;
-    bool LRFillInternalHists_;
     bool combineResiduals_;
     bool lineariseStubPosition_;
     bool checkSectorConsistency_;
@@ -715,7 +716,7 @@ namespace tmtt {
     double kf_tanlambdaRange_;
     unsigned int kf_chisquaredBits_;
     double kf_chisquaredRange_;
-    vector<double> kf_chisquaredBinEdges_;
+    std::vector<double> kf_chisquaredBinEdges_;
     //
     bool other_skipTrackDigi_;
 

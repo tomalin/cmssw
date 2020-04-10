@@ -9,8 +9,6 @@
 
 #include <vector>
 
-using namespace std;
-
 class TrackerTopology;
 class TrackerGeometry;
 
@@ -36,15 +34,15 @@ namespace tmtt {
     double barrelNTiltedModules() const { return barrelNTiltedModules_; }
     double barrelNLayersWithTiltedModules() const { return barrelNLayersWithTiltedModules_; }
 
-    vector<double> moduleZoR() const { return moduleZoR_; }
-    vector<double> moduleB() const { return moduleB_; }
+    std::vector<double> moduleZoR() const { return moduleZoR_; }
+    std::vector<double> moduleB() const { return moduleB_; }
 
   private:
     unsigned int barrelNTiltedModules_;
     unsigned int barrelNLayersWithTiltedModules_;
 
     std::vector<double> moduleZoR_;
-    vector<double> moduleB_;
+    std::vector<double> moduleB_;
   };
 
 }  // namespace tmtt

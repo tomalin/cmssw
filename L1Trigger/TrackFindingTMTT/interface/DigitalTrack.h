@@ -6,8 +6,6 @@
 #include <string>
 #include <set>
 
-using namespace std;
-
 namespace tmtt {
 
   class Settings;
@@ -21,6 +19,7 @@ namespace tmtt {
   //====================================================================================================
 
   class DigitalTrack {
+
   public:
     // Note configuration parameters.
     DigitalTrack(const Settings* settings);
@@ -31,7 +30,7 @@ namespace tmtt {
     ~DigitalTrack() {}
 
     /// Initialize track with original, floating point coords
-    void init(const string& fitterName,
+    void init(const std::string& fitterName,
               unsigned int nHelixParams,
               unsigned int iPhiSec,
               unsigned int iEtaReg,
@@ -305,15 +304,15 @@ namespace tmtt {
     // Check DigitalTrack correctly initialized;
     void okin() const {
       if (!ranInit_)
-        throw cms::Exception("DigitalTrack: You forgot to call init()!");
+        throw cms::Exception("LogicError")<<"DigitalTrack: You forgot to call init()!"<<std::endl;
     }
     void ok() const {
       if (!ranMake_)
-        throw cms::Exception("DigitalTrack: You forgot to call makeDigitalTrack()!");
+        throw cms::Exception("LogicError")<<"DigitalTrack: You forgot to call makeDigitalTrack()!"<<std::endl;
     }
 
     // Get digitisation configuration parameters for the specific track fitter being used here.
-    void getDigiCfg(const string& fitterName);
+    void getDigiCfg(const std::string& fitterName);
 
     // Check that stub coords. are within assumed digitization range.
     void checkInRange() const;
@@ -329,7 +328,7 @@ namespace tmtt {
     // Configuration params
     const Settings* settings_;
 
-    string fitterName_;
+    std::string fitterName_;
     unsigned int nHelixParams_;
 
     // Integer data after digitization (which doesn't degrade its resolution, but can recast it in a different form).

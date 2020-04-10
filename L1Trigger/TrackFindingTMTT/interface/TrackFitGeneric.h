@@ -14,8 +14,6 @@
 #include <vector>
 #include <utility>
 
-using namespace std;
-
 namespace tmtt {
 
   class Settings;
@@ -23,11 +21,11 @@ namespace tmtt {
   class TrackFitGeneric {
   public:
     // Set configuration parameters.
-    TrackFitGeneric(const Settings* settings, const string& fitterName = "");
+    TrackFitGeneric(const Settings* settings, const std::string& fitterName = "");
 
     virtual ~TrackFitGeneric() {}
 
-    // Static method to produce a fitter based on a string
+    // Static method to produce a fitter based on a std::string
     //  static std::auto_ptr<TrackFitGeneric> create(std::string, const Settings* settings);
     static TrackFitGeneric* create(std::string, const Settings* settings);
     virtual void bookHists() {}
@@ -45,7 +43,7 @@ namespace tmtt {
   protected:
     // Configuration parameters
     const Settings* settings_;
-    const string fitterName_;
+    const std::string fitterName_;
     unsigned nDupStubs_;
   };
 

@@ -9,18 +9,11 @@ namespace tmtt {
   public:
     ChiSquared4ParamsApprox(const Settings* settings, const uint nPar);
 
-    ~ChiSquared4ParamsApprox() {}
-
   protected:
-    std::vector<double> seed(const L1track3D& l1track3D);
-    std::vector<double> residuals(std::vector<double> x);
-    Matrix<double> D(std::vector<double> x);
-    Matrix<double> Vinv();
-    std::map<std::string, double> convertParams(std::vector<double> x);
-
-  private:
-    std::vector<double> mapToVec(std::map<std::string, double> x);
-    std::map<std::string, double> vecToMap(std::vector<double> x);
+    TVectorD seed(const L1track3D& l1track3D);
+    TVectorD residuals(const TVectorD& x);
+    TMatrixD D(const TVectorD& x);
+    TMatrixD Vinv();
   };
 
 }  // namespace tmtt

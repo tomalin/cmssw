@@ -7,8 +7,6 @@
 
 class TrackerTopology;
 
-using namespace std;
-
 namespace tmtt {
 
   class DegradeBend {
@@ -28,7 +26,7 @@ namespace tmtt {
    * are useful for debugging.
    * 
    * IMPORTANT: If the code below detects a stub with bend outside the assumed window, meaning that looser windows
-   * were used when generating the MC, then it sets boolean reject = true to tell you this. You should reject this stub,
+   * were used when generating the MC, then it std::sets boolean reject = true to tell you this. You should reject this stub,
    * and ideally update the hard-wired constants in this C++.
    *-------------------------------------------------------------------------------------------------------------------
    */
@@ -46,7 +44,7 @@ namespace tmtt {
     // (Input argument windowFEnew specifies the stub window size that should be used for this stub instead
     // of the window sizes specified in TTStubAlgorithmRegister_cfi.py , but it will ONLY replace the latter
     // sizes if it windowFEnew is smaller. If you always want to use TTStubAlgorithmRegister_cfi.py, then
-    // set windowFEnew to a large number, such as 99999.).
+    // std::set windowFEnew to a large number, such as 99999.).
     void degrade(float bend,
                  bool psModule,
                  const DetId& stDetId,

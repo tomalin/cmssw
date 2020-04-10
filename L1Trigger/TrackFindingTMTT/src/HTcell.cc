@@ -2,6 +2,8 @@
 #include "L1Trigger/TrackFindingTMTT/interface/TP.h"
 #include "L1Trigger/TrackFindingTMTT/interface/Stub.h"
 
+using namespace std;
+
 namespace tmtt {
 
   //=== Initialization with cfg params,

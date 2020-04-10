@@ -13,8 +13,6 @@
 
 #include <vector>
 
-using namespace std;
-
 namespace tmtt {
 
   class Stub;
@@ -30,7 +28,7 @@ namespace tmtt {
     bool operator==(const TP& tpOther) { return (this->index() == tpOther.index()); }
 
     // Fill truth info with association from tracking particle to stubs.
-    void fillTruth(const vector<Stub>& vStubs);
+    void fillTruth(const std::vector<Stub>& vStubs);
 
     // == Functions for returning info about tracking particles ===
 
@@ -71,7 +69,7 @@ namespace tmtt {
     float trkZAtStub(const Stub* stub) const;
 
     // == Functions returning stubs produced by tracking particle.
-    const vector<const Stub*>& assocStubs() const {
+    const std::vector<const Stub*>& assocStubs() const {
       return assocStubs_;
     }  // associated stubs. (Includes those failing tightened front-end electronics cuts supplied by user). (Which stubs are returned is affected by "StubMatchStrict" config param.)
     unsigned int numAssocStubs() const { return assocStubs_.size(); }
@@ -124,7 +122,7 @@ namespace tmtt {
     bool useForEff_;     // TP can be used for tracking efficiency measurement.
     bool useForAlgEff_;  // TP can be used for tracking algorithmic efficiency measurement.
 
-    vector<const Stub*> assocStubs_;
+    std::vector<const Stub*> assocStubs_;
     unsigned int nLayersWithStubs_;  // Number of tracker layers with stubs from this TP.
 
     bool tpInJet_;

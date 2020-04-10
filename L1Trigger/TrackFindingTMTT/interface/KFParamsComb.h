@@ -10,17 +10,15 @@
 namespace tmtt {
 
   class KFParamsComb : public L1KalmanComb {
-  public:
-    enum PAR_IDS { INV2R, PHI0, T, Z0, D0 };
-    enum MEAS_IDS { PHI, Z };
 
   public:
-    KFParamsComb(const Settings* settings, const uint nPar, const string& fitterName);
+    KFParamsComb(const Settings* settings, const uint nPar, const std::string& fitterName) : L1KalmanComb(settings, nPar, fitterName) {}
+  
     virtual ~KFParamsComb() {}
 
   protected:
-    virtual std::map<std::string, double> getTrackParams(const KalmanState* state) const;
-    virtual std::map<std::string, double> getTrackParams_BeamConstr(const KalmanState* state, double& chi2rphi) const;
+    virtual std::vector<double> getTrackParams(const KalmanState* state) const;
+    virtual std::vector<double> getTrackParams_BeamConstr(const KalmanState* state, double& chi2rphi) const;
     virtual std::vector<double> seedx(const L1track3D& l1track3D) const;
     virtual TMatrixD seedP(const L1track3D& l1track3D) const;
     virtual std::vector<double> d(const StubCluster* stubCluster) const;
@@ -30,10 +28,6 @@ namespace tmtt {
     virtual TMatrixD PxxModel(const KalmanState* state, const StubCluster* stubCluster) const;
     virtual TMatrixD PddMeas(const StubCluster* stubCluster, const KalmanState* state) const;
     virtual bool isGoodState(const KalmanState& state) const;
-
-  private:
-    std::vector<double> mapToVec(std::map<std::string, double> x) const;
-    std::map<std::string, double> vecToMap(std::vector<double> x) const;
   };
 
 }  // namespace tmtt

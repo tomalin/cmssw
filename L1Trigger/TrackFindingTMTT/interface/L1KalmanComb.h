@@ -25,26 +25,34 @@ namespace tmtt {
   class StubCluster;
 
   class L1KalmanComb : public TrackFitGeneric {
+
   public:
+    enum PAR_IDS { INV2R, PHI0, T, Z0, D0 };
+    enum PAR_IDS_VAR { QOVERPT };
+    enum MEAS_IDS { PHI, Z };
     enum OVERLAP_TYPE { TYPE_NORMAL, TYPE_V2, TYPE_NOCLUSTERING, TYPE_TP };
 
   public:
-    L1KalmanComb(const Settings *settings, const uint nPar, const string &fitterName = "", const uint nMeas = 2);
+    L1KalmanComb(const Settings *settings, const uint nPar, const std::string &fitterName = "", const uint nMeas = 2);
 
     virtual ~L1KalmanComb() {
       this->resetStates();
       this->deleteStubClusters();
     }
 
+    L1KalmanComb(const L1KalmanComb& kf) = delete; // Disable copy & move of this class.
+    L1KalmanComb(L1KalmanComb&& kf) = delete;
+    L1KalmanComb& operator=(const L1KalmanComb& kf) = delete;
+    L1KalmanComb& operator=(L1KalmanComb&& kf) = delete;
+
     L1fittedTrack fit(const L1track3D &l1track3D);
-    void bookHists();
 
   protected:
-    static std::map<std::string, double> getTrackParams(const L1KalmanComb *p, const KalmanState *state);
-    virtual std::map<std::string, double> getTrackParams(const KalmanState *state) const = 0;
+    static std::vector<double> getTrackParams(const L1KalmanComb *p, const KalmanState *state);
+    virtual std::vector<double> getTrackParams(const KalmanState *state) const = 0;
 
     // Get track params with beam-spot constraint & chi2 (r-phi) after applying it..
-    virtual std::map<std::string, double> getTrackParams_BeamConstr(const KalmanState *state,
+    virtual std::vector<double> getTrackParams_BeamConstr(const KalmanState *state,
                                                                     double &chi2rphi_bcon) const {
       chi2rphi_bcon = 0.0;
       return (this->getTrackParams(state));  // Returns unconstrained result, unless derived class overrides it.
@@ -114,7 +122,7 @@ namespace tmtt {
 
     virtual void calcChi2(const KalmanState &state, double &chi2rphi, double &chi2rz) const;
 
-    virtual double getRofState(unsigned layerId, const vector<double> &xa) const { return 0; }
+    virtual double getRofState(unsigned layerId, const std::vector<double> &xa) const { return 0; }
     virtual unsigned int getKalmanLayer(
         unsigned int iEtaReg, unsigned int layerIDreduced, bool barrel, float r, float z) const;
     virtual bool getKalmanAmbiguousLayer(unsigned int iEtaReg, unsigned int kfLayer);
@@ -131,15 +139,11 @@ namespace tmtt {
     void printStub(std::ostream &os, const Stub *stub, bool addReturn = true) const;
     void printStubs(std::ostream &os, std::vector<const Stub *> &stubs) const;
 
-    void fillSeedHists(const KalmanState *state, const TP *tpa);
-    void fillCandHists(const KalmanState &state, const TP *tpa = 0);
-    void fillStepHists(const TP *tpa, unsigned nItr, const KalmanState *new_state);
-
     double DeltaRphiForClustering(unsigned layerId, unsigned endcapRing);
     double DeltaRForClustering(unsigned endcapRing);
     bool isOverlap(const Stub *a, const Stub *b, OVERLAP_TYPE type);
 
-    set<unsigned> getKalmanDeadLayers(bool &remove2PSCut) const;
+    std::set<unsigned> getKalmanDeadLayers(bool &remove2PSCut) const;
 
     // Function to calculate approximation for tilted barrel modules (aka B) copied from Stub class.
     float getApproxB(float z, float r) const;
@@ -155,42 +159,6 @@ namespace tmtt {
     std::vector<KalmanState *> state_list_;
     std::vector<StubCluster *> stbcl_list_;
 
-    std::vector<double> hxaxtmin;
-    std::vector<double> hxaxtmax;
-    std::vector<double> hxmin;
-    std::vector<double> hxmax;
-    std::vector<double> hymin;
-    std::vector<double> hymax;
-    std::vector<double> hdxmin;
-    std::vector<double> hdxmax;
-    std::vector<double> hresmin;
-    std::vector<double> hresmax;
-    std::vector<double> hddMeasmin;
-    std::vector<double> hddMeasmax;
-
-    TH1F *hTrackEta_;
-    TH1F *hUniqueTrackEta_;
-    std::map<TString, TH2F *> hBarrelStubMaxDistanceMap;
-    std::map<TString, TH2F *> hEndcapStubMaxDistanceMap;
-    std::map<TString, TH2F *> hphiErrorRatioMap;
-    std::map<TString, TH1F *> hstubCombMap;
-
-    TH1F *hndupStub_;
-    TH1F *hnmergeStub_;
-    std::map<TString, TH1F *> hytMap;
-    std::map<TString, TH1F *> hy0Map;
-    std::map<TString, TH1F *> hyfMap;
-    std::map<TString, TH1F *> hxMap;
-    std::map<TString, TH1F *> hxcovMap;
-    std::map<TString, TH1F *> hkMap;
-    std::map<TString, TH1F *> hresMap;
-    std::map<TString, TH1F *> hmcovMap;
-
-    double hchi2min;
-    double hchi2max;
-
-    unsigned maxNfitForDump_;
-    bool dump_;
     unsigned int iCurrentPhiSec_;
     unsigned int iCurrentEtaReg_;
     unsigned int iLastPhiSec_;

@@ -1,4 +1,4 @@
-///=== This is the base class for the Kalman Combinatorial Filter track fit algorithm.
+//=== This is the base class for the Kalman Combinatorial Filter track fit algorithm.
 
 ///=== Written by: S. Summers, K. Uchida, M. Pesaresi, I.Tomalin
 
@@ -6,7 +6,6 @@
 #include "L1Trigger/TrackFindingTMTT/interface/Utility.h"
 
 #include <TMatrixD.h>
-#include <TH2F.h>
 #include "L1Trigger/TrackFindingTMTT/interface/TP.h"
 #include "L1Trigger/TrackFindingTMTT/interface/KalmanState.h"
 #include "L1Trigger/TrackFindingTMTT/interface/StubCluster.h"
@@ -26,9 +25,9 @@
 // Enable merging of nearby stubs.
 //#define MERGE_STUBS
 
-namespace tmtt {
+using namespace std;
 
-  unsigned LayerId[16] = {1, 2, 3, 4, 5, 6, 11, 12, 13, 14, 15, 21, 22, 23, 24, 25};
+namespace tmtt {
 
   static bool orderStubsByLayer(const Stub *a, const Stub *b) { return (a->layerId() < b->layerId()); }
 
@@ -56,20 +55,21 @@ namespace tmtt {
   }
 
   void L1KalmanComb::printTP(std::ostream &os, const TP *tp) const {
-    std::map<std::string, double> tpParams;
+    std::vector<double> tpParams(5);
     bool useForAlgEff(false);
     if (tp) {
       useForAlgEff = tp->useForAlgEff();
-      tpParams["qOverPt"] = tp->qOverPt();
-      tpParams["phi0"] = tp->phi0();
-      tpParams["z0"] = tp->z0();
-      tpParams["t"] = tp->tanLambda();
-      tpParams["d0"] = tp->d0();
+      tpParams[QOVERPT] = tp->qOverPt();
+      tpParams[PHI0] = tp->phi0();
+      tpParams[Z0] = tp->z0();
+      tpParams[T] = tp->tanLambda();
+      tpParams[D0] = tp->d0();
     }
     if (tp) {
       os << "  TP index = " << tp->index() << " useForAlgEff = " << useForAlgEff << " ";
-      for (auto pair : tpParams) {
-        os << pair.first << ":" << pair.second << ", ";
+      const string helixNames[5] = {"qOverPt", "phi0", "z0", "tanL", "d0"};
+      for (unsigned int i = 0; i < tpParams.size(); i++) {
+        os << helixNames[i] << ":" << tpParams[i] << ", ";
       }
       os << "  inv2R = " << tp->qOverPt() * getSettings()->invPtToInvR() * 0.5;
     } else {
@@ -173,8 +173,8 @@ namespace tmtt {
     const unsigned int nGPlayID = 7;
 
     if (nEta != numEtaRegions_)
-      throw cms::Exception(
-          "ERROR L1KalmanComb::getKalmanLayer hardwired value of nEta differs from NumEtaRegions cfg param");
+      throw cms::Exception("LogicError")<<
+	"ERROR L1KalmanComb::getKalmanLayer hardwired value of nEta differs from NumEtaRegions cfg param"<<endl;
 
     // In cases where identical GP encoded layer ID present in this sector from both barrel & endcap, this array filled considering barrel. The endcap is fixed by subsequent code.
 
@@ -303,42 +303,6 @@ namespace tmtt {
     nMeas_ = nMeas;
     numEtaRegions_ = settings->numEtaRegions();
 
-    hymin = vector<double>(nPar_, -1);
-    hymax = vector<double>(nPar_, 1);
-    hymin[0] = -0.05;
-    hymax[0] = +0.05;
-    hymin[1] = -3.2;
-    hymax[1] = +3.2;
-    hymin[2] = -20;
-    hymax[2] = +20;
-    hymin[3] = -6;
-    hymax[3] = +6;
-    if (nPar_ == 5) {
-      hymin[4] = -5;
-      hymax[4] = +5;
-    }
-
-    hxmin = vector<double>(nPar_, -1);
-    hxmax = vector<double>(nPar_, 1);
-
-    hddMeasmin = vector<double>(2, -1e-3);
-    hddMeasmax = vector<double>(2, 1e-3);
-
-    hresmin = vector<double>(2, -1e-2);
-    hresmax = vector<double>(2, 1e-2);
-
-    hxaxtmin = vector<double>(nPar_, -1);
-    hxaxtmax = vector<double>(nPar_, 1);
-
-    hdxmin = vector<double>(nPar_, -1);
-    hdxmax = vector<double>(nPar_, 1);
-
-    hchi2min = 0;
-    hchi2max = 50;
-
-    maxNfitForDump_ = 10;
-    dump_ = false;
-
     iLastPhiSec_ = 999;
     iLastEtaReg_ = 999;
   }
@@ -363,17 +327,6 @@ namespace tmtt {
     }
     tpa_ = tpa;
 
-    //dump flag
-    static std::atomic<unsigned> nthFit(0);
-    nthFit++;
-    if (getSettings()->kalmanDebugLevel() >= 3 && nthFit <= maxNfitForDump_) {
-      if (tpa)
-        dump_ = true;
-      else
-        dump_ = false;
-    } else
-      dump_ = false;
-
     //stub list from L1track3D, sorted in layer order - necessary for clustering only
     std::vector<const Stub *> stubs = l1track3D.getStubs();
 
@@ -387,8 +340,6 @@ namespace tmtt {
         const Stub *stub_b = stubs.at(j);
         if (stub_a->r() == stub_b->r() && stub_a->phi() == stub_b->phi() && stub_a->z() == stub_b->z()) {
           stubs.erase(stubs.begin() + j);
-          if (getSettings()->kalmanFillInternalHists())
-            hndupStub_->Fill(1);
           j--;
         }
       }
@@ -397,17 +348,16 @@ namespace tmtt {
 
     std::vector<const StubCluster *> stubcls;
 
-    for (unsigned j_layer = 0; j_layer < 16; j_layer++) {
-      std::vector<const Stub *> layer_stubs;
-      for (unsigned i = 0; i < stubs.size(); i++) {
-        const Stub *stub = stubs.at(i);
-        if (stub->layerId() == LayerId[j_layer]) {
-          layer_stubs.push_back(stub);
-        }
-      }
+    std::map<unsigned int, std::vector<const Stub*> > stubsByLay;
+    for (const Stub* stub : stubs) {
+      stubsByLay[stub->layerId()].push_back(stub);
+    }
+    for (const auto& p : stubsByLay) {
+      const std::vector<const Stub*>& layer_stubs = p.second;
 
 #ifdef MERGE_STUBS
-      if (LayerId[j_layer] < 10)
+      unsigned int layerId = p.first;
+      if (layerId < 10)
         sort(layer_stubs.begin(), layer_stubs.end(), orderStubsByZ);  // barrel
       else
         sort(layer_stubs.begin(), layer_stubs.end(), orderStubsByR);  // endcap
@@ -422,76 +372,16 @@ namespace tmtt {
         while (layer_stubs.at(i) != layer_stubs.back()) {
           if (isOverlap(layer_stubs.at(i), layer_stubs.at(i + 1), TYPE_NORMAL)) {
             stubs_for_cls.push_back(layer_stubs.at(i + 1));
-            if (getSettings()->kalmanFillInternalHists())
-              hnmergeStub_->Fill(0);
             i++;
           } else
             break;
         }
 #endif
 
-        if (getSettings()->kalmanFillInternalHists()) {
-          if (tpa && tpa->useForAlgEff()) {
-            if (stubs_for_cls.size() > 1) {
-              std::set<const TP *> s_tps = stubs_for_cls.at(0)->assocTPs();
-              if (s_tps.find(tpa) != s_tps.end()) {
-                const Stub *sa = stubs_for_cls.front();
-                const Stub *sb = stubs_for_cls.back();
-
-                double drphi = fabs(sa->r() * reco::deltaPhi(sa->phi(), sectorPhi()) -
-                                    sb->r() * reco::deltaPhi(sb->phi(), sectorPhi()));
-                double dz = fabs(sa->z() - sb->z());
-                double dr = fabs(sa->r() - sb->r());
-                TString hname;
-                if (LayerId[j_layer] < 10) {
-                  hname = Form("hBarrelStubMaxDistanceLayer%02d", LayerId[j_layer]);
-
-                  if (hBarrelStubMaxDistanceMap.find(hname) == hBarrelStubMaxDistanceMap.end()) {
-                    cout << hname << " does not exist." << endl;
-                  } else {
-                    hBarrelStubMaxDistanceMap[hname]->Fill(drphi, dz);
-                  }
-                } else {
-                  hname = Form("hEndcapStubMaxDistanceRing%02d", sa->endcapRing());
-
-                  if (hEndcapStubMaxDistanceMap.find(hname) == hEndcapStubMaxDistanceMap.end()) {
-                    cout << hname << " does not exist." << endl;
-                  } else {
-                    hEndcapStubMaxDistanceMap[hname]->Fill(drphi, dr);
-                  }
-                }
-              }
-            }
-          }
-        }
-
         // dl error now disabled
         StubCluster *stbcl = new StubCluster(stubs_for_cls, sectorPhi(), 0);
         stbcl_list_.push_back(stbcl);
         stubcls.push_back(stbcl);
-
-        if (getSettings()->kalmanFillInternalHists()) {
-          if (!stbcl->barrel()) {
-            TString hname = Form("hphiErrorRatioRing%d", stbcl->endcapRing());
-            if (hphiErrorRatioMap.find(hname) == hphiErrorRatioMap.end()) {
-              cout << hname << " does not exist." << endl;
-            } else {
-              hphiErrorRatioMap[hname]->Fill(fabs(stbcl->deltai() + 0.5), fabs(stbcl->dphi_dr()) / stbcl->dphi_dl());
-            }
-          }
-        }
-      }
-    }
-    if (getSettings()->kalmanFillInternalHists()) {
-      if (tpa && tpa->useForAlgEff()) {
-        hTrackEta_->Fill(tpa->eta());
-        static thread_local set<const TP *> set_tp;
-        if (iCurrentPhiSec_ < iLastPhiSec_ && iCurrentEtaReg_ < iLastEtaReg_)
-          set_tp.clear();
-        if (set_tp.find(tpa) == set_tp.end()) {
-          hUniqueTrackEta_->Fill(tpa->eta());
-        }
-        set_tp.insert(tpa);
       }
     }
 
@@ -521,17 +411,17 @@ namespace tmtt {
       //cout<<"Final KF candidate eta="<<cand->candidate().iEtaReg()<<" ns="<<cand->nSkippedLayers()<<" klid="<<cand->nextLayer()-1<<" n="<<cand->nStubLayers()<<endl;
 
       // Get track helix params.
-      std::map<std::string, double> trackParams = getTrackParams(cand);
+      std::vector<double> trackParams = getTrackParams(cand);
 
       L1fittedTrack returnTrk(getSettings(),
                               l1track3D,
                               cand->stubs(),
                               cand->hitPattern(),
-                              trackParams["qOverPt"],
-                              trackParams["d0"],
-                              trackParams["phi0"],
-                              trackParams["z0"],
-                              trackParams["t"],
+                              trackParams[QOVERPT],
+                              trackParams[D0],
+                              trackParams[PHI0],
+                              trackParams[Z0],
+                              trackParams[T],
                               cand->chi2rphi(),
                               cand->chi2rz(),
                               nPar_,
@@ -562,8 +452,8 @@ namespace tmtt {
       if (getSettings()->kalmanAddBeamConstr()) {
         if (nPar_ == 5) {
           double chi2rphi_bcon = 0.;
-          std::map<std::string, double> trackParams_bcon = getTrackParams_BeamConstr(cand, chi2rphi_bcon);
-          returnTrk.setBeamConstr(trackParams_bcon["qOverPt"], trackParams_bcon["phi0"], chi2rphi_bcon);
+          std::vector<double> trackParams_bcon = getTrackParams_BeamConstr(cand, chi2rphi_bcon);
+          returnTrk.setBeamConstr(trackParams_bcon[QOVERPT], trackParams_bcon[PHI0], chi2rphi_bcon);
         }
       }
 
@@ -579,11 +469,11 @@ namespace tmtt {
                                   l1track3D,
                                   cand->stubs(),
                                   cand->hitPattern(),
-                                  trackParams["qOverPt"],
-                                  trackParams["d0"],
-                                  trackParams["phi0"],
-                                  trackParams["z0"],
-                                  trackParams["t"],
+                                  trackParams[QOVERPT],
+                                  trackParams[D0],
+                                  trackParams[PHI0],
+                                  trackParams[Z0],
+                                  trackParams[T],
                                   cand->chi2rphi(),
                                   cand->chi2rz(),
                                   nPar_,
@@ -613,10 +503,6 @@ namespace tmtt {
         cout << "------------------------------------" << endl;
       }
 
-      //fill histograms for the selected state with TP for algEff
-      if (getSettings()->kalmanFillInternalHists())
-        fillCandHists(*cand, tpa);
-
       return returnTrk;
 
     } else {
@@ -645,29 +531,6 @@ namespace tmtt {
                 cout << " none" << endl;
             }
           }
-          cout << "---------------------" << endl;
-          /*				
-					for( it_last = last_states.begin(); it_last != last_states.end(); it_last++ ){
-					const KalmanState *state = *it_last;
-				
-					//std::map<std::string, double> trackParams = getTrackParams(state);
-					//L1fittedTrack returnTrk(getSettings(), l1track3D, state->stubs(), state->hitPattern(), trackParams["qOverPt"], trackParams["d0"], trackParams["phi0"], trackParams["z0"], trackParams["t"], state->chi2rphi(), state->chi2rz(), nPar_, true);
-				
-				
-					std::vector<const Stub *> sstubs = state->stubs();
-					for( auto stub : sstubs ){
-				
-					for (const TP* tp_i : stub->assocTPs()) {
-					cout<<tp_i->index()<<endl;
-					}
-				
-					cout<<stub->r()<<" "<<stub->z()<<" "<<state->nStubLayers()<<endl;
-					}
-				
-					cout<<"---------------------"<<endl;
-				
-					}
-	*/
           cout << "=====================" << endl;
         }
       }
@@ -720,9 +583,6 @@ namespace tmtt {
     TMatrixD dcov(2, 2);
 
     const KalmanState *state0 = mkState(l1track3D, 0, 0, 0, nullptr, x0, pxx0, K, dcov, nullptr, 0, 0);
-
-    if (getSettings()->kalmanFillInternalHists())
-      fillSeedHists(state0, tpa);
 
     // internal containers - i.e. the state FIFO. Contains estimate of helix params in last/next layer, with multiple entries if there were multiple stubs, yielding multiple states.
     std::vector<const KalmanState *> new_states;
@@ -852,9 +712,6 @@ namespace tmtt {
           // Update helix params by adding this stub.
           const KalmanState *new_state = kalmanUpdate(skipped, layer + 1, next_stubCluster, *the_state, tpa);
 
-          if (getSettings()->kalmanFillInternalHists())
-            fillStepHists(tpa, iteration, new_state);
-
           // Cut on track chi2, pt etc.
           if (isGoodState(*new_state))
             next_states.push_back(new_state);
@@ -870,9 +727,6 @@ namespace tmtt {
                            next_stubCluster,
                            *the_state,
                            tpa);
-
-          if (getSettings()->kalmanFillInternalHists())
-            fillStepHists(tpa, iteration, new_state);
 
           if (isGoodState(*new_state))
             next_states_skipped.push_back(new_state);
@@ -941,15 +795,6 @@ namespace tmtt {
 
       }  //end of state loop
 
-      if (getSettings()->kalmanFillInternalHists()) {
-        TString hname = Form("hstubComb_itr%d", iteration);
-        if (hstubCombMap.find(hname) == hstubCombMap.end()) {
-          cout << hname << " does not exist." << endl;
-        } else {
-          hstubCombMap[hname]->Fill(combinations_per_iteration);
-        }
-      }
-
       // copy new_states into prev_states for next iteration or end if we are on
       // last iteration by clearing all states and making final state selection
 
@@ -972,21 +817,6 @@ namespace tmtt {
         prev_states = new_states;
         new_states.clear();
       }
-
-      /*
-      int i = 0;
-      bool found = false;
-      for( auto best_state : best_states4 ){
-			
-      if( tpa && tpa->useForAlgEff() ) {
-      std::map<std::string, double> trackParams = getTrackParams(best_state);
-      L1fittedTrack returnTrk(getSettings(), l1track3D, best_state->stubs(), best_state->hitPattern(), trackParams["qOverPt"], trackParams["d0"], trackParams["phi0"], trackParams["z0"], trackParams["t"], best_state->chi2rphi(), best_state->chi2rz(), nPar_, true);
-      if (returnTrk.getNumMatchedLayers()>=4) {
-      //temp_states.push_back(best_state);
-      if(i==0) found = true;
-      if (!found) cout<<"Lost this cand "<<i<<" "<<best_state->chi2()<<" "<<best_state->reducedChi2()<<" "<<best_state->path()<<" chose instead "<<best_states4[0]->chi2()<<" "<<best_states4[0]->reducedChi2()<<" "<<best_statesn4[0]->path()<<endl;
-      }
-      }*/
     }
 
     if (best_state_by_nstubs.size()) {
@@ -999,10 +829,10 @@ namespace tmtt {
              << stateFinal->hitPattern() << std::dec << " phiSec=" << l1track3D.iPhiSec()
              << " etaReg=" << l1track3D.iEtaReg() << " HT(m,c)=(" << l1track3D.getCellLocationHT().first << ","
              << l1track3D.getCellLocationHT().second << ")";
-        std::map<std::string, double> y = getTrackParams(stateFinal);
-        cout << " q/pt=" << y["qOverPt"] << " tanL=" << y["t"] << " z0=" << y["z0"] << " phi0=" << y["phi0"];
+        std::vector<double> y = getTrackParams(stateFinal);
+        cout << " q/pt=" << y[QOVERPT] << " tanL=" << y[T] << " z0=" << y[Z0] << " phi0=" << y[PHI0];
         if (nPar_ == 5)
-          cout << " d0=" << y["d0"];
+          cout << " d0=" << y[D0];
         cout << " chosen from states:";
         for (const auto &p : best_state_by_nstubs)
           cout << " " << p.second->chi2() << "/" << p.second->nStubLayers();
@@ -1226,7 +1056,7 @@ namespace tmtt {
     return;
   }
 
-  std::map<std::string, double> L1KalmanComb::getTrackParams(const L1KalmanComb *p, const KalmanState *state) {
+  std::vector<double> L1KalmanComb::getTrackParams(const L1KalmanComb *p, const KalmanState *state) {
     return p->getTrackParams(state);
   }
 
@@ -1456,236 +1286,6 @@ namespace tmtt {
     delta.at(0) = reco::deltaPhi(delta.at(0), 0.);
 
     return delta;
-  }
-
-  void L1KalmanComb::bookHists() {
-    if (getSettings()->kalmanFillInternalHists()) {
-      edm::Service<TFileService> fs_;
-      string dirName;
-      if (fitterName_.compare("") == 0)
-        dirName = "L1KalmanCombInternal";
-      else
-        dirName = fitterName_ + "Internal";
-
-      TFileDirectory inputDir = fs_->mkdir(dirName.c_str());
-
-      TString hname;
-      hTrackEta_ = inputDir.make<TH1F>("hTrackEta", "Track #eta; #eta", 50, -2.5, 2.5);
-      hUniqueTrackEta_ = inputDir.make<TH1F>("hUniqueTrackEta", "Unique Track #eta; #eta", 50, -2.5, 2.5);
-      hndupStub_ = inputDir.make<TH1F>("hndupStub", "# of duplicated stubs", 1, 0, 1);
-      hnmergeStub_ = inputDir.make<TH1F>("hnmergeStub", "# of merged stubs", 1, 0, 1);
-
-      for (unsigned j_layer = 0; j_layer < 6; j_layer++) {
-        hname = Form("hBarrelStubMaxDistanceLayer%02d", LayerId[j_layer]);
-        hBarrelStubMaxDistanceMap[hname] =
-            inputDir.make<TH2F>(hname,
-                                Form("max distance of stubs in barrel Layer %02d; dr#phi; dz", LayerId[j_layer]),
-                                100,
-                                0,
-                                1.,
-                                100,
-                                0,
-                                10);
-      }
-
-      for (unsigned j_ecring = 1; j_ecring < 16; j_ecring++) {
-        hname = Form("hEndcapStubMaxDistanceRing%02d", j_ecring);
-        hEndcapStubMaxDistanceMap[hname] = inputDir.make<TH2F>(
-            hname, Form("max distance of stubs in endcap Ring %02d; dr#phi; dr", j_ecring), 100, 0, 1., 100, 0, 10);
-        hname = Form("hphiErrorRatioRing%d", j_ecring);
-        hphiErrorRatioMap[hname] =
-            inputDir.make<TH2F>(hname,
-                                Form("; fabs( strip id - 0.5 x nStrips + 0.5 ); #delta #phi_{r} / #delta #phi_{l}"),
-                                508,
-                                0.0,
-                                508.0,
-                                50,
-                                -0.5,
-                                49.5);
-      }
-
-      float nbins(2002);
-      for (unsigned i = 0; i < nPar_; i++) {
-        hname = Form("hyt_%d", i);
-        hytMap[hname] =
-            inputDir.make<TH1F>(hname, Form("; true track parameter values %d", i), nbins, hymin[i], hymax[i]);
-        hname = Form("hy0_%d", i);
-        hy0Map[hname] =
-            inputDir.make<TH1F>(hname, Form("; after HT track parameter values %d", i), nbins, hymin[i], hymax[i]);
-        hname = Form("hyf_%d", i);
-        hyfMap[hname] =
-            inputDir.make<TH1F>(hname, Form("; after KF track parameter values %d", i), nbins, hymin[i], hymax[i]);
-        hname = Form("hx_%d", i);
-        hxMap[hname] = inputDir.make<TH1F>(hname, Form("; x values %d", i), nbins, hxmin[i], hxmax[i]);
-      }
-
-      for (unsigned itr = 0; itr <= 5; itr++) {
-        hname = Form("hstubComb_itr%d", itr);
-        hstubCombMap[hname] =
-            inputDir.make<TH1F>(hname, Form("; #state+stub combinations, iteration %d ", itr), 100, 0., 100.);
-
-        for (unsigned i = 0; i < nPar_; i++) {
-          for (unsigned j = 0; j <= i; j++) {
-            hname = Form("hxcov_itr%d_%d_%d", itr, i, j);
-            hxcovMap[hname] =
-                inputDir.make<TH1F>(hname,
-                                    Form("; state covariance adjusted values, iteration %d (%d,%d)", itr, i, j),
-                                    nbins,
-                                    -1 * hdxmin[i] * hdxmin[j],
-                                    hdxmax[i] * hdxmax[j]);
-          }
-        }
-        for (unsigned i = 0; i < nPar_; i++) {
-          for (unsigned j = 0; j < nMeas_; j++) {
-            hname = Form("hk_itr%d_%d_%d", itr, i, j);
-            hkMap[hname] = inputDir.make<TH1F>(hname, Form("; K(%d,%d), Iteration %d", i, j, itr), 200, -1., 1.);
-          }
-        }
-        for (unsigned i = 0; i < nMeas_; i++) {
-          hname = Form("hres_itr%d_%d", itr, i);
-          hresMap[hname] = inputDir.make<TH1F>(
-              hname, Form("; residual values, iteration %d (%d)", itr, i), nbins, hresmin[i], hresmax[i]);
-          for (unsigned j = 0; j <= i; j++) {
-            hname = Form("hmcov_itr%d_%d_%d", itr, i, j);
-            hmcovMap[hname] =
-                inputDir.make<TH1F>(hname,
-                                    Form("; measurement covariance values, iteration %d (%d,%d)", itr, i, j),
-                                    nbins,
-                                    -1 * hddMeasmin[i] * hddMeasmin[i],
-                                    hddMeasmax[i] * hddMeasmax[j]);
-          }
-        }
-      }
-    }
-  }
-
-  void L1KalmanComb::fillCandHists(const KalmanState &state, const TP *tpa) {
-    if (tpa && tpa->useForAlgEff()) {
-      const KalmanState *the_state = &state;
-      while (the_state) {
-        if (the_state->stubCluster()) {
-          std::vector<double> x = the_state->xa();
-          for (unsigned i = 0; i < nPar_; i++) {
-            TString hname = Form("hx_%d", i);
-            if (hxMap.find(hname) == hxMap.end()) {
-              cout << hname << " does not exist." << endl;
-            } else
-              hxMap[hname]->Fill(x.at(i));
-          }
-        }
-        the_state = the_state->last_state();
-      }
-
-      std::map<std::string, double> mx = getTrackParams(&state);
-      std::vector<double> vx(nPar_);
-      vx[0] = mx["qOverPt"];
-      vx[1] = mx["phi0"];
-      vx[2] = mx["z0"];
-      vx[3] = mx["t"];
-      if (nPar_ == 5)
-        vx[4] = mx["d0"];
-      for (unsigned i = 0; i < nPar_; i++) {
-        TString hname = Form("hyf_%d", i);
-        if (hyfMap.find(hname) == hyfMap.end()) {
-          cout << hname << " does not exist." << endl;
-        } else
-          hyfMap[hname]->Fill(vx[i]);
-      }
-    }
-  }
-
-  void L1KalmanComb::fillSeedHists(const KalmanState *state, const TP *tpa) {
-    std::vector<double> x0 = state->xa();
-    TMatrixD pxx0 = state->pxxa();
-    //Histogram Fill : seed pxxa
-    for (unsigned i = 0; i < nPar_; i++) {
-      for (unsigned j = 0; j <= i; j++) {
-        TString hname = Form("hxcov_itr%d_%d_%d", 0, i, j);
-        if (hxcovMap.find(hname) == hxcovMap.end()) {
-          cout << hname << " does not exist." << endl;
-        } else
-          hxcovMap[hname]->Fill(pxx0(i, j));
-      }
-    }
-
-    if (tpa && tpa->useForAlgEff()) {
-      std::vector<double> tpParams(nPar_);
-      tpParams[0] = tpa->qOverPt();
-      tpParams[1] = tpa->phi0();
-      tpParams[2] = tpa->z0();
-      tpParams[3] = tpa->tanLambda();
-      if (nPar_ == 5)
-        tpParams[4] = tpa->d0();
-      for (unsigned i = 0; i < nPar_; i++) {
-        TString hname = Form("hyt_%d", i);
-        if (hytMap.find(hname) == hytMap.end()) {
-          cout << hname << " does not exist." << endl;
-        } else
-          hytMap[hname]->Fill(tpParams[i]);
-      }
-      //Histogram Fill : Seed state
-      std::map<std::string, double> trackParams = getTrackParams(state);
-      std::vector<double> trackParVec(nPar_);
-      trackParVec[0] = trackParams["qOverPt"];
-      trackParVec[1] = trackParams["phi0"];
-      trackParVec[2] = trackParams["z0"];
-      trackParVec[3] = trackParams["t"];
-      if (nPar_ == 5)
-        trackParVec[4] = trackParams["d0"];
-      for (unsigned i = 0; i < nPar_; i++) {
-        TString hname = Form("hy0_%d", i);
-        if (hy0Map.find(hname) == hy0Map.end()) {
-          cout << hname << " does not exist." << endl;
-        } else
-          hy0Map[hname]->Fill(trackParVec[i]);
-      }
-    }
-  }
-
-  void L1KalmanComb::fillStepHists(const TP *tpa, unsigned nItr, const KalmanState *new_state) {
-    unsigned path = 0;
-
-    const std::vector<double> &xa = new_state->xa();
-    const StubCluster *stubCluster = new_state->stubCluster();
-    const TMatrixD &pxxa = new_state->pxxa();
-
-    TString hname;
-
-    for (unsigned i = 0; i < nPar_; i++) {
-      for (unsigned j = 0; j <= i; j++) {
-        hname = Form("hxcov_itr%d_%d_%d", nItr, i, j);
-        if (hxcovMap.find(hname) == hxcovMap.end()) {
-          cout << hname << " does not exist." << endl;
-        } else
-          hxcovMap[hname]->Fill(pxxa(i, j));
-      }
-    }
-    for (unsigned i = 0; i < nPar_; i++) {
-      for (int j = 0; j < 2; j++) {
-        TString hname = Form("hk_itr%d_%d_%d", nItr, i, j);
-        if (hkMap.find(hname) == hkMap.end()) {
-          cout << hname << " does not exist." << endl;
-        } else
-          hkMap[hname]->Fill(new_state->K()(i, j));
-      }
-    }
-    std::vector<double> delta_new = residual(stubCluster, xa, new_state->candidate().qOverPt());
-    for (unsigned int i = 0; i < delta_new.size(); i++) {
-      TString hname = Form("hres_itr%d_%d", nItr, i);
-      if (hresMap.find(hname) == hresMap.end()) {
-        cout << hname << " does not exist." << endl;
-      } else
-        hresMap[hname]->Fill(delta_new[i]);
-    }
-    for (int i = 0; i < 2; i++) {
-      for (int j = 0; j < i; j++) {
-        TString hname = Form("hmcov_itr%d_%d_%d", nItr, i, j);
-        if (hmcovMap.find(hname) == hmcovMap.end()) {
-          cout << hname << " does not exist." << endl;
-        } else
-          hmcovMap[hname]->Fill(new_state->dcov()(i, j));
-      }
-    }
   }
 
   void L1KalmanComb::deleteStubClusters() {

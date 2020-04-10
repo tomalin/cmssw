@@ -4,8 +4,6 @@
 #include <vector>
 #include <utility>
 
-using namespace std;
-
 //=== L1 track base class
 //=== This is a pure virtual class containing no implemented functions or data members.
 //=== However, it declares functions that are common to the derived classes L1trackBase, L1track3D and L1fittedTrack,
@@ -25,7 +23,7 @@ namespace tmtt {
     //--- Get information about the reconstructed track.
 
     // Get stubs on track candidate.
-    virtual const vector<const Stub*>& getStubs() const = 0;
+    virtual const std::vector<const Stub*>& getStubs() const = 0;
     // Get number of stubs on track candidate.
     virtual unsigned int getNumStubs() const = 0;
     // Get number of tracker layers these stubs are in.
@@ -39,7 +37,7 @@ namespace tmtt {
     //virtual float   tanLambda()  const  = 0;
 
     //--- Cell locations of the track candidate in the r-phi Hough transform array in units of bin number.
-    virtual pair<unsigned int, unsigned int> getCellLocationHT() const = 0;
+    virtual std::pair<unsigned int, unsigned int> getCellLocationHT() const = 0;
 
     //--- Get phi sector and eta region used by track finding code that this track is in.
     virtual unsigned int iPhiSec() const = 0;
@@ -53,7 +51,7 @@ namespace tmtt {
     // Get matching tracking particle (=nullptr if none).
     virtual const TP* getMatchedTP() const = 0;
     // Get the matched stubs.
-    virtual const vector<const Stub*>& getMatchedStubs() const = 0;
+    virtual const std::vector<const Stub*>& getMatchedStubs() const = 0;
     // Get number of matched stubs.
     virtual unsigned int getNumMatchedStubs() const = 0;
     // Get number of tracker layers with matched stubs.

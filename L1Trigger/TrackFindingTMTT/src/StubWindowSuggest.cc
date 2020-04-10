@@ -4,6 +4,8 @@
 #include "DataFormats/DetId/interface/DetId.h"
 #include "FWCore/Utilities/interface/Exception.h"
 
+using namespace std;
+
 namespace tmtt {
 
   thread_local std::vector<double> StubWindowSuggest::barrelCut_;
@@ -35,10 +37,8 @@ namespace tmtt {
     if (stub->trackerGeometryVersion() >= 5) {  // Tilted barrel
       barrelNTilt_ = barrelNTilt_init;
     } else {
-      throw cms::Exception(
-          "StubWindowSuggest: the tracker geometry you are using is not yet known to StubWindowSuggest. Please update "
-          "constant barrelNTilt_T*_init inside it.")
-          << " Geometry=" << stub->trackerGeometryVersion() << endl;
+      throw cms::Exception("LogicError")<<
+          "StubWindowSuggest: the tracker geometry you are using is not yet known to StubWindowSuggest. Please update constant barrelNTilt_T*_init inside it. Geometry=" << stub->trackerGeometryVersion() << endl;
     }
 
     // This code should be kept almost identical to that in

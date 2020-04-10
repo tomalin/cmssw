@@ -6,6 +6,8 @@
 
 #include "FWCore/Utilities/interface/Exception.h"
 
+using namespace std;
+
 namespace tmtt {
 
   //=== Count number of tracker layers a given list of stubs are in.
@@ -41,7 +43,7 @@ namespace tmtt {
           if (layerID >= 0 && layerID < maxLayerID) {
             foundLayers[layerID] = true;
           } else {
-            throw cms::Exception("Utility::invalid layer ID");
+            throw cms::Exception("LogicError")<<"Utility::invalid layer ID"<<endl;
           }
         }
       }
@@ -55,7 +57,7 @@ namespace tmtt {
           if (layerID >= 0 && layerID < maxLayerID) {
             foundLayers[layerID] = true;
           } else {
-            throw cms::Exception("Utility::invalid layer ID");
+            throw cms::Exception("LogicError")<<"Utility::invalid layer ID"<<endl;
           }
         }
       }
@@ -192,7 +194,7 @@ namespace tmtt {
 
       return nLayCut;
     } else {
-      throw cms::Exception("Utility::numLayerCut() called with invalid algo argument!") << algo << endl;
+      throw cms::Exception("LogicError")<<"Utility::numLayerCut() called with invalid algo argument! " << algo << endl;
     }
   }
 

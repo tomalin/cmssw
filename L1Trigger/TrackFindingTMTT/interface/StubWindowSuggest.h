@@ -5,8 +5,6 @@
 
 #include <vector>
 
-using namespace std;
-
 class TrackerTopology;
 
 namespace tmtt {

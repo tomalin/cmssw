@@ -32,11 +32,13 @@ namespace tmtt {
   InputData::InputData(const edm::Event& iEvent,
                        const edm::EventSetup& iSetup,
                        Settings* settings,
-                       const edm::EDGetTokenT<TrackingParticleCollection> tpInputTag,
-                       const edm::EDGetTokenT<DetSetVec> stubInputTag,
-                       const edm::EDGetTokenT<TTStubAssMap> stubTruthInputTag,
-                       const edm::EDGetTokenT<TTClusterAssMap> clusterTruthInputTag,
-                       const edm::EDGetTokenT<reco::GenJetCollection> genJetInputTag) {
+		       const TrackerGeometry* trackerGeometry,
+		       const TrackerTopology* trackerTopology,
+                       const edm::EDGetTokenT<TrackingParticleCollection> tpToken,
+                       const edm::EDGetTokenT<TTStubDetSetVec> stubToken,
+                       const edm::EDGetTokenT<TTStubAssMap> stubTruthToken,
+                       const edm::EDGetTokenT<TTClusterAssMap> clusterTruthToken,
+                       const edm::EDGetTokenT<reco::GenJetCollection> genJetToken) {
     vTPs_.reserve(2500);
     vStubs_.reserve(35000);
     vAllStubs_.reserve(35000);
@@ -49,7 +51,7 @@ namespace tmtt {
     edm::Handle<TrackingParticleCollection> tpHandle;
 
     if (enableMCtruth_) {
-      iEvent.getByToken(tpInputTag, tpHandle);
+      iEvent.getByToken(tpToken, tpHandle);
 
       unsigned int tpCount = 0;
       for (unsigned int i = 0; i < tpHandle->size(); i++) {
@@ -63,7 +65,7 @@ namespace tmtt {
           // Only bother storing tp if it could be useful for tracking efficiency or fake rate measurements.
           if (tp.use()) {
             edm::Handle<reco::GenJetCollection> genJetHandle;
-            iEvent.getByToken(genJetInputTag, genJetHandle);
+            iEvent.getByToken(genJetToken, genJetHandle);
             if (genJetHandle.isValid()) {
               tp.fillNearestJetInfo(genJetHandle.product());
             }
@@ -86,33 +88,21 @@ namespace tmtt {
       }
     }
 
-    // Get the tracker geometry info needed to unpack the stub info.
-
-    edm::ESHandle<TrackerGeometry> trackerGeometryHandle;
-    iSetup.get<TrackerDigiGeometryRecord>().get(trackerGeometryHandle);
-
-    const TrackerGeometry* trackerGeometry = trackerGeometryHandle.product();
-
-    edm::ESHandle<TrackerTopology> trackerTopologyHandle;
-    iSetup.get<TrackerTopologyRcd>().get(trackerTopologyHandle);
-
-    const TrackerTopology* trackerTopology = trackerTopologyHandle.product();
-
     // Get stub info, by looping over modules and then stubs inside each module.
     // Also get the association map from stubs to tracking particles.
 
-    edm::Handle<DetSetVec> ttStubHandle;
+    edm::Handle<TTStubDetSetVec> ttStubHandle;
     edm::Handle<TTStubAssMap> mcTruthTTStubHandle;
     edm::Handle<TTClusterAssMap> mcTruthTTClusterHandle;
-    iEvent.getByToken(stubInputTag, ttStubHandle);
+    iEvent.getByToken(stubToken, ttStubHandle);
     if (enableMCtruth_) {
-      iEvent.getByToken(stubTruthInputTag, mcTruthTTStubHandle);
-      iEvent.getByToken(clusterTruthInputTag, mcTruthTTClusterHandle);
+      iEvent.getByToken(stubTruthToken, mcTruthTTStubHandle);
+      iEvent.getByToken(clusterTruthToken, mcTruthTTClusterHandle);
     }
 
     unsigned int stubCount = 0;
 
-    for (DetSetVec::const_iterator p_module = ttStubHandle->begin(); p_module != ttStubHandle->end(); p_module++) {
+    for (TTStubDetSetVec::const_iterator p_module = ttStubHandle->begin(); p_module != ttStubHandle->end(); p_module++) {
       for (DetSet::const_iterator p_ttstub = p_module->begin(); p_ttstub != p_module->end(); p_ttstub++) {
         TTStubRef ttStubRef = edmNew::makeRefTo(ttStubHandle, p_ttstub);
 

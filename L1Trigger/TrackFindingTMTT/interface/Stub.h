@@ -27,8 +27,6 @@
 #include <map>
 #include <atomic>
 
-using namespace std;
-
 class TrackerGeometry;
 class TrackerTopology;
 // class DetId;
@@ -37,10 +35,9 @@ namespace tmtt {
 
   class TP;
 
-  // typedef edm::Ref< edm::DetSetVector< Phase2TrackerDigi >, Phase2TrackerDigi > Ref_Phase2TrackerDigi_;
-  typedef edmNew::DetSetVector<TTStub<Ref_Phase2TrackerDigi_> > DetSetVec;
+  typedef edmNew::DetSetVector<TTStub<Ref_Phase2TrackerDigi_> > TTStubDetSetVec;
   typedef edmNew::DetSet<TTStub<Ref_Phase2TrackerDigi_> > DetSet;
-  typedef edm::Ref<DetSetVec, TTStub<Ref_Phase2TrackerDigi_> > TTStubRef;
+  typedef edm::Ref<TTStubDetSetVec, TTStub<Ref_Phase2TrackerDigi_> > TTStubRef;
   typedef edm::Ref<edmNew::DetSetVector<TTCluster<Ref_Phase2TrackerDigi_> >, TTCluster<Ref_Phase2TrackerDigi_> >
       TTClusterRef;
   typedef TTStubAssociationMap<Ref_Phase2TrackerDigi_> TTStubAssMap;
@@ -77,8 +74,8 @@ namespace tmtt {
     bool operator==(const Stub& stubOther) { return (this->index() == stubOther.index()); }
 
     // Fill truth info with association from stub to tracking particles.
-    // The 1st argument is a map relating TrackingParticles to TP.
-    void fillTruth(const map<edm::Ptr<TrackingParticle>, const TP*>& translateTP,
+    // The 1st argument is a std::map relating TrackingParticles to TP.
+    void fillTruth(const std::map<edm::Ptr<TrackingParticle>, const TP*>& translateTP,
                    const edm::Handle<TTStubAssMap>& mcTruthTTStubHandle,
                    const edm::Handle<TTClusterAssMap>& mcTruthTTClusterHandle);
 
@@ -99,7 +96,7 @@ namespace tmtt {
 
     // Digitize stub for input to r-z Seed Filter or Track Fitter.
     // Argument is "SeedFilter" or name of Track Fitter.
-    void digitizeForSForTFinput(string SForTF);
+    void digitizeForSForTFinput(std::string SForTF);
 
     // Digitize stub for input to Duplicate Removal .
     void digitizeForDRinput(unsigned int stubId);
@@ -131,7 +128,7 @@ namespace tmtt {
     // Access to booleans indicating if the stub has been digitized.
     bool digitizedForGPinput() const { return digitizedForGPinput_; }
     bool digitizedForHTinput() const { return digitizedForHTinput_; }
-    string digitizedForSForTFinput() const {
+    std::string digitizedForSForTFinput() const {
       return digitizedForSForTFinput_;
     }  // Returns which SF or TF digitisation was done for, if any.
     bool digitizedForDRinput() const { return digitizedForDRinput_; }
@@ -164,7 +161,7 @@ namespace tmtt {
     float beta() const { return (phi_ + dphi()); }
     // Estimated phi angle at which track intercepts a given radius rad, based on stub bend info. Also estimate uncertainty on this angle due to endcap 2S module strip length.
     // This is identical to beta() if rad=0.
-    pair<float, float> trkPhiAtR(float rad) const;
+    std::pair<float, float> trkPhiAtR(float rad) const;
     // Estimated resolution in trkPhiAtR(rad) based on nominal stub bend resolution.
     float trkPhiAtRres(float rad) const { return this->dphiRes() * fabs(1 - rad / r_); }
     // Difference in phi between stub and angle at which track crosses given radius, assuming track has given Pt.
@@ -184,8 +181,8 @@ namespace tmtt {
 
     //--- Info about the two clusters that make up the stub.
     // Coordinates in frame of sensor, measured in units of strip pitch along two orthogonal axes running perpendicular and parallel to longer axis of pixels/strips (U & V).
-    array<float, 2> localU_cluster() const { return localU_cluster_; }
-    array<float, 2> localV_cluster() const { return localV_cluster_; }
+    std::array<float, 2> localU_cluster() const { return localU_cluster_; }
+    std::array<float, 2> localV_cluster() const { return localV_cluster_; }
 
     //--- Check if this stub will be output by front-end readout electronics,
     //--- (where we can reconfigure the stub window size and rapidity cut).
@@ -254,7 +251,7 @@ namespace tmtt {
     //--- Truth info
 
     // Association of stub to tracking particles
-    const set<const TP*>& assocTPs() const {
+    const std::set<const TP*>& assocTPs() const {
       return assocTPs_;
     }  // Return TPs associated to this stub. (Whether only TPs contributing to both clusters are returned is determined by "StubMatchStrict" config param.)
     bool genuine() const { return (assocTPs_.size() > 0); }  // Did stub match at least one TP?
@@ -263,10 +260,10 @@ namespace tmtt {
     }  // If only one TP contributed to both clusters, this tells you which TP it is. Returns nullptr if none.
 
     // Association of both clusters making up stub to tracking particles
-    array<bool, 2> genuineCluster() const {
-      return array<bool, 2>{{(assocTPofCluster_[0] != nullptr), (assocTPofCluster_[1] != nullptr)}};
+    std::array<bool, 2> genuineCluster() const {
+      return std::array<bool, 2>{{(assocTPofCluster_[0] != nullptr), (assocTPofCluster_[1] != nullptr)}};
     }  // Was cluster produced by a single TP?
-    array<const TP*, 2> assocTPofCluster() const {
+    std::array<const TP*, 2> assocTPofCluster() const {
       return assocTPofCluster_;
     }  // Which TP made each cluster. Warning: If cluster was not produced by a single TP, then returns nullptr! (P.S. If both clusters match same TP, then this will equal assocTP()).
 
@@ -306,12 +303,12 @@ namespace tmtt {
     // No HT firmware can access directly the stub bend info.
     void check1() const {
       if (digitizeWarningsOn_ && digitizedForHTinput_)
-        throw cms::Exception("Stub: You can't access digitized bend variable within HT firmware!");
+        throw cms::Exception("LogicError")<<"Stub: You can't access digitized bend variable within HT firmware!"<<std::endl;
     }
     // If using daisy-chain firmware, then it makes no sense to access the digiitzed values of dphi within HT.
     void check2() const {
       if (digitizeWarningsOn_ && digitizedForHTinput_)
-        throw cms::Exception("Stub: You can't access digitized dphi within the HT or KF!");
+        throw cms::Exception("LogicError")<<"Stub: You can't access digitized dphi within the HT or KF!"<<std::endl;
     }
 
   private:
@@ -332,8 +329,8 @@ namespace tmtt {
     unsigned int max_qOverPt_bin_;
 
     //--- Info about the two clusters that make up the stub.
-    array<float, 2> localU_cluster_;
-    array<float, 2> localV_cluster_;
+    std::array<float, 2> localU_cluster_;
+    std::array<float, 2> localV_cluster_;
 
     //--- Parameters common to all stubs in a given module.
     DetId idDet_;
@@ -363,9 +360,9 @@ namespace tmtt {
     bool outerModuleAtSmallerR_;
     //--- Truth info about stub.
     const TP* assocTP_;
-    set<const TP*> assocTPs_;
+    std::set<const TP*> assocTPs_;
     //--- Truth info about the two clusters that make up the stub
-    array<const TP*, 2> assocTPofCluster_;
+    std::array<const TP*, 2> assocTPofCluster_;
 
     // Would front-end electronics output this stub?
     bool frontendPass_;
@@ -379,8 +376,7 @@ namespace tmtt {
     DigitalStub digitalStub_;   // Class used to digitize stub if required.
     bool digitizedForGPinput_;  // Has this stub been digitized for GP input?
     bool digitizedForHTinput_;  // Has this stub been digitized for HT input?
-    string
-        digitizedForSForTFinput_;  // Has this stub been digitized for seed filter or track fitter input? If so, this was its name.
+    std::string digitizedForSForTFinput_;  // Has this stub been digitized for seed filter or track fitter input? If so, this was its name.
     bool digitizedForDRinput_;  // Has this stub been digitized for seed filter input?
     bool digitizeWarningsOn_;   // Enable warnings about accessing non-digitized quantities.
 

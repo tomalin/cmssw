@@ -3,7 +3,6 @@
 ///=== Written by: Sioni Summers and Alexander D. Morton
 
 #include "L1Trigger/TrackFindingTMTT/interface/L1ChiSquared.h"
-#include "L1Trigger/TrackFindingTMTT/interface/Matrix.h"
 #include "L1Trigger/TrackFindingTMTT/interface/Stub.h"
 #include "L1Trigger/TrackFindingTMTT/interface/L1fittedTrack.h"
 #include "L1Trigger/TrackFindingTMTT/interface/L1track3D.h"
@@ -15,16 +14,8 @@
 
 namespace tmtt {
 
-  template <typename T>
-  std::vector<T> operator-(const std::vector<T>& a, const std::vector<T>& b) {
-    assert(a.size() == b.size());
-    std::vector<T> result;
-    result.reserve(a.size());
-    std::transform(a.begin(), a.end(), b.begin(), std::back_inserter(result), std::minus<T>());
-    return result;
-  }
-
   L1ChiSquared::L1ChiSquared(const Settings* settings, const uint nPar) : TrackFitGeneric(settings), chiSq_(0.0) {
+
     // Bad stub killing settings
     numFittingIterations_ = getSettings()->numTrackFitIterations();
     killTrackFitWorstHit_ = getSettings()->killTrackFitWorstHit();
@@ -37,7 +28,7 @@ namespace tmtt {
     nPar_ = nPar;
   }
 
-  void L1ChiSquared::calculateChiSq(std::vector<double> resids) {
+  void L1ChiSquared::calculateChiSq(const TVectorD& resids) {
     chiSq_ = 0.0;
     uint j = 0;
     for (uint i = 0; i < stubs_.size(); i++) {
@@ -46,8 +37,8 @@ namespace tmtt {
     }
   }
 
-  void L1ChiSquared::calculateDeltaChiSq(std::vector<double> delX, std::vector<double> covX) {
-    for (uint i = 0; i < covX.size(); i++) {
+  void L1ChiSquared::calculateDeltaChiSq(const TVectorD& delX, const TVectorD& covX) {
+    for (int i = 0; i < covX.GetNrows(); i++) {
       chiSq_ += (-delX[i]) * covX[i];
     }
   }
@@ -59,35 +50,28 @@ namespace tmtt {
     minStubLayersRed_ = Utility::numLayerCut(
         "FIT", getSettings(), l1track3D.iPhiSec(), l1track3D.iEtaReg(), fabs(l1track3D.qOverPt()), l1track3D.eta());
 
-    std::vector<double> x = seed(l1track3D);
+    TVectorD x = seed(l1track3D);
 
-    Matrix<double> d = D(x);
-    Matrix<double> dtVinv = d.transpose() * Vinv();
-    //  Matrix<double> M = dtVinv * d;
-    Matrix<double> M = dtVinv * (dtVinv.transpose());  //TODO this match tracklet code, but not literature:w
+    for (int i = 0; i < numFittingIterations_; i++) {
 
-    std::vector<double> resids = residuals(x);
-    //  std::cout << "resids.size(): " << resids.size() << std::endl;
-    std::vector<double> deltaX = M.inverse() * dtVinv * resids;
-    x = x - deltaX;
-    std::vector<double> covX = d.transpose() * Vinv() * resids;
+      TMatrixD d = D(x);
+      TMatrixD dTrans(TMatrixD::kTransposed, d);
+      TMatrixD dtVinv = dTrans * Vinv();
+      TMatrixD dtVinvTrans(TMatrixD::kTransposed, dtVinv);
+      //  TMatrixD M = dtVinv * d;
+      TMatrixD M = dtVinv * dtVinvTrans;  //TODO this match tracklet code, but not literature!
+      TMatrixD Minv(TMatrixD::kInverted, M);
+      TVectorD resids = residuals(x);
+      TVectorD deltaX = Minv * dtVinv * resids;
+      x = x - deltaX;
+      TVectorD covX = dTrans * Vinv() * resids;
+      calculateChiSq(resids);
+      calculateDeltaChiSq(deltaX, covX);
 
-    calculateChiSq(resids);
-    calculateDeltaChiSq(deltaX, covX);
-    resids = residuals(x);  // update resids.
+      if (i < numFittingIterations_ - 1) { // Don't kill stub if will not refit.
 
-    for (int i = 1; i < numFittingIterations_ + 1; ++i) {
-      if (i > 1) {
-        /*
-      // Original buggy code of 18th April 2018
-      if ( killTrackFitWorstHit_  &&  (largestresid_ > killingResidualCut_ || (largestresid_ > generalResidualCut_ && Utility::countLayers( getSettings(), stubs_ ) > minStubLayersRed_)) ) {
-	cout<<"RATS KILLED STUB "<<largestresid_<<" > "<<killingResidualCut_<<" or "<<generalResidualCut_<<" ; "<<Utility::countLayers( getSettings(), stubs_ )<<" > "<<minStubLayersRed_<<endl;
-        stubs_.erase(stubs_.begin()+ilargestresid_);
-        if (getSettings()->debug() == 6) std::cout << __FILE__ " : Killed stub " << ilargestresid_ << "." << std::endl;
-      }
-      */
+	resids = residuals(x);  // update resids & largestresid_
 
-        // IRT - Debugged code of 19th April 2018
         bool killWorstStub = false;
         if (killTrackFitWorstHit_) {
           if (largestresid_ > killingResidualCut_) {
@@ -128,23 +112,11 @@ namespace tmtt {
                                  4,
                                  valid);
           }
+	} else {
+	  break;
         }
-
-        d = D(x);  // Calculate derivatives
-        dtVinv = d.transpose() * Vinv();
-        M = dtVinv * (dtVinv.transpose());
-        resids = residuals(x);  // Calculate new residuals
-        std::vector<double> deltaX = M.inverse() * dtVinv * resids;
-        x = x - deltaX;
-        std::vector<double> covX = d.transpose() * Vinv() * resids;
-        resids = residuals(x);  // update resids.
-
-        calculateChiSq(resids);
-        calculateDeltaChiSq(deltaX, covX);
       }
     }
-
-    std::map<std::string, double> tp = convertParams(x);  // tp = track params
 
     // Reject tracks with too many killed stubs
     unsigned int nLayers = Utility::countLayers(getSettings(), stubs_);  // Count tracker layers with stubs
@@ -156,11 +128,11 @@ namespace tmtt {
                            l1track3D,
                            stubs_,
                            hitPattern,
-                           tp["qOverPt"],
+                           x[INVR]/(getSettings()->invPtToInvR()),
                            0,
-                           tp["phi0"],
-                           tp["z0"],
-                           tp["t"],
+                           x[PHI0],
+                           x[Z0],
+                           x[T],
                            chiSq_,
                            nPar_,
                            valid4par);

@@ -10,56 +10,35 @@ namespace tmtt {
     ilargestresid_ = -1;
   }
 
-  std::map<std::string, double> ChiSquared4ParamsApprox::vecToMap(std::vector<double> x) {
-    // Convert a vector of track parameters to a labelled map for ease of use
-    std::map<std::string, double> result;
-    result["rInv"] = x[0];
-    result["phi0"] = x[1];
-    result["t"] = x[2];
-    result["z0"] = x[3];
-    return result;
-  }
-
-  std::vector<double> ChiSquared4ParamsApprox::mapToVec(std::map<std::string, double> x) {
-    // Conevrt the map of labelled track parameters to a vector (in correct order)
-    std::vector<double> result;
-    result.resize(4);
-    result[0] = x["rInv"];
-    result[1] = x["phi0"];
-    result[2] = x["t"];
-    result[3] = x["z0"];
-    return result;
-  }
-
-  std::vector<double> ChiSquared4ParamsApprox::seed(const L1track3D& l1track3D) {
+  TVectorD ChiSquared4ParamsApprox::seed(const L1track3D& l1track3D) {
     /* Cheat by using MC trutth to initialize helix parameters. Useful to check if conevrgence is the problem */
-    std::map<std::string, double> x;
-    x["rInv"] = getSettings()->invPtToInvR() * l1track3D.qOverPt();
-    x["phi0"] = l1track3D.phi0();
-    x["z0"] = l1track3D.z0();
-    x["t"] = l1track3D.tanLambda();
-    return mapToVec(x);
+    TVectorD x(4);
+    x[INVR] = getSettings()->invPtToInvR() * l1track3D.qOverPt();
+    x[PHI0] = l1track3D.phi0();
+    x[T] = l1track3D.tanLambda();
+    x[Z0] = l1track3D.z0();
+    return x;
   }
 
-  Matrix<double> ChiSquared4ParamsApprox::D(std::vector<double> x) {
-    Matrix<double> D(2 * stubs_.size(), nPar_, 0.0);  // Empty matrix
+  TMatrixD ChiSquared4ParamsApprox::D(const TVectorD& x) {
+    TMatrixD D(2 * stubs_.size(), nPar_);  // Empty matrix
+    D.Zero();
     int j = 0;
-    std::map<std::string, double> y = vecToMap(x);  // Get the track params by label
-    double rInv = y["rInv"];
-    double phi0 = y["phi0"];
-    double t = y["t"];
+    double rInv = x[INVR];
+    double phi0 = x[PHI0];
+    double t = x[T];
     for (unsigned i = 0; i < stubs_.size(); i++) {
       double ri = stubs_[i]->r();
       if (stubs_[i]->barrel()) {
-        D(j, 0) = -0.5 * ri * ri;  // Fine for now;
-        D(j, 1) = ri;              // Fine
-        //D(j, 2);
-        //D(j, 3);
+        D(j, INVR) = -0.5 * ri * ri;  // Fine for now;
+        D(j, PHI0) = ri;              // Fine
+        //D(j, T);
+        //D(j, Z0);
         j++;
-        //D(j, 0)
-        //D(j, 1)
-        D(j, 2) = ri;  // ri; // Fine for now
-        D(j, 3) = 1;   // Fine
+        //D(j, INVR)
+        //D(j, PHI0)
+        D(j, T) = ri;  // ri; // Fine for now
+        D(j, Z0) = 1;   // Fine
         j++;
       } else {
         //here we handle a disk hit
@@ -83,24 +62,24 @@ namespace tmtt {
 
         double tInv = 1 / t;
 
-        D(j, 0) = -0.167 * ri * ri * ri * rInv;  // Tweaking of constant?
-        D(j, 1) = 0;                             // Exact
-        D(j, 2) = -ri * tInv;                    // Fine;
-        D(j, 3) = -1 * tInv;                     // Fine
+        D(j, INVR) = -0.167 * ri * ri * ri * rInv;  // Tweaking of constant?
+        D(j, PHI0) = 0;                             // Exact
+        D(j, T) = -ri * tInv;                    // Fine;
+        D(j, Z0) = -1 * tInv;                     // Fine
         j++;
         //second the rphi position
-        D(j, 0) = -0.5 * ri * ri;  // Needs fine tuning, was (phimultiplier*-0.5*(zi-z0)/t+rmultiplier*drdrinv);
-        D(j, 1) = ri;              // Fine, originally phimultiplier
-        D(j, 2) = ri * 0.5 * rInv * ri * tInv - ((phi_track - phii) - theta0) * ri * tInv;
-        D(j, 3) = ri * 0.5 * rInv * tInv - ((phi_track - phii) - theta0) * tInv;
+        D(j, INVR) = -0.5 * ri * ri;  // Needs fine tuning, was (phimultiplier*-0.5*(zi-z0)/t+rmultiplier*drdrinv);
+        D(j, PHI0) = ri;              // Fine, originally phimultiplier
+        D(j, T) = ri * 0.5 * rInv * ri * tInv - ((phi_track - phii) - theta0) * ri * tInv;
+        D(j, Z0) = ri * 0.5 * rInv * tInv - ((phi_track - phii) - theta0) * tInv;
         j++;
       }
     }
     return D;
   }
 
-  Matrix<double> ChiSquared4ParamsApprox::Vinv() {
-    Matrix<double> Vinv(2 * stubs_.size(), 2 * stubs_.size(), 0.0);
+  TMatrixD ChiSquared4ParamsApprox::Vinv() {
+    TMatrixD Vinv(2 * stubs_.size(), 2 * stubs_.size());
     for (unsigned i = 0; i < stubs_.size(); i++) {
       if (stubs_[i]->barrel()) {
         Vinv(2 * i, 2 * i) = 1 / stubs_[i]->sigmaX();
@@ -113,17 +92,15 @@ namespace tmtt {
     return Vinv;
   }
 
-  std::vector<double> ChiSquared4ParamsApprox::residuals(std::vector<double> x) {
+  TVectorD ChiSquared4ParamsApprox::residuals(const TVectorD& x) {
     unsigned int n = stubs_.size();
 
-    std::vector<double> delta;
-    delta.resize(2 * n);
+    TVectorD delta(2*n);
 
-    std::map<std::string, double> trackParams = vecToMap(x);  // Get the track params by label
-    double rInv = trackParams["rInv"];
-    double phi0 = trackParams["phi0"];
-    double t = trackParams["t"];
-    double z0 = trackParams["z0"];
+    double rInv = x[INVR];
+    double phi0 = x[PHI0];
+    double t = x[T];
+    double z0 = x[Z0];
 
     double chiSq = 0.0;
 
@@ -206,16 +183,6 @@ namespace tmtt {
     }
 
     return delta;
-  }
-
-  std::map<std::string, double> ChiSquared4ParamsApprox::convertParams(std::vector<double> x) {
-    std::map<std::string, double> y = vecToMap(x);  // Get track parameters by label
-    std::map<std::string, double> result;
-    result["qOverPt"] = y["rInv"] / getSettings()->invPtToInvR();
-    result["phi0"] = y["phi0"];
-    result["z0"] = y["z0"];
-    result["t"] = y["t"];
-    return result;
   }
 
 }  // namespace tmtt

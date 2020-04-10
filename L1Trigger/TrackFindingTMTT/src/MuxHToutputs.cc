@@ -9,6 +9,8 @@
 
 #include <atomic>
 
+using namespace std;
+
 namespace tmtt {
 
   //=== Initialize constants from configuration parameters.
@@ -28,11 +30,11 @@ namespace tmtt {
   {
     // Implemented MUX algorithm relies on same number of sectors per nonant.
     if (numPhiSectors_ % numPhiNonants_ != 0)
-      throw cms::Exception("MuxHToutputs: Number of phi sectors is not a multiple of number of nonants!");
+      throw cms::Exception("BadConfig")<<"MuxHToutputs: Number of phi sectors is not a multiple of number of nonants!"<<endl;
 
     if (!busySectorUseMbinRanges_)
-      throw cms::Exception(
-          "MuxHToutputs: The implemented MUX algorithm requires you to be using the busySectorMbinRanges cfg option!");
+      throw cms::Exception("BadConfig")<<
+	"MuxHToutputs: The implemented MUX algorithm requires you to be using the busySectorMbinRanges cfg option!"<<endl;
 
     // Check that the MUX algorithm implemented in linkID() is not obviously wrong.
     this->sanityCheck();
@@ -125,7 +127,7 @@ namespace tmtt {
         link += 3 * iSecInNon;                     // In range 0 to (3*numPhiSecPerNon - 1)
         link += 3 * numPhiSecPerNon_ * mBinRange;  // In range 0 to (3*numPhiSecsPerNon*numMbinRanges - 1)
       } else {
-        throw cms::Exception("MuxHToutputs: MUX algorithm only implemented for 18 eta sectors!");
+        throw cms::Exception("BadConfig")<<"MuxHToutputs: MUX algorithm only implemented for 18 eta sectors!"<<endl;
       }
 
     } else if (muxOutputsHT_ == 2) {
@@ -158,11 +160,11 @@ namespace tmtt {
       link += mBinRange;
 
     } else {
-      throw cms::Exception("MuxHToutputs: Unknown MuxOutputsHT configuration option!");
+	throw cms::Exception("BadConfig")<<"MuxHToutputs: Unknown MuxOutputsHT configuration option!"<<endl;
     }
 
     if (link >= this->numLinksPerNonant())
-      throw cms::Exception("MuxHToutputs: Calculated link ID exceeded expected number of links! ")
+      throw cms::Exception("LogicError")<<"MuxHToutputs: Calculated link ID exceeded expected number of links! "
           << link << " " << this->numLinksPerNonant() << endl;
     return link;
   }
@@ -171,7 +173,7 @@ namespace tmtt {
 
   void MuxHToutputs::sanityCheck() {
     if (numPhiSecPerNon_ * numEtaRegions_ % this->muxFactor() != 0)
-      throw cms::Exception("MuxHToutputs: Number of sectors per phi nonant is not a multiple of muxFactor().");
+      throw cms::Exception("LogicError")<<"MuxHToutputs: Number of sectors per phi nonant is not a multiple of muxFactor()."<<endl;
 
     vector<unsigned int> nObsElementsPerLink(this->numLinksPerNonant(), 0);
     for (unsigned int iSecInNon = 0; iSecInNon < numPhiSecPerNon_; iSecInNon++) {
@@ -184,11 +186,11 @@ namespace tmtt {
         }
       }
     }
-    for (const unsigned int& n : nObsElementsPerLink) {
+    //for (const unsigned int& n : nObsElementsPerLink) {
       // Assume good algorithms will distribute sectors & m-bin ranges equally across links.
       // IRT
-      //    if (n != this->muxFactor()) throw cms::Exception("MuxHToutputs: MUX algorithm is not assigning equal numbers of elements per link! ")<<n<<" "<<this->muxFactor()<<endl;
-    }
+      //    if (n != this->muxFactor()) throw cms::Exception("LogicError")<<"MuxHToutputs: MUX algorithm is not assigning equal numbers of elements per link! "<<n<<" "<<this->muxFactor()<<endl;
+    //}
   }
 
 }  // namespace tmtt

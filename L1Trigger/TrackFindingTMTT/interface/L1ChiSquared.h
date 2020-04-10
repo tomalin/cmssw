@@ -5,11 +5,12 @@
 #ifndef L1Trigger_TrackFindingTMTT_L1ChiSquared_h
 #define L1Trigger_TrackFindingTMTT_L1ChiSquared_h
 
-#include "L1Trigger/TrackFindingTMTT/interface/Matrix.h"
 #include "L1Trigger/TrackFindingTMTT/interface/Stub.h"
 #include "L1Trigger/TrackFindingTMTT/interface/TrackFitGeneric.h"
 #include "L1Trigger/TrackFindingTMTT/interface/Settings.h"
 #include "L1Trigger/TrackFindingTMTT/interface/L1track3D.h"
+#include <TMatrixD.h>
+#include <TVectorD.h>
 #include <vector>
 #include <map>
 #include <utility>
@@ -17,32 +18,33 @@
 namespace tmtt {
 
   class L1ChiSquared : public TrackFitGeneric {
+
+  public:
+    enum PAR_IDS { INVR, PHI0, T, Z0, D0 };
+
   public:
     L1ChiSquared(const Settings* settings, const uint nPar);
-
-    virtual ~L1ChiSquared() {}
 
     L1fittedTrack fit(const L1track3D& l1track3D);
 
   protected:
     /* Methods */
-    virtual std::vector<double> seed(const L1track3D& l1track3D) = 0;
-    virtual std::vector<double> residuals(std::vector<double> x) = 0;
-    virtual Matrix<double> D(std::vector<double> x) = 0;  // derivatives
-    virtual Matrix<double> Vinv() = 0;                    // Covariances
-    virtual std::map<std::string, double> convertParams(std::vector<double> x) = 0;
+    virtual TVectorD seed(const L1track3D& l1track3D) = 0;
+    virtual TVectorD residuals(const TVectorD& x) = 0; // Stub residuals/uncertainty
+    virtual TMatrixD D(const TVectorD& x) = 0;  // derivatives
+    virtual TMatrixD Vinv() = 0;                    // Covariances
 
     /* Variables */
     std::vector<const Stub*> stubs_;
-    std::map<std::string, double> trackParams_;
+    TVectorD trackParams_;
     uint nPar_;
     float largestresid_;
     int ilargestresid_;
     double chiSq_;
 
   private:
-    void calculateChiSq(std::vector<double> resids);
-    void calculateDeltaChiSq(std::vector<double> deltaX, std::vector<double> covX);
+    void calculateChiSq(const TVectorD& resids);
+    void calculateDeltaChiSq(const TVectorD& deltaX, const TVectorD& covX);
 
     int numFittingIterations_;
     int killTrackFitWorstHit_;

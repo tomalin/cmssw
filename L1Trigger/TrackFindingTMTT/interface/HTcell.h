@@ -10,8 +10,6 @@
 #include <algorithm>
 #include <utility>
 
-using namespace std;
-
 //=== A single cell in a Hough Transform array.
 
 namespace tmtt {
@@ -21,8 +19,9 @@ namespace tmtt {
 
   class HTcell {
   public:
-    HTcell() {}
-    ~HTcell() {}
+
+    // Null constructor.
+    HTcell() : settings_(nullptr), iPhiSec_(0), iEtaReg_(0), etaMinSector_(0), etaMaxSector_(0), qOverPtCell_(0), ibin_qOverPt_(0), mergedCell_(false), miniHTcell_(false), invPtToDphi_(0), useBendFilter_(false), maxStubsInCell_(0), numSubSecs_(0), numFilteredLayersInCell_(0), numFilteredLayersInCellBestSubSec_(0) {}
 
     // Initialization with cfg params,
     // sector number, rapidity range of current sector, estimated q/Pt of cell,
@@ -42,11 +41,11 @@ namespace tmtt {
     void store(const Stub* stub) { vStubs_.push_back(stub); }
 
     // Add stub to this cell in HT array, indicating also which subsectors within the sector is consistent with.
-    void store(const Stub* stub, const vector<bool>& inSubSecs) {
+    void store(const Stub* stub, const std::vector<bool>& inSubSecs) {
       this->store(stub);
       subSectors_[stub] = inSubSecs;
       if (inSubSecs.size() != numSubSecs_)
-        throw cms::Exception("HTcell: Wrong number of subsectors!");
+        throw cms::Exception("LogicError")<<"HTcell: Wrong number of subsectors!"<<std::endl;
     }
 
     // Termination. Search for track in this HT cell etc.
@@ -62,7 +61,7 @@ namespace tmtt {
     //=== If no filters were requested, they are identical to the unfiltered stubs.)
 
     // Get filtered stubs in this cell in HT array.
-    const vector<const Stub*>& stubs() const { return vFilteredStubs_; }
+    const std::vector<const Stub*>& stubs() const { return vFilteredStubs_; }
 
     // Check if a specific stub is in this cell and survived filtering.
     bool stubInCell(const Stub* stub) const {
@@ -108,11 +107,11 @@ namespace tmtt {
     float dphi(float rad) const { return (invPtToDphi_ * rad * qOverPtCell_); }
 
     // Produce a filtered collection of stubs in this cell that all have consistent bend
-    vector<const Stub*> bendFilter(const vector<const Stub*>& stubs) const;
+    std::vector<const Stub*> bendFilter(const std::vector<const Stub*>& stubs) const;
 
     // Filter stubs so as to prevent more than specified number of stubs being stored in one cell.
     // This reflects finite memory of hardware.
-    vector<const Stub*> maxStubCountFilter(const vector<const Stub*>& stubs) const;
+    std::vector<const Stub*> maxStubCountFilter(const std::vector<const Stub*>& stubs) const;
 
   private:
     //=== Configuration parameters
@@ -147,15 +146,14 @@ namespace tmtt {
 
     //=== data
 
-    vector<const Stub*> vStubs_;  // Stubs in this cell
-    vector<const Stub*>
+    std::vector<const Stub*> vStubs_;  // Stubs in this cell
+    std::vector<const Stub*>
         vFilteredStubs_;  // Stubs in cell selected by applying all requested stub filters (e.g. bend and/or eta filter ...)
 
     unsigned int numFilteredLayersInCell_;  // How many tracker layers these filtered stubs are in
-    unsigned int
-        numFilteredLayersInCellBestSubSec_;  // Ditto, but requiring all stubs to be in same subsector to be counted. This number is the highest layer count found in any of the subsectors in this sector.
+    unsigned int numFilteredLayersInCellBestSubSec_;  // Ditto, but requiring all stubs to be in same subsector to be counted. This number is the highest layer count found in any of the subsectors in this sector.
 
-    map<const Stub*, vector<bool>>
+    std::map<const Stub*, std::vector<bool>>
         subSectors_;  // Indicate which subsectors within the sector this stub is consistent with.
   };
 

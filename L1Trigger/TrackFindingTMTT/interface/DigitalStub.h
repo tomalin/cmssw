@@ -4,8 +4,6 @@
 #include "FWCore/Utilities/interface/Exception.h"
 #include <math.h>
 
-using namespace std;
-
 //=== Used to digitize stubs both for input to GP and for input to HT.
 //=== N.B. After constructing an object of type DigitalStub, you must call functions
 //=== init() and make() before you try using any of the other functions to access digitized stub info.
@@ -57,7 +55,7 @@ namespace tmtt {
 
     // Digitize stub for input to r-z Seed Filter or Track Fitter.
     // Argument is "SeedFilter" or name of Track Fitter.
-    void makeSForTFinput(string SForTF);
+    void makeSForTFinput(std::string SForTF);
 
     void makeDRinput(unsigned int stubId);
 
@@ -233,25 +231,25 @@ namespace tmtt {
     // Check that makeGPinput() or makeHTinput() are called before accessing digitized stub info.
     void okGP() const {
       if (!ranMakeGPinput_)
-        throw cms::Exception("DigitalStub: You forgot to call makeGPinput() or makeHTinput()!");
+        throw cms::Exception("LogicError")<<"DigitalStub: You forgot to call makeGPinput() or makeHTinput()!"<<std::endl;
     }
     void okHT() const {
       if (!ranMakeHTinput_)
-        throw cms::Exception("DigitalStub: You forgot to call makeGPinput() or makeHTinput()!");
+        throw cms::Exception("LogicError")<<"DigitalStub: You forgot to call makeGPinput() or makeHTinput()!"<<std::endl;
     }
     void okSForTF() const {
       if (ranMakeSForTFinput_ == "")
-        throw cms::Exception("DigitalStub: You forgot to call makeSForTFinput()!");
+        throw cms::Exception("LogicError")<<"DigitalStub: You forgot to call makeSForTFinput()!"<<std::endl;
     }
     void okDR() const {
       if (!ranMakeDRinput_)
-        throw cms::Exception("DigitalStub: You forgot to call makeDRinput()!");
+        throw cms::Exception("LogicError")<<"DigitalStub: You forgot to call makeDRinput()!"<<std::endl;
     }
 
     // Check that init() is called before accessing original pre-digitization variables.
     void okin() const {
       if (!ranInit_)
-        throw cms::Exception("DigitalStub: You forgot to call init()!");
+        throw cms::Exception("LogicError")<<"DigitalStub: You forgot to call init()!"<<std::endl;
     }
 
   private:
@@ -259,7 +257,7 @@ namespace tmtt {
     bool ranInit_;
     bool ranMakeGPinput_;
     bool ranMakeHTinput_;
-    string ranMakeSForTFinput_;
+    std::string ranMakeSForTFinput_;
     bool ranMakeDRinput_;
     //--- configuration
 

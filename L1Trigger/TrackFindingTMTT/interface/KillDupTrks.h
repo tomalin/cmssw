@@ -14,8 +14,6 @@
 #include "FWCore/Utilities/interface/Exception.h"
 #include <gsl/gsl_fit.h>
 
-using namespace std;
-
 /**
 *  Kill duplicate reconstructed tracks.
 *  e.g. Those sharing many hits in common.
@@ -59,7 +57,7 @@ namespace tmtt {
     /**
   *  Eliminate duplicate tracks from the input collection, and so return a reduced list of tracks.
   */
-    vector<T> filter(const vector<T>& vecTracks) const;
+    std::vector<T> filter(const std::vector<T>& vecTracks) const;
 
   private:
     /**
@@ -68,7 +66,7 @@ namespace tmtt {
   *  Implementing "inverse" OSU algorithm, check for stubs in common,
   *  keep largest candidates if common stubs in N or more layers (default 5 at present), both if equal
   */
-    vector<T> filterAlg8(const vector<T>& vecTracks) const;
+    std::vector<T> filterAlg8(const std::vector<T>& vecTracks) const;
 
     /** Implementing "inverse" OSU algorithm, check for layers in common, reverse order as per Luis's suggestion
    * Comparison window of up to 6
@@ -76,7 +74,7 @@ namespace tmtt {
    * Check if N or more common layers (default 5 at present)
    * Then keep candidate with most stubs, use |q/pT| as tie-break, finally drop "latest" if still equal
    */
-    vector<T> filterAlg25(const vector<T>& vecTracks) const;
+    std::vector<T> filterAlg25(const std::vector<T>& vecTracks) const;
 
     /**
   *  Prints out a consistently formatted formatted report of killed duplicate track

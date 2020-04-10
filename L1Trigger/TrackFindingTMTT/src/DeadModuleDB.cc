@@ -1,6 +1,8 @@
 #include <L1Trigger/TrackFindingTMTT/interface/DeadModuleDB.h>
 #include <L1Trigger/TrackFindingTMTT/interface/Stub.h>
 
+using namespace std;
+
 //=== Does this stub lie in a dead region of the tracker?
 //=== This function is only invoked if cfg param DeadSimulate = True & used to kill stubs to emulate dead regions.
 

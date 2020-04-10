@@ -50,7 +50,7 @@ namespace tmtt {
 
   // Eliminate duplicate tracks from the input collection, and so return a reduced list of tracks.
   template <class T>
-  vector<T> KillDupTrks<T>::filter(const vector<T>& vecTracks) const {
+  std::vector<T> KillDupTrks<T>::filter(const std::vector<T>& vecTracks) const {
     // Short-circuit the calculation for trivial cases
     if (vecTracks.size() == 0 || vecTracks.size() == 1) {
       return vecTracks;
@@ -69,7 +69,7 @@ namespace tmtt {
         return filterAlg25(vecTracks);
         break;
       default:
-        throw cms::Exception("KillDupTrks: Option DupTrkAlg in cfg has invalid value.");
+        throw cms::Exception("BadConfig")<<"KillDupTrks: Option DupTrkAlg in cfg has invalid value."<<std::endl;
     }
 
     // We should never end up here
@@ -82,14 +82,14 @@ namespace tmtt {
   // keep largest candidates if common stubs in N or more layers (default 5 at present), both if equal
 
   template <class T>
-  vector<T> KillDupTrks<T>::filterAlg8(const vector<T>& vecTracks) const {
-    vector<T> vecTracksFiltered;
+  std::vector<T> KillDupTrks<T>::filterAlg8(const std::vector<T>& vecTracks) const {
+    std::vector<T> vecTracksFiltered;
 
-    // vector (corresponding to candidate tracks) of vectors (indices for stubs)
+    // std::vector (corresponding to candidate tracks) of std::vectors (indices for stubs)
     std::vector<std::vector<std::pair<unsigned int, unsigned int> > > candList;
 
     for (const T& trk : vecTracks) {
-      const vector<const Stub*>& stubs = trk.getStubs();
+      const std::vector<const Stub*>& stubs = trk.getStubs();
       std::vector<std::pair<unsigned int, unsigned int> > stubList;
 
       for (const auto& myStub : stubs) {
@@ -99,11 +99,11 @@ namespace tmtt {
       // now necessary due to seed-filter disordering stubs
       std::sort(stubList.begin(), stubList.end());
 
-      // make up vector of vectors
+      // make up std::vector of std::vectors
       candList.push_back(stubList);
     }
 
-    std::vector<unsigned int> indices;  // to avoid expense of manipulating candidate vector
+    std::vector<unsigned int> indices;  // to avoid expense of manipulating candidate std::vector
 
     for (std::size_t i = 0; i < candList.size(); ++i) {
       indices.push_back(i);
@@ -111,7 +111,7 @@ namespace tmtt {
 
     unsigned int i = 0;
 
-    // Loop through vector
+    // Loop through std::vector
     while (i < (candList.size() - 1)) {
       unsigned int j = i + 1;
 
@@ -164,14 +164,14 @@ namespace tmtt {
   // Check if N or more common layers (default 5 at present)
   // Then keep candidate with most stubs, use |q/pT| as tie-break, finally drop "latest" if still equal
   template <class T>
-  vector<T> KillDupTrks<T>::filterAlg25(
-      const vector<T>& vecTracks) const {  // vector (corresponding to candidate tracks) of vectors (indices for stubs)
+  std::vector<T> KillDupTrks<T>::filterAlg25(
+      const std::vector<T>& vecTracks) const {  // std::vector (corresponding to candidate tracks) of std::vectors (indices for stubs)
     std::vector<std::vector<std::pair<unsigned int, unsigned int> > > candList;
 
     //std::cout<<"** Alg25 comparing "<<vecTracks.size()<<" candidates"<<std::endl;
 
     for (const T& trk : vecTracks) {
-      const vector<const Stub*>& stubs = trk.getStubs();
+      const std::vector<const Stub*>& stubs = trk.getStubs();
       std::vector<std::pair<unsigned int, unsigned int> > stubList;
 
       for (const auto& myStub : stubs) {
@@ -181,15 +181,15 @@ namespace tmtt {
       // now necessary due to seed-filter disordering stubs
       std::sort(stubList.begin(), stubList.end());
 
-      // make up vector of vectors
+      // make up std::vector of std::vectors
       candList.push_back(stubList);
     }
 
-    std::vector<bool> indices(candList.size(), true);  // since we can't manipulate const candidate vector
+    std::vector<bool> indices(candList.size(), true);  // since we can't manipulate const candidate std::vector
 
     unsigned int i = 0;
 
-    // Loop through vector
+    // Loop through std::vector
     while (i < candList.size()) {
       unsigned int range = vecTracks[i].getNumStubs();
 
@@ -267,7 +267,7 @@ namespace tmtt {
       ++i;
     }
 
-    vector<T> vecTracksFiltered;  // Copy surviving candidates to output
+    std::vector<T> vecTracksFiltered;  // Copy surviving candidates to output
     for (unsigned int i = 0; i < vecTracks.size(); ++i) {
       if (indices[i]) {
         vecTracksFiltered.push_back(vecTracks[i]);

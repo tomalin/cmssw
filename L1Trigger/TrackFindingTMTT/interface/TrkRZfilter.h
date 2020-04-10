@@ -8,8 +8,6 @@
 
 #include <vector>
 
-using namespace std;
-
 //=== This class runs filters in track candidates previously found by the r-phi Hough transform,
 //=== which check that each track's stubs are consistent with a straight line in the r-z plane.
 //===
@@ -66,13 +64,13 @@ namespace tmtt {
     // also killing some of the tracks altogether if they are left with too few stubs.
     // Also adds an estimate of r-z helix parameters to the selected track objects, returning the tracks as L1track3D type.
     //
-    vector<L1track3D> filterTracks(const vector<L1track2D>& tracks);
+    std::vector<L1track3D> filterTracks(const std::vector<L1track2D>& tracks);
 
     //=== Extra information about each track input to filter. (Only use after you have first called filterTracks).
 
     // Number of seed combinations considered by the Seed Filter for each input track.
-    vector<unsigned int> numSeedCombsPerTrk() const { return numSeedCombsPerTrk_; }
-    vector<unsigned int> numGoodSeedCombsPerTrk() const {
+    std::vector<unsigned int> numSeedCombsPerTrk() const { return numSeedCombsPerTrk_; }
+    std::vector<unsigned int> numGoodSeedCombsPerTrk() const {
       return numGoodSeedCombsPerTrk_;
     }  // Only counts seeds compatible with beam-spot.
 
@@ -81,7 +79,7 @@ namespace tmtt {
 
     // Use Seed Filter to produce a filtered collection of stubs on this track candidate that are consistent with a straight line
     // in r-z using tracklet algo.
-    vector<const Stub*> seedFilter(const vector<const Stub*>& stubs, float trkQoverPt, bool print);
+    std::vector<const Stub*> seedFilter(const std::vector<const Stub*>& stubs, float trkQoverPt, bool print);
 
     //--- Estimate r-z helix parameters from centre of eta-sector if no better estimate provided by r-z filter.
     void estRZhelix();
@@ -109,7 +107,7 @@ namespace tmtt {
     float beamWindowZ_;  // Assumed length of beam spot in z.
 
     // Name of r-z track filter algorithm to run.
-    string rzFilterName_;
+    std::string rzFilterName_;
 
     // Filter stubs in cell using Seed Filter? (a tracklet-like algorithm in r-z plane).
     bool useSeedFilter_;
@@ -119,8 +117,8 @@ namespace tmtt {
     bool keepAllSeed_;
 
     // Number of seed combinations considered by the Seed Filter, for each input track.
-    vector<unsigned int> numSeedCombsPerTrk_;
-    vector<unsigned int> numGoodSeedCombsPerTrk_;
+    std::vector<unsigned int> numSeedCombsPerTrk_;
+    std::vector<unsigned int> numGoodSeedCombsPerTrk_;
     unsigned int maxSeedCombinations_;
     unsigned int maxGoodSeedCombinations_;
     unsigned int maxSeedsPerStub_;

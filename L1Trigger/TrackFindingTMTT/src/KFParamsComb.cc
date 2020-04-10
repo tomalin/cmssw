@@ -6,6 +6,8 @@
 #include "DataFormats/Math/interface/deltaPhi.h"
 //#define CKF_DEBUG
 
+using namespace std;
+
 namespace tmtt {
 
   /*
@@ -33,66 +35,15 @@ constexpr double matx_inner[25] = {
 };
 */
 
-  KFParamsComb::KFParamsComb(const Settings* settings, const uint nPar, const string& fitterName)
-      : L1KalmanComb(settings, nPar, fitterName) {
-    hdxmin[INV2R] = -1.1e-4;
-    hdxmax[INV2R] = +1.1e-4;
-    hdxmin[PHI0] = -6.e-3;
-    hdxmax[PHI0] = +6.e-3;
-    hdxmin[Z0] = -4.1;
-    hdxmax[Z0] = +4.1;
-    hdxmin[T] = -6.;
-    hdxmax[T] = +6.;
-    if (nPar_ == 5) {
-      hdxmin[D0] = -1.001;
-      hdxmax[D0] = +1.001;
-    }
-
-    hxmin[INV2R] = -0.3 * 0.0057;
-    hxmax[INV2R] = +0.3 * 0.0057;
-    hxmin[PHI0] = -0.3;
-    hxmax[PHI0] = +0.3;
-    hxmin[Z0] = -120;
-    hxmax[Z0] = +120;
-    hxmin[T] = -6.;
-    hxmax[T] = +6.;
-    if (nPar_ == 5) {
-      hxmin[D0] = -3.5;
-      hxmax[D0] = +3.5;
-    }
-
-    hddMeasmin[PHI0] = -1.e1;
-    hddMeasmax[PHI0] = +1.e1;
-
-    hresmin[PHI0] = -0.5;
-    hresmax[PHI0] = +0.5;
-
-    hresmin[PHI0] = -10.;
-    hresmax[PHI0] = +10.;
-
-    hxaxtmin[INV2R] = -1.e-3;
-    hxaxtmax[INV2R] = +1.e-3;
-    hxaxtmin[PHI0] = -1.e-1;
-    hxaxtmax[PHI0] = +1.e-1;
-    hxaxtmin[Z0] = -10.;
-    hxaxtmax[Z0] = +10.;
-    hxaxtmin[T] = -1.e-0;
-    hxaxtmax[T] = +1.e-0;
-    if (nPar_ == 5) {
-      hxaxtmin[D0] = -1.001;
-      hxaxtmax[D0] = +1.001;
-    }
-  }
-
-  std::map<std::string, double> KFParamsComb::getTrackParams(const KalmanState* state) const {
+  std::vector<double> KFParamsComb::getTrackParams(const KalmanState* state) const {
+    std::vector<double> y(nPar_);
     std::vector<double> x = state->xa();
-    std::map<std::string, double> y;
-    y["qOverPt"] = 2. * x.at(INV2R) / getSettings()->invPtToInvR();
-    y["phi0"] = reco::deltaPhi(x.at(PHI0) + sectorPhi(), 0.);
-    y["z0"] = x.at(Z0);
-    y["t"] = x.at(T);
+    y[QOVERPT] = 2. * x.at(INV2R) / getSettings()->invPtToInvR();
+    y[PHI0] = reco::deltaPhi(x.at(PHI0) + sectorPhi(), 0.);
+    y[Z0] = x.at(Z0);
+    y[T] = x.at(T);
     if (nPar_ == 5) {
-      y["d0"] = x.at(D0);
+      y[D0] = x.at(D0);
     }
     return y;
   }
@@ -100,10 +51,10 @@ constexpr double matx_inner[25] = {
   /* If using 5 param helix fit, get track params with beam-spot constraint & track fit chi2 from applying it. */
   /* (N.B. chi2rz unchanged by constraint) */
 
-  std::map<std::string, double> KFParamsComb::getTrackParams_BeamConstr(const KalmanState* state,
+  std::vector<double> KFParamsComb::getTrackParams_BeamConstr(const KalmanState* state,
                                                                         double& chi2rphi) const {
     if (nPar_ == 5) {
-      std::map<std::string, double> y;
+      std::vector<double> y(nPar_);
       std::vector<double> x = state->xa();
       TMatrixD cov_xa = state->pxxa();
       double deltaChi2rphi = (x.at(D0) * x.at(D0)) / cov_xa[D0][D0];
@@ -112,11 +63,11 @@ constexpr double matx_inner[25] = {
       x[INV2R] -= x.at(D0) * (cov_xa[INV2R][D0] / cov_xa[D0][D0]);
       x[PHI0] -= x.at(D0) * (cov_xa[PHI0][D0] / cov_xa[D0][D0]);
       x[D0] = 0.0;
-      y["qOverPt"] = 2. * x.at(INV2R) / getSettings()->invPtToInvR();
-      y["phi0"] = reco::deltaPhi(x.at(PHI0) + sectorPhi(), 0.);
-      y["z0"] = x.at(Z0);
-      y["t"] = x.at(T);
-      y["d0"] = x.at(D0);
+      y[QOVERPT] = 2. * x.at(INV2R) / getSettings()->invPtToInvR();
+      y[PHI0] = reco::deltaPhi(x.at(PHI0) + sectorPhi(), 0.);
+      y[Z0] = x.at(Z0);
+      y[T] = x.at(T);
+      y[D0] = x.at(D0);
       return y;
     } else {
       return (this->getTrackParams(state));
@@ -352,8 +303,8 @@ constexpr double matx_inner[25] = {
     dl = ( stub_itr - last_itr ) * dl; 
 
     if( dl ){
-    std::map<std::string, double> y = getTrackParams( state );
-    double dtheta0 = 1./sqrt(3) * 0.0136 * fabs(y["qOverPt"]) * sqrt(dl)*( 1+0.038*log(dl) ); 
+    std::vector<double> y = getTrackParams( state );
+    double dtheta0 = 1./sqrt(3) * 0.0136 * fabs(y[QOVERPT]) * sqrt(dl)*( 1+0.038*log(dl) ); 
     dtheta0 *= getSettings()->kalmanMultiScattFactor();
     p(PHI0, PHI0) = dtheta0 * dtheta0; // Despite the name, I think this is uncertainty in phi0. I guess uncertainty in theta0 neglected compared to detector resolution.
     }
@@ -384,10 +335,10 @@ constexpr double matx_inner[25] = {
     unsigned nStubLayers = state.nStubLayers();
     bool goodState(true);
 
-    std::map<std::string, double> y = getTrackParams(&state);
-    double qOverPt = y["qOverPt"];
+    std::vector<double> y = getTrackParams(&state);
+    double qOverPt = y[QOVERPT];
     double pt = fabs(1 / qOverPt);
-    double z0 = fabs(y["z0"]);
+    double z0 = fabs(y[Z0]);
 
     // state parameter selections
 
@@ -450,9 +401,9 @@ constexpr double matx_inner[25] = {
       cout << " nlay=" << nStubLayers << " nskip=" << state.nSkippedLayers() << " chi2_scaled=" << chi2scaled;
       if (tpa_ != nullptr)
         cout << " pt(mc)=" << tpa_->pt();
-      cout << " pt=" << pt << " q/pt=" << qOverPt << " tanL=" << y["t"] << " z0=" << y["z0"] << " phi0=" << y["phi0"];
+      cout << " pt=" << pt << " q/pt=" << qOverPt << " tanL=" << y[T] << " z0=" << y[Z0] << " phi0=" << y[PHI0];
       if (nPar_ == 5)
-        cout << " d0=" << y["d0"];
+        cout << " d0=" << y[D0];
       cout << " fake" << (tpa_ == nullptr);
       if (tpa_ != nullptr)
         cout << " pt(mc)=" << tpa_->pt();

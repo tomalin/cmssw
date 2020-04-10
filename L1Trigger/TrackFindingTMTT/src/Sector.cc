@@ -49,7 +49,7 @@ namespace tmtt {
   */
 
     //=== Characteristics of this phi region.
-    unsigned int numPhiSecPerNonant = (settings->numPhiSectors()) / (settings->numPhiNonants());
+    //unsigned int numPhiSecPerNonant = (settings->numPhiSectors()) / (settings->numPhiNonants());
     // Centre of phi (tracking) nonant zero must be along x-axis to be consistent with tracker cabling map.
     // Define phi sector zero  to start at lower end of phi range in nonant 0.
     float phiCentreSec0 = -M_PI / float(settings->numPhiNonants()) + M_PI / float(settings->numPhiSectors());
@@ -267,7 +267,7 @@ namespace tmtt {
     Long64_t mask = (Long64_t(1) << nBits) - Long64_t(1);
     Long64_t result = sign * (iValue & mask);
     if (fabs(result - value) > 1)
-      throw cms::Exception("Sector::forceBitWidth is messing by using too few bits to digitize number")
+      throw cms::Exception("LogicError")<<"Sector::forceBitWidth is messing up by using too few bits to digitize number"
           << " nBits=" << nBits << " Input float=" << value << " Output digi = " << result << endl;
     return result;
     // Check that result is compatible with value. Throw error if not.

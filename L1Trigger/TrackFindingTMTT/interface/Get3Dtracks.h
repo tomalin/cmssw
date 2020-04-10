@@ -10,8 +10,6 @@
 
 using boost::numeric::ublas::matrix;
 
-using namespace std;
-
 //=== This reconstructs 3D tracks from the 2D tracks found by the Hough transform.
 //=== It can do this by simply estimating the r-z helix parameters from the centre of the eta sector
 //=== and/or by running an r-z filter (e.g. Seed Filter), which also cleans up the tracks by
@@ -48,7 +46,7 @@ namespace tmtt {
               float phiCentreSector);
 
     // Make 3D track collections.
-    void run(const vector<L1track2D>& vecTracksRphi) {
+    void run(const std::vector<L1track2D>& vecTracksRphi) {
       this->makeUnfilteredTrks(vecTracksRphi);
       if (runRZfilter_)
         this->makeRZfilteredTrks(vecTracksRphi);
@@ -59,7 +57,7 @@ namespace tmtt {
     // Get 3D tracks (either r-z filtered or unfiltered, depending on the boolean).
     // (Each L1track3D object gives access to stubs on each track and helix parameters
     // & also to the associated truth tracking particle).
-    const vector<L1track3D>& trackCands3D(bool rzFiltered) const {
+    const std::vector<L1track3D>& trackCands3D(bool rzFiltered) const {
       if (rzFiltered) {
         return vecTracks3D_rzFiltered_;
       } else {
@@ -69,8 +67,8 @@ namespace tmtt {
 
     // Get all 3D track candidates (either r-z filtered on unfiltered, depending on the boolean),
     // that are associated to the given tracking particle.
-    // (If the vector is empty, then the tracking particle was not reconstructed in this sector).
-    vector<const L1track3D*> assocTrackCands3D(const TP& tp, bool rzFiltered) const;
+    // (If the std::vector is empty, then the tracking particle was not reconstructed in this sector).
+    std::vector<const L1track3D*> assocTrackCands3D(const TP& tp, bool rzFiltered) const;
 
     //=== Access to track r-z filter in case internal info from it required.
 
@@ -81,12 +79,12 @@ namespace tmtt {
   private:
     // Convert 2D HT tracks within the current sector to 3D tracks,
     // by adding a rough estimate of their r-z helix parameters, without running any r-z track filter.
-    void makeUnfilteredTrks(const vector<L1track2D>& vecTracksRphi);
+    void makeUnfilteredTrks(const std::vector<L1track2D>& vecTracksRphi);
 
     // Make 3D tracks from the 2D HT tracks within the current sector, by running the r-z track filter.
     // The r-z filter also adds an estimate of the r-z helix parameters to each track.
     // (Not filled if no track fitter needs the r-z filter).
-    void makeRZfilteredTrks(const vector<L1track2D>& vecTracksRphi);
+    void makeRZfilteredTrks(const std::vector<L1track2D>& vecTracksRphi);
 
   private:
     // Configuration parameters
@@ -103,8 +101,8 @@ namespace tmtt {
     TrkRZfilter rzFilter_;
 
     // List of all found 3D track candidates and their associated properties.
-    vector<L1track3D> vecTracks3D_rzFiltered_;  // After r-z filter run
-    vector<L1track3D> vecTracks3D_unfiltered_;  // Before r-z filter run.
+    std::vector<L1track3D> vecTracks3D_rzFiltered_;  // After r-z filter run
+    std::vector<L1track3D> vecTracks3D_unfiltered_;  // Before r-z filter run.
   };
 
 }  // namespace tmtt

@@ -6,7 +6,6 @@
 #include "boost/numeric/ublas/matrix.hpp"
 #include <vector>
 
-using namespace std;
 using boost::numeric::ublas::matrix;
 
 //==================================================================================================
@@ -68,7 +67,7 @@ namespace tmtt {
     unsigned int numEtaRegions_;
     bool busySectorKill_;
     unsigned int busySectorNumStubs_;
-    vector<unsigned int> busySectorMbinRanges_;
+    std::vector<unsigned int> busySectorMbinRanges_;
     bool busySectorUseMbinRanges_;
   };
 

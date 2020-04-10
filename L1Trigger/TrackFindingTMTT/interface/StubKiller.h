@@ -12,8 +12,6 @@
 #include "TRandom.h"
 #include "TMath.h"
 
-using namespace std;
-
 namespace tmtt {
 
   class StubKiller {
@@ -26,7 +24,7 @@ namespace tmtt {
                     const TrackerGeometry* trackerGeometry);
 
     bool killStub(const TTStub<Ref_Phase2TrackerDigi_>* stub,
-                  const vector<int> layersToKill,
+                  const std::vector<int> layersToKill,
                   const double minPhiToKill,
                   const double maxPhiToKill,
                   const double minZToKill,
@@ -40,7 +38,7 @@ namespace tmtt {
 
     bool killStubInDeadModule(const TTStub<Ref_Phase2TrackerDigi_>* stub);
 
-    map<DetId, float> getListOfDeadModules() { return deadModules_; }
+    std::map<DetId, float> getListOfDeadModules() { return deadModules_; }
 
   private:
     void chooseModulesToKill();
@@ -50,7 +48,7 @@ namespace tmtt {
     const TrackerTopology* trackerTopology_;
     const TrackerGeometry* trackerGeometry_;
 
-    vector<int> layersToKill_;
+    std::vector<int> layersToKill_;
     double minPhiToKill_;
     double maxPhiToKill_;
     double minZToKill_;
@@ -61,7 +59,7 @@ namespace tmtt {
     double fractionOfStubsToKillEverywhere_;
     double fractionOfModulesToKillEverywhere_;
 
-    map<DetId, float> deadModules_;
+    std::map<DetId, float> deadModules_;
   };
 
 };  // namespace tmtt

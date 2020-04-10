@@ -170,7 +170,7 @@ namespace tmtt {
       iCoordBinMin = floor((coordAvg - coordAxisMin) / coordAxisBinSize);
       iCoordBinMax = iCoordBinMin;
     } else {
-      throw cms::Exception("HT: invalid HoughUseFullRange option in cfg");
+      throw cms::Exception("BadConfig")<<"HT: invalid KillSomeHTCells option in cfg"<<endl;
     }
 
     if (debug)
@@ -213,9 +213,6 @@ namespace tmtt {
     // Currently this is by decreasing Pt for r-phi HT and unordered for r-z HT.
     const vector<unsigned int> iOrder = this->rowOrder(numRows);
     bool wantOrdering = (iOrder.size() > 0);
-
-    unsigned int numStubsLeft = 0;
-    unsigned int numStubsRight = 0;
 
     // Loop over cells in HT array.
     for (unsigned int i = 0; i < numRows; i++) {

@@ -1,6 +1,8 @@
 #include "L1Trigger/TrackFindingTMTT/interface/ConverterToTTTrack.h"
 #include "FWCore/Utilities/interface/Exception.h"
 
+using namespace std;
+
 //=== Convert our non-persistent L1track3D object (track candidate found by Hough transform prior to fit)
 //=== to the official persistent CMSSW EDM TTrack format.
 
@@ -79,7 +81,7 @@ namespace tmtt {
                                                                   unsigned int iEtaReg) const {
     // Check that this track is valid.
     if (!trk.accepted())
-      throw cms::Exception("ConverterToTTTrack ERROR: requested to convert invalid L1fittedTrack.");
+      throw cms::Exception("LogicError")<<"ConverterToTTTrack ERROR: requested to convert invalid L1fittedTrack"<<endl;
 
     // Get references to stubs on this track.
     std::vector<TTStubRef> ttstubrefs = this->getStubRefs(trk);

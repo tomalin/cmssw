@@ -4,6 +4,8 @@
 #include "FWCore/Framework/interface/EDProducer.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
+#include "FWCore/Framework/interface/Event.h"
+#include "FWCore/Framework/interface/EventSetup.h"
 #include "DataFormats/L1TrackTrigger/interface/TTTypes.h"
 #include "DataFormats/Phase2TrackerDigi/interface/Phase2TrackerDigi.h"
 #include "SimDataFormats/TrackingAnalysis/interface/TrackingParticle.h"
@@ -12,12 +14,12 @@
 #include "L1Trigger/TrackFindingTMTT/interface/Stub.h"
 #include "L1Trigger/TrackFindingTMTT/interface/L1track3D.h"
 #include "L1Trigger/TrackFindingTMTT/interface/TrackerGeometryInfo.h"
+#include "MagneticField/Engine/interface/MagneticField.h"
+#include "MagneticField/Records/interface/IdealMagneticFieldRecord.h"
 
 #include <vector>
 #include <map>
 #include <string>
-
-using namespace std;
 
 namespace tmtt {
 
@@ -38,20 +40,29 @@ namespace tmtt {
     virtual void endJob();
 
   private:
-    edm::EDGetTokenT<DetSetVec> stubInputTag;
-    edm::EDGetTokenT<TrackingParticleCollection> tpInputTag;
-    edm::EDGetTokenT<TTStubAssMap> stubTruthInputTag;
-    edm::EDGetTokenT<TTClusterAssMap> clusterTruthInputTag;
-    edm::EDGetTokenT<reco::GenJetCollection> genJetInputTag_;
+
+    // ES tokens
+    edm::ESGetToken<MagneticField, IdealMagneticFieldRecord> magneticFieldToken_;
+    edm::ESGetToken<TrackerGeometry, TrackerDigiGeometryRecord> trackerGeometryToken_;
+    edm::ESGetToken<TrackerTopology, TrackerTopologyRcd> trackerTopologyToken_;
+    // ED tokens
+    edm::EDGetTokenT<TTStubDetSetVec> stubToken_;
+    edm::EDGetTokenT<TrackingParticleCollection> tpToken_;
+    edm::EDGetTokenT<TTStubAssMap> stubTruthToken_;
+    edm::EDGetTokenT<TTClusterAssMap> clusterTruthToken_;
+    edm::EDGetTokenT<reco::GenJetCollection> genJetToken_;
+
+    const TrackerGeometry* trackerGeometry_; 
+    const TrackerTopology* trackerTopology_;
 
     // Configuration parameters
     Settings *settings_;
-    vector<string> trackFitters_;
-    vector<string> useRZfilter_;
+   std::vector<std::string> trackFitters_;
+   std::vector<std::string> useRZfilter_;
     bool runRZfilter_;
 
     Histos *hists_;
-    map<string, TrackFitGeneric *> fitterWorkerMap_;
+   std::map<std::string, TrackFitGeneric *> fitterWorkerMap_;
 
     TrackerGeometryInfo trackerGeometryInfo_;
   };

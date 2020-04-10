@@ -7,12 +7,10 @@
 
 #include "DataFormats/L1TrackTrigger/interface/TTTypes.h"
 
-using namespace std;
-
 namespace tmtt {
 
-  typedef edmNew::DetSetVector<TTStub<Ref_Phase2TrackerDigi_> > DetSetVec;
-  typedef edm::Ref<DetSetVec, TTStub<Ref_Phase2TrackerDigi_> > TTStubRef;
+  typedef edmNew::DetSetVector<TTStub<Ref_Phase2TrackerDigi_> > TTStubDetSetVec;
+  typedef edm::Ref<TTStubDetSetVec, TTStub<Ref_Phase2TrackerDigi_> > TTStubRef;
 
   //=== Convert our non-persistent L1 track collection to the official persistent CMSSW EDM TTTrack format.
   //=== Works for both L1track3D and for L1fittedTrk4and5 objects.

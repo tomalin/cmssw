@@ -134,7 +134,7 @@ namespace tmtt {
         } else if (numSmallGroups % 2 == 1 && inSmallGroup % 2 == 1) {
           groups.push_back(inSmallGroup);
         } else {
-          throw cms::Exception("DegradeBend: logic error with odd numbers");
+          throw cms::Exception("LogicError")<<"DegradeBend: logic error with odd numbers"<<endl;
         }
         for (unsigned int i = 0; i < numSmallGroups / 2; i++)
           groups.push_back(inSmallGroup);
@@ -152,7 +152,7 @@ namespace tmtt {
           }
         }
         if (degradedB == 999)
-          throw cms::Exception("DegradeResolution: Logic error in loop over groups");
+          throw cms::Exception("LogicError")<<"DegradeResolution: Logic error in loop over groups"<<endl;
       }
 
       // This is degraded bend in full strip units (neglecting bend sign).
@@ -202,12 +202,9 @@ namespace tmtt {
 
         // Sanity checks.
         if (rejectTmp)
-          throw cms::Exception("DegradeBend: `rejected' flag set, despite bend being within window")
-              << " fabs(" << bendTmp << ") <= " << float(windowHalfStrips) / 2. << endl;
+          throw cms::Exception("LogicError")<<"DegradeBend: `rejected' flag set, despite bend being within window" << " fabs(" << bendTmp << ") <= " << float(windowHalfStrips) / 2. << endl;
         if (4 * fabs(bendTmp - degradedBendTmp) > std::round(numInGroupTmp - 1))
-          throw cms::Exception("DegradeBend: degraded bend differs by more than expected from input bend.")
-              << " bendTmp=" << bendTmp << " degradedBendTmp=" << degradedBendTmp << " numInGroupTmp=" << numInGroupTmp
-              << endl;
+          throw cms::Exception("LogicError")<<"DegradeBend: degraded bend differs by more than expected from input bend: " << " bendTmp=" << bendTmp << " degradedBendTmp=" << degradedBendTmp << " numInGroupTmp=" << numInGroupTmp << endl;
       }
 
       // Sanity checks.
@@ -215,16 +212,13 @@ namespace tmtt {
       unsigned int maxAllowed = (psModule) ? pow(2, bitsPS_) : pow(2, bits2S_);
       if (wasDegraded) {
         if (numRedValues != maxAllowed - 1)
-          throw cms::Exception("DegradeBend: Bend encoding using wrong number of bits")
-              << numRedValues << " > " << maxAllowed << endl;
+          throw cms::Exception("LogicError")<<"DegradeBend: Bend encoding using wrong number of bits" << numRedValues << " > " << maxAllowed <<endl;
       } else {
         if (numRedValues > maxAllowed)
-          throw cms::Exception("DegradeBend: Bend encoding using too many bits")
-              << numRedValues << " > " << maxAllowed << endl;
+          throw cms::Exception("LogicError")<<"DegradeBend: Bend encoding using too many bits: " << numRedValues << " > " << maxAllowed << endl;
       }
       if (bendTmpMatches.size() != numInGroup)
-        throw cms::Exception("DegradeBend: number of bend values in group inconsistent.")
-            << bendTmpMatches.size() << " is not equal to " << numInGroup << endl;
+        throw cms::Exception("LogicError")<<"DegradeBend: number of bend values in group inconsistent: " << bendTmpMatches.size() << " != " << numInGroup << endl;
     }
   }
 

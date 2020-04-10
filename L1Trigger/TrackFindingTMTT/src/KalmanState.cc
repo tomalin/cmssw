@@ -2,6 +2,8 @@
 #include "L1Trigger/TrackFindingTMTT/interface/StubCluster.h"
 #include <TMatrixD.h>
 
+using namespace std;
+
 namespace tmtt {
 
   KalmanState::KalmanState()
@@ -189,33 +191,33 @@ namespace tmtt {
   }
 
   void KalmanState::dump(ostream &os, const TP *tp, bool all) const {
-    std::map<std::string, double> tp_x;
+    std::vector<double> tp_x(5);
     bool useForAlgEff(false);
+    const string helixNames[5] = {"qOverPt", "phi0", "z0", "tanL", "d0"};
     if (tp) {
       useForAlgEff = tp->useForAlgEff();
-      tp_x["qOverPt"] = tp->qOverPt();
-      tp_x["phi0"] = tp->phi0();
-      tp_x["z0"] = tp->z0();
-      tp_x["t"] = tp->tanLambda();
-      tp_x["d0"] = tp->d0();
+      tp_x[0] = tp->qOverPt();
+      tp_x[1] = tp->phi0();
+      tp_x[2] = tp->z0();
+      tp_x[3] = tp->tanLambda();
+      tp_x[4] = tp->d0();
     }
-    std::map<std::string, double> y = fXtoTrackParams_(fitter_, this);
+    std::vector<double> y = fXtoTrackParams_(fitter_, this);
 
     os << "KalmanState : ";
     os << "next Kalman layer = " << kLayerNext_ << ", ";
     os << "layerId = " << layerId_ << ", ";
-    os << " n_skipped = " << n_skipped_ << ", ";
+    os << "n_skipped = " << n_skipped_ << ", ";
     os << "barrel = " << barrel_ << ", ";
     os << "endcapRing = " << endcapRing_ << ", ";
     os << "r = " << r_ << ", ";
     os << "z = " << z_ << ", ";
-    for (auto pair : y) {
-      os << pair.first << ":" << y[pair.first] << " ";
+    for (unsigned int i = 0; i < y.size(); i++) {
+      os << helixNames[i] << ":" << y[i] << ", ";
     }
     os << endl;
     os << "xa = ( ";
-    for (unsigned i = 0; i < xa_.size() - 1; i++)
-      os << xa_[i] << ", ";
+    for (unsigned j = 0; j < xa_.size() - 1; j++) os << xa_[j] << ", ";
     os << xa_.back() << " )" << endl;
 
     os << "xcov" << endl;
@@ -233,16 +235,15 @@ namespace tmtt {
       os << "[" << stub->r() << ", " << stub->phi() << ", " << stub->z() << "] ";
       os << " assoc TP indices = [ ";
       std::set<const TP *> tps = stub->assocTPs();
-      for (auto tp : tps)
-        os << tp->index() << " ";
+      for (auto tp : tps) os << tp->index() << " ";
       os << "] ";
       os << endl;
     }
     if (tp) {
       os << "\tTP index = " << tp->index() << " useForAlgEff = " << useForAlgEff << " ";
       os << "rel. residual ";
-      for (auto pair : tp_x) {
-        os << pair.first << ":" << (y[pair.first] - pair.second) / pair.second << " ";
+      for (unsigned int i = 0; i < y.size(); i++) {
+	os << helixNames[i] << ":" << (y[i] - tp_x[i])/tp_x[i] << " ";
       }
     } else {
       os << "\tTP index = ";
@@ -254,8 +255,7 @@ namespace tmtt {
       os << "[" << stubCluster_->r() << ", " << stubCluster_->phi() << ", " << stubCluster_->z() << "] ";
       os << " assoc TP indices = [ ";
       std::set<const TP *> tps = stubCluster_->assocTPs();
-      for (auto tp : tps)
-        os << tp->index() << " ";
+      for (auto tp : tps) os << tp->index() << " ";
       os << "] ";
     } else {
       os << "\tvirtual stub";

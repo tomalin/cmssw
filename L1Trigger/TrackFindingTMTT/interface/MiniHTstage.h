@@ -3,7 +3,6 @@
 
 #include "L1Trigger/TrackFindingTMTT/interface/HTrphi.h"
 
-using namespace std;
 using boost::numeric::ublas::matrix;
 
 namespace tmtt {
@@ -24,8 +23,8 @@ namespace tmtt {
                                     unsigned int mBin,
                                     unsigned int cBin,
                                     unsigned int numStubs,
-                                    map<pair<unsigned int, unsigned int>, unsigned int>& numStubsPerLinkStage1,
-                                    map<pair<unsigned int, unsigned int>, unsigned int>& numStubsPerLinkStage2,
+                                    std::map<std::pair<unsigned int, unsigned int>, unsigned int>& numStubsPerLinkStage1,
+                                    std::map<std::pair<unsigned int, unsigned int>, unsigned int>& numStubsPerLinkStage2,
                                     bool test = false) const;
 
   private:
@@ -46,7 +45,7 @@ namespace tmtt {
     unsigned int numEtaRegions_;
     bool busySectorKill_;
     unsigned int busySectorNumStubs_;
-    vector<unsigned int> busySectorMbinRanges_;
+    std::vector<unsigned int> busySectorMbinRanges_;
     float chosenRofPhi_;
     float binSizeQoverPtAxis_;
     float binSizePhiTrkAxis_;

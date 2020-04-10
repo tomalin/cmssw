@@ -3,6 +3,8 @@
 #include <TGraph.h>
 #include <TF1.h>
 
+using namespace std;
+
 namespace tmtt {
 
   TrackerGeometryInfo::TrackerGeometryInfo()

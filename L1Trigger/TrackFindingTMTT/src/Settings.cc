@@ -3,6 +3,8 @@
 #include <set>
 #include <cmath>
 
+using namespace std;
+
 namespace tmtt {
 
   // Set config params for HYBRID TRACKING via hard-wired consts to allow use outside CMSSW.
@@ -66,7 +68,6 @@ namespace tmtt {
     bApprox_gradient_ = 0.886454;
     bApprox_intercept_ = 0.504148;
     handleStripsEtaSec_ = false;
-    kalmanFillInternalHists_ = false;
     kalmanMultiScattTerm_ = 0.00075;
     kalmanChi2RphiScale_ = 8;
     //
@@ -111,6 +112,16 @@ namespace tmtt {
       :
 
         // See either Analyze_Defaults_cfi.py or Settings.h for description of these parameters.
+
+        //=== Tags for Input ES & ED data.
+        magneticFieldInputTag_(iConfig.getParameter<edm::ESInputTag>("magneticFieldInputTag")),
+        trackerGeometryInputTag_(iConfig.getParameter<edm::ESInputTag>("trackerGeometryInputTag")),
+	trackerTopologyInputTag_(iConfig.getParameter<edm::ESInputTag>("trackerTopologyInputTag")),
+	stubInputTag_(iConfig.getParameter<edm::InputTag>("stubInputTag")),
+	tpInputTag_(iConfig.getParameter<edm::InputTag>("tpInputTag")),
+	stubTruthInputTag_(iConfig.getParameter<edm::InputTag>("stubTruthInputTag")),
+	clusterTruthInputTag_(iConfig.getParameter<edm::InputTag>("clusterTruthInputTag")),
+	genJetInputTag_(iConfig.getParameter<edm::InputTag>("genJetInputTag")),
 
         //=== Parameter sets for differents types of configuration parameter.
         genCuts_(iConfig.getParameter<edm::ParameterSet>("GenCuts")),
@@ -271,7 +282,6 @@ namespace tmtt {
         generalResidualCut_(trackFitSettings_.getParameter<double>("GeneralResidualCut")),
         killingResidualCut_(trackFitSettings_.getParameter<double>("KillingResidualCut")),
         maxIterationsLR_(trackFitSettings_.getParameter<unsigned int>("MaxIterationsLR")),
-        LRFillInternalHists_(trackFitSettings_.getParameter<bool>("LRFillInternalHists")),
         combineResiduals_(trackFitSettings_.getParameter<bool>("CombineResiduals")),
         lineariseStubPosition_(trackFitSettings_.getParameter<bool>("LineariseStubPosition")),
         checkSectorConsistency_(trackFitSettings_.getParameter<bool>("CheckSectorConsistency")),
@@ -298,7 +308,6 @@ namespace tmtt {
         residualCut_(trackFitSettings_.getParameter<double>("ResidualCut")),
         //
         kalmanDebugLevel_(trackFitSettings_.getParameter<unsigned int>("KalmanDebugLevel")),
-        kalmanFillInternalHists_(trackFitSettings_.getParameter<bool>("KalmanFillInternalHists")),
         kalmanMinNumStubs_(trackFitSettings_.getParameter<unsigned int>("KalmanMinNumStubs")),
         kalmanMaxNumStubs_(trackFitSettings_.getParameter<unsigned int>("KalmanMaxNumStubs")),
         kalmanAddBeamConstr_(trackFitSettings_.getParameter<bool>("KalmanAddBeamConstr")),
@@ -402,96 +411,94 @@ namespace tmtt {
     //--- Sanity checks
 
     if (!(useStubPhi_ || useStubPhiTrk_))
-      throw cms::Exception(
-          "Settings.cc: Invalid cfg parameters - You cant set both UseStubPhi & useStubPhiTrk to false.");
+      throw cms::Exception("BadConfig")<<
+	"Settings.cc: Invalid cfg parameters - You cant set both UseStubPhi & useStubPhiTrk to false."<<endl;
 
     if (minNumMatchLayers_ > minStubLayers_)
-      throw cms::Exception(
-          "Settings.cc: Invalid cfg parameters - You are setting the minimum number of layers incorrectly : type A.");
+      throw cms::Exception("BadConfig")<<
+	"Settings.cc: Invalid cfg parameters - You are setting the minimum number of layers incorrectly : type A."<<endl;
     if (genMinStubLayers_ > minStubLayers_)
-      throw cms::Exception(
-          "Settings.cc: Invalid cfg parameters - You are setting the minimum number of layers incorrectly : type B.");
+      throw cms::Exception("BadConfig")<<
+	"Settings.cc: Invalid cfg parameters - You are setting the minimum number of layers incorrectly : type B."<<endl;
     if (minNumMatchLayers_ > genMinStubLayers_)
-      throw cms::Exception(
-          "Settings.cc: Invalid cfg parameters - You are setting the minimum number of layers incorrectly : type C.");
+      throw cms::Exception("BadConfig")<<
+	"Settings.cc: Invalid cfg parameters - You are setting the minimum number of layers incorrectly : type C."<<endl;
 
     // If reducing number of required layers for high Pt tracks, then above checks must be redone.
     bool doReduceLayers = (minPtToReduceLayers_ < 10000. || etaSecsReduceLayers_.size() > 0);
     if (doReduceLayers && minStubLayers_ > 4) {
       if (minNumMatchLayers_ > minStubLayers_ - 1)
-        throw cms::Exception(
-            "Settings.cc: Invalid cfg parameters - You are setting the minimum number of layers incorrectly : type D.");
+        throw cms::Exception("BadConfig")<<
+	  "Settings.cc: Invalid cfg parameters - You are setting the minimum number of layers incorrectly : type D."<<endl;
       if (genMinStubLayers_ > minStubLayers_ - 1)
-        throw cms::Exception(
-            "Settings.cc: Invalid cfg parameters - You are setting the minimum number of layers incorrectly : type E.");
+        throw cms::Exception("BadConfig")<<
+			     "Settings.cc: Invalid cfg parameters - You are setting the minimum number of layers incorrectly : type E."<<endl;
     }
 
     for (const unsigned int& iEtaReg : etaSecsReduceLayers_) {
       if (iEtaReg >= etaRegions_.size())
-        throw cms::Exception(
+        throw cms::Exception("BadConfig")<<
             "Settings.cc: You specified an eta sector number in EtaSecsReduceLayers which exceeds the total number of "
-            "eta sectors!")
+            "eta sectors! "
             << iEtaReg << " " << etaRegions_.size() << endl;
     }
 
     // Duplicate track removal algorithm 50 must not be run in parallel with any other.
     if (dupTrkAlgFit_ == 50) {
       if (dupTrkAlgRphi_ != 0 || dupTrkAlg3D_ != 0)
-        throw cms::Exception(
-            "Settings.c: Invalid cfg parameters -- If using DupTrkAlgFit = 50, you must disable all other duplicate "
-            "track removal algorithms.");
+        throw cms::Exception("BadConfig")<<
+            "Settings.c: Invalid cfg parameters -- If using DupTrkAlgFit = 50, you must disable all other duplicate track removal algorithms."<<endl;
     }
 
     // Chains of m bin ranges for output of HT.
     if (!busySectorMbinOrder_.empty()) {
       // User has specified an order in which the m bins should be chained together. Check if it makes sense.
       if (busySectorMbinOrder_.size() != houghNbinsPt_)
-        throw cms::Exception(
-            "Settings.cc: Invalid cfg parameters - BusySectorMbinOrder used by HT MUX contains wrong number of "
-            "elements. Unless you are optimising the MUX, suggest you configure it to an empty vector.");
+        throw cms::Exception("BadConfig")<<
+	  "Settings.cc: Invalid cfg parameters - BusySectorMbinOrder used by HT MUX contains wrong number of elements. Unless you are optimising the MUX, suggest you configure it to an empty vector."<<endl;
       set<unsigned int> mOrderCheck;
       for (const unsigned int& m : busySectorMbinOrder_) {
         mOrderCheck.insert(m);
       }
       if (mOrderCheck.size() != houghNbinsPt_)
-        throw cms::Exception(
-            "Settings.cc: Invalid cfg parameters - BusySectorMbinOrder used by HT MUX contains duplicate elements.");
+        throw cms::Exception("BadConfig")<<
+	  "Settings.cc: Invalid cfg parameters - BusySectorMbinOrder used by HT MUX contains duplicate elements."<<endl;
       unsigned int sum_nr = 0;
       for (unsigned int nr : busySectorMbinRanges_) {
         sum_nr += nr;
       }
       if (sum_nr != houghNbinsPt_)
-        throw cms::Exception(
-            "Settings.cc: Invalid cfg parameters - Sum of entries in BusySectorMbinRanges is incorrect.");
+        throw cms::Exception("BadConfig")<<
+	  "Settings.cc: Invalid cfg parameters - Sum of entries in BusySectorMbinRanges is incorrect."<<endl;
     }
 
     if (miniHTstage_) {
       if (enableMerge2x2_)
-        throw cms::Exception("Settings.cc: it is not allowed to enable both MiniHTstage & EnableMerge2x2 options.");
+        throw cms::Exception("BadConfig")<<"Settings.cc: it is not allowed to enable both MiniHTstage & EnableMerge2x2 options."<<endl;
       // Options for 2nd stage mini HT
       if (shape_ != 0)
-        throw cms::Exception(
-            "Settings.cc: Invalid cfg parameters - 2nd stage mini HT only allowed for square-shaped cells.");
+        throw cms::Exception("BadConfig")<<
+	  "Settings.cc: Invalid cfg parameters - 2nd stage mini HT only allowed for square-shaped cells."<<endl;
       if (miniHoughNbinsPt_ != 2 || miniHoughNbinsPhi_ != 2)
-        throw cms::Exception("Settings.cc: 2nd mini HT has so dar only been implemented in C++ for 2x2.");
+        throw cms::Exception("BadConfig")<<"Settings.cc: 2nd mini HT has so dar only been implemented in C++ for 2x2."<<endl;
     }
 
     if (enableMerge2x2_) {
       if (miniHTstage_)
-        throw cms::Exception("Settings.cc: it is not allowed to enable both MiniHTstage & EnableMerge2x2 options.");
+        throw cms::Exception("BadConfig")<<"Settings.cc: it is not allowed to enable both MiniHTstage & EnableMerge2x2 options."<<endl;
       // Merging of HT cells has not yet been implemented for diamond or hexagonal HT cell shape.
       if (enableMerge2x2_ && shape_ != 0)
-        throw cms::Exception("Settings.cc: Invalid cfg parameters - merging only allowed for square-shaped cells.");
+        throw cms::Exception("BadConfig")<<"Settings.cc: Invalid cfg parameters - merging only allowed for square-shaped cells."<<endl;
     }
 
     // Do not use our private dead module emulation together with the communal Tracklet/TMTT dead module emulation
     // developed for the Stress Test.
     if (deadSimulateFrac_ > 0. && killScenario_ > 0)
-      throw cms::Exception("Settings.cc: Invalid cfg parameters - don't enable both DeadSimulateFrac and KillScenario");
+      throw cms::Exception("BadConfig")<<"Settings.cc: Invalid cfg parameters - don't enable both DeadSimulateFrac and KillScenario"<<endl;
 
     // Check Kalman fit params.
     if (kalmanMaxNumStubs_ < kalmanMinNumStubs_)
-      throw cms::Exception("Settings.cc: Invalid cfg parameters - KalmanMaxNumStubs is less than KalmanMaxNumStubs.");
+      throw cms::Exception("BadConfig")<<"Settings.cc: Invalid cfg parameters - KalmanMaxNumStubs is less than KalmanMaxNumStubs."<<endl;
   }
 
   bool Settings::isHTRPhiEtaRegWhitelisted(unsigned const iEtaReg) const {

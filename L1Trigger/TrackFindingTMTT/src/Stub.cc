@@ -121,14 +121,14 @@ namespace tmtt {
           }
       }
   }
-  if (geoDetId.null()) throw cms::Exception("Stub: Det ID corresponding to Stub not found");
+  if (geoDetId.null()) throw cms::Exception("LogicError")<<"Stub: Det ID corresponding to Stub not found"<<endl;
   */
 
     // This is a faster way we found of doing the conversion. It seems to work ...
     DetId stackDetid = ttStubRef->getDetId();
     DetId geoDetId(stackDetid.rawId() + 1);
     if (not(trackerTopology->isLower(geoDetId) && trackerTopology->stack(geoDetId) == stackDetid))
-      throw cms::Exception("Stub: determination of detId went wrong");
+      throw cms::Exception("LogicError")<<"Stub: determination of detId went wrong"<<endl;
 
     const GeomDetUnit* det0 = trackerGeometry->idToDetUnit(geoDetId);
     // To get other module, can do this
@@ -146,8 +146,8 @@ namespace tmtt {
 
     if (r_ < settings_->trackerInnerRadius() || r_ > settings_->trackerOuterRadius() ||
         fabs(z_) > settings_->trackerHalfLength()) {
-      throw cms::Exception(
-          "Stub: Stub found outside assumed tracker volume. Please update tracker dimensions specified in Settings.h!")
+      throw cms::Exception("BadConfig")<<
+          "Stub: Stub found outside assumed tracker volume. Please update tracker dimensions specified in Settings.h!"
           << " r=" << r_ << " z=" << z_ << " " << ttStubRef->getDetId().subdetId() << endl;
     }
 
@@ -304,7 +304,7 @@ namespace tmtt {
     if (min_bin > max_bin) {
       min_bin = max_array_bin;
       max_bin = min_array_bin;
-      //if (frontendPass_) throw cms::Exception("Stub: m bin calculation found low Pt stub not killed by FE electronics cuts")<<qOverPtMin<<" "<<qOverPtMax<<endl;
+      //if (frontendPass_) throw cms::Exception("LogicError")<<Stub: m bin calculation found low Pt stub not killed by FE electronics cuts "<<qOverPtMin<<" "<<qOverPtMax<<endl;
     }
     min_qOverPt_bin_ = (unsigned int)min_bin;
     max_qOverPt_bin_ = (unsigned int)max_bin;
@@ -603,7 +603,7 @@ namespace tmtt {
     cout<<" DEBUGC "<<this->genuineCluster()[0]<<" "<<this->genuineCluster()[1]<<endl;
     if (this->assocTPofCluster()[0] != nullptr) cout<<" DEBUGD "<<this->assocTPofCluster()[0]->index()<<endl;
     if (this->assocTPofCluster()[1] != nullptr) cout<<" DEBUGE "<<this->assocTPofCluster()[1]->index()<<endl;
-    //    throw cms::Exception("Stub: Truth info of stub & its clusters inconsistent!")<<iErr<<endl;
+    //    throw cms::Exception("LogicError")<<"Stub: Truth info of stub & its clusters inconsistent! "<<iErr<<endl;
   }
   */
   }
@@ -656,7 +656,7 @@ namespace tmtt {
       lay -= 8;
 
     if (lay < 1 || lay > 7)
-      throw cms::Exception("Stub: Reduced layer ID out of expected range");
+      throw cms::Exception("LogicError")<<"Stub: Reduced layer ID out of expected range"<<endl;
 
     return lay;
   }

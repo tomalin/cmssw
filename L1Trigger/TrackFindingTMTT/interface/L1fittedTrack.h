@@ -19,8 +19,6 @@
 #include <utility>
 #include <string>
 
-using namespace std;
-
 //=== This represents a fitted L1 track candidate found in 3 dimensions.
 //=== It gives access to the fitted helix parameters & chi2 etc.
 //=== It also calculates & gives access to associated truth particle (Tracking Particle) if any.
@@ -37,7 +35,7 @@ namespace tmtt {
     // And if track fit declared this to be a valid track (enough stubs left on track after fit etc.).
     L1fittedTrack(const Settings* settings,
                   const L1track3D& l1track3D,
-                  const vector<const Stub*>& stubs,
+                  const std::vector<const Stub*>& stubs,
                   unsigned int hitPattern,
                   float qOverPt,
                   float d0,
@@ -103,11 +101,11 @@ namespace tmtt {
       this->setConsistentHTcell();
     }
 
-    L1fittedTrack() : L1trackBase(){};  // Creates track object, but doesn't set any variables.
+    L1fittedTrack() : L1trackBase(){};  // Creates track object, but doesn't std::set any variables.
 
     ~L1fittedTrack() {}
 
-    //--- Optionally set track helix params & chi2 if beam-spot constraint is used (for 5-parameter fit).
+    //--- Optionally std::set track helix params & chi2 if beam-spot constraint is used (for 5-parameter fit).
     void setBeamConstr(float qOverPt_bcon, float phi0_bcon, float chi2rphi_bcon) {
       done_bcon_ = true;
       qOverPt_bcon_ = qOverPt_bcon;
@@ -173,7 +171,7 @@ namespace tmtt {
     const L1track3D& getL1track3D() const { return l1track3D_; }
 
     // Get stubs on fitted track (can differ from those on HT track if track fit kicked out stubs with bad residuals)
-    const vector<const Stub*>& getStubs() const { return stubs_; }
+    const std::vector<const Stub*>& getStubs() const { return stubs_; }
     // Get number of stubs on fitted track.
     unsigned int getNumStubs() const { return stubs_.size(); }
     // Get number of tracker layers these stubs are in.
@@ -186,9 +184,9 @@ namespace tmtt {
     // Get Hough transform cell locations in units of bin number, corresponding to the fitted helix parameters of the track.
     // Always uses the beam-spot constrained helix params if they are available.
     // (If fitted track is outside HT array, it it put in the closest bin inside it).
-    pair<unsigned int, unsigned int> getCellLocationFit() const { return htRphiTmp_.getCell(this); }
+    std::pair<unsigned int, unsigned int> getCellLocationFit() const { return htRphiTmp_.getCell(this); }
     // Also get HT cell determined by Hough transform.
-    pair<unsigned int, unsigned int> getCellLocationHT() const { return l1track3D_.getCellLocationHT(); }
+    std::pair<unsigned int, unsigned int> getCellLocationHT() const { return l1track3D_.getCellLocationHT(); }
 
     //--- Get information about its association (if any) to a truth Tracking Particle.
     //--- Can differ from that of corresponding HT track, if track fit kicked out stubs with bad residuals.
@@ -196,7 +194,7 @@ namespace tmtt {
     // Get best matching tracking particle (=nullptr if none).
     const TP* getMatchedTP() const { return matchedTP_; }
     // Get the matched stubs with this Tracking Particle
-    const vector<const Stub*>& getMatchedStubs() const { return matchedStubs_; }
+    const std::vector<const Stub*>& getMatchedStubs() const { return matchedStubs_; }
     // Get number of matched stubs with this Tracking Particle
     unsigned int getNumMatchedStubs() const { return matchedStubs_.size(); }
     // Get number of tracker layers with matched stubs with this Tracking Particle
@@ -209,7 +207,7 @@ namespace tmtt {
       if (nStubCount > 0) {  // Original HT track candidate did match a truth particle
         const TP* tp = l1track3D_.getMatchedTP();
         for (const Stub* s : stubs_) {
-          set<const TP*> assTPs = s->assocTPs();
+          std::set<const TP*> assTPs = s->assocTPs();
           if (assTPs.find(tp) != assTPs.end())
             nStubCount--;  // We found a stub matched to original truth particle that survived fit.
         }
@@ -303,14 +301,14 @@ namespace tmtt {
       //return (max(fabs(this->deltaM()), fabs(this->deltaC())) < 0.5);
       // Use helix params with beam-spot constaint if done in case of 5 param fit.
 
-      pair<unsigned int, unsigned int> htCell = this->getCellLocationHT();
+      std::pair<unsigned int, unsigned int> htCell = this->getCellLocationHT();
       bool consistent = (htCell == this->getCellLocationFit());
 
       if (l1track3D_.mergedHTcell()) {
         // If this is a merged cell, check other elements of merged cell.
-        pair<unsigned int, unsigned int> htCell10(htCell.first + 1, htCell.second);
-        pair<unsigned int, unsigned int> htCell01(htCell.first, htCell.second + 1);
-        pair<unsigned int, unsigned int> htCell11(htCell.first + 1, htCell.second + 1);
+        std::pair<unsigned int, unsigned int> htCell10(htCell.first + 1, htCell.second);
+        std::pair<unsigned int, unsigned int> htCell01(htCell.first, htCell.second + 1);
+        std::pair<unsigned int, unsigned int> htCell11(htCell.first + 1, htCell.second + 1);
         if (htCell10 == this->getCellLocationFit())
           consistent = true;
         if (htCell01 == this->getCellLocationFit())
@@ -331,7 +329,7 @@ namespace tmtt {
     }
 
     // Digitize track and degrade helix parameter resolution according to effect of digitisation.
-    void digitizeTrack(const string& fitterName);
+    void digitizeTrack(const std::string& fitterName);
 
     // Access to detailed info about digitized track
     const DigitalTrack& digitaltrack() const { return digitalTrack_; }
@@ -344,7 +342,7 @@ namespace tmtt {
     L1track3D l1track3D_;
 
     //--- The stubs on the fitted track (can differ from those on HT track if fit kicked off stubs with bad residuals)
-    vector<const Stub*> stubs_;
+    std::vector<const Stub*> stubs_;
     unsigned int nLayers_;
 
     //--- Bit-encoded hit pattern (where layer number assigned by increasing distance from origin, according to layers track expected to cross).
@@ -377,7 +375,7 @@ namespace tmtt {
 
     //--- Information about its association (if any) to a truth Tracking Particle.
     const TP* matchedTP_;
-    vector<const Stub*> matchedStubs_;
+    std::vector<const Stub*> matchedStubs_;
     unsigned int nMatchedLayers_;
 
     //--- Has the track fit declared this to be a valid track?

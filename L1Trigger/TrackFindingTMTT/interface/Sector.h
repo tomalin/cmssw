@@ -6,8 +6,6 @@
 #include <vector>
 #include <unordered_map>
 
-using namespace std;
-
 namespace tmtt {
 
   class Settings;
@@ -55,7 +53,7 @@ namespace tmtt {
     bool insidePhi(const Stub* stub) const;
 
     // Check if stub is within subsectors in eta that sector may be divided into.
-    vector<bool> insideEtaSubSecs(const Stub* stub) const;
+    std::vector<bool> insideEtaSubSecs(const Stub* stub) const;
 
     unsigned int iPhiSec() const { return iPhiSec_; }  // Sector number.
     unsigned int iEtaReg() const { return iEtaReg_; }
@@ -72,7 +70,7 @@ namespace tmtt {
     // For performance studies, note which stubs on given tracking particle are inside the sector.
     // Returns two booleans for each stub, indicating if they are in phi & eta sectors respectively.
     // You can AND them together to check if stub is in (eta,phi) sector.
-    unordered_map<const Stub*, pair<bool, bool>> stubsInside(const TP& tp) const;
+    std::unordered_map<const Stub*, std::pair<bool, bool>> stubsInside(const TP& tp) const;
 
     // Count number of stubs in given tracking particle which are inside this (phi,eta) sector;
     // or inside it if only the eta cuts are applied; or inside it if only the phi cuts are applied.
@@ -98,7 +96,7 @@ namespace tmtt {
     Long64_t forceBitWidth(const float value, const UInt_t nBits) const;
 
     // Check if stub is within subsectors in eta that sector may be divided into. Uses digitized calculation corresponding to GP firmware. (Kristian Harder)
-    vector<bool> subEtaFwCalc(const int rT, const int z) const;
+    std::vector<bool> subEtaFwCalc(const int rT, const int z) const;
 
   private:
     const Settings* settings_;
@@ -133,8 +131,8 @@ namespace tmtt {
 
     // Possible subsectors in eta within each sector.
     unsigned int numSubSecsEta_;
-    vector<float> zOuterMinSub_;
-    vector<float> zOuterMaxSub_;
+    std::vector<float> zOuterMinSub_;
+    std::vector<float> zOuterMaxSub_;
   };
 
 }  // namespace tmtt

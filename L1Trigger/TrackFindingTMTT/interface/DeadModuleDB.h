@@ -9,8 +9,6 @@
 #include <utility>
 #include <cmath>
 
-using namespace std;
-
 namespace tmtt {
 
   class Settings;
@@ -43,7 +41,7 @@ namespace tmtt {
     // Should the required number of layers that tracks must have be reduced by 1 in the given sector, because of dead modules
     // within it? This function is only invoked if cfg param DeadReduceLayers = True.
     bool reduceLayerCut(unsigned int iPhiSec, unsigned int iEtaReg) const {
-      return reduceLayerCut_.find(pair<unsigned int, unsigned int>(iPhiSec, iEtaReg)) != reduceLayerCut_.end();
+      return reduceLayerCut_.find(std::pair<unsigned int, unsigned int>(iPhiSec, iEtaReg)) != reduceLayerCut_.end();
     }
 
   public:
@@ -89,11 +87,11 @@ namespace tmtt {
 
   private:
     // Regions of the tracker barrel & endcap which are dead.
-    map<unsigned int, vector<DeadModuleDB::DeadBarrelRegion> > deadBarrelRegions_;
-    map<unsigned int, vector<DeadModuleDB::DeadEndcapRegion> > deadEndcapRegions_;
+    std::map<unsigned int, std::vector<DeadModuleDB::DeadBarrelRegion> > deadBarrelRegions_;
+    std::map<unsigned int, std::vector<DeadModuleDB::DeadEndcapRegion> > deadEndcapRegions_;
 
     // Sectors in which layer cut should be reduced.
-    set<pair<unsigned int, unsigned int> > reduceLayerCut_;
+    std::set<std::pair<unsigned int, unsigned int> > reduceLayerCut_;
   };
 
 }  // namespace tmtt

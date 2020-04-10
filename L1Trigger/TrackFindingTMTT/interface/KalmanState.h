@@ -12,7 +12,7 @@ namespace tmtt {
   class KalmanState;
   class StubCluster;
 
-  typedef std::map<std::string, double> (*GET_TRACK_PARAMS)(const L1KalmanComb *p, const KalmanState *state);
+  typedef std::vector<double> (*GET_TRACK_PARAMS)(const L1KalmanComb *p, const KalmanState *state);
 
   class KalmanState {
   public:
@@ -74,7 +74,7 @@ namespace tmtt {
     static bool orderMinSkipChi2(const KalmanState *left, const KalmanState *right);
 
     static bool order(const KalmanState *left, const KalmanState *right);
-    void dump(ostream &os, const TP *tp = 0, bool all = 0) const;
+    void dump(std::ostream &os, const TP *tp = 0, bool all = 0) const;
     void setChi2(double chi2rphi, double chi2rz) {
       chi2rphi_ = chi2rphi;
       chi2rz_ = chi2rz;

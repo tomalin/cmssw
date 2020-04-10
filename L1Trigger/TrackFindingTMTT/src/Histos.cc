@@ -32,7 +32,7 @@ namespace tmtt {
 
   //=== Store cfg parameters.
 
-  Histos::Histos(const Settings* settings) : settings_(settings), plotFirst_(true), bApproxMistake_(false) {
+Histos::Histos(const Settings* settings) : settings_(settings), oldSumW2opt_(false), plotFirst_(true), bApproxMistake_(false) {
     genMinStubLayers_ = settings->genMinStubLayers();
     numPhiSectors_ = settings->numPhiSectors();
     numEtaRegions_ = settings->numEtaRegions();
@@ -53,6 +53,7 @@ namespace tmtt {
     if (!this->enabled())
       return;
 
+    oldSumW2opt_ = TH1::GetDefaultSumw2();
     TH1::SetDefaultSumw2(true);
 
     // Book histograms about input data.
@@ -424,7 +425,7 @@ namespace tmtt {
     // Study efficiency of stubs to pass front-end electronics cuts.
 
     const vector<Stub>& vAllStubs = inputData.getAllStubs();  // Get all stubs prior to FE cuts to do this.
-    for (const Stub s : vAllStubs) {
+    for (const Stub& s : vAllStubs) {
       unsigned int layerOrTenPlusRing = s.barrel() ? s.layerId() : 10 + s.endcapRing();
       // Fraction of all stubs (good and bad) failing tightened front-end electronics cuts.
       hisStubKillFE_->Fill(layerOrTenPlusRing, (!s.frontendPass()));
@@ -914,8 +915,8 @@ namespace tmtt {
 
       if (!settings_->allowOver2EtaSecs()) {
         if (nEtaSecs > 2)
-          throw cms::Exception(
-              "Histos ERROR: Stub assigned to more than 2 eta regions. Please redefine eta regions to avoid this!")
+          throw cms::Exception("LogicError")<<
+              "Histos ERROR: Stub assigned to more than 2 eta regions. Please redefine eta regions to avoid this!"
               << " stub r=" << stub->r() << " eta=" << stub->eta() << endl;
       }
     }
@@ -1217,12 +1218,12 @@ namespace tmtt {
 
   //=== Book histograms studying track candidates found by Hough Transform.
 
-  TFileDirectory Histos::bookTrackCands(string tName) {
+  TFileDirectory Histos::bookTrackCands(const string& tName) {
     // Now book histograms for studying tracking in general.
 
     // Define lambda function to facilitate adding "tName" to directory & histogram names.
-    //auto addn = [tName](string s){ return TString::Format("%s_%s", s.c_str(), tName.c_str()).Data(); };
-    auto addn = [tName](string s) { return TString::Format("%s_%s", s.c_str(), tName.c_str()); };
+    //auto addn = [tName](const string& s){ return TString::Format("%s_%s", s.c_str(), tName.c_str()).Data(); };
+    auto addn = [tName](const string& s) { return TString::Format("%s_%s", s.c_str(), tName.c_str()); };
 
     TFileDirectory inputDir = fs_->mkdir(addn("TrackCands").Data());
 
@@ -1451,7 +1452,7 @@ namespace tmtt {
   void Histos::fillTrackCands(const InputData& inputData, const vector<L1track3D>& tracks, string tName) {
     bool withRZfilter = (tName == "RZ");
 
-    bool TMTT = (tName == "HT" || tName == "RZ");
+    bool algoTMTT = (tName == "HT" || tName == "RZ"); // Check if running TMTT or Hybrid L1 tracking.
 
     // Now fill histograms for studying tracking in general.
 
@@ -1482,7 +1483,7 @@ namespace tmtt {
     }
 
     profNumTrackCands_[tName]->Fill(1.0, tracks.size());  // Plot mean number of tracks/event.
-    if (TMTT) {
+    if (algoTMTT) {
       for (unsigned int iEtaReg = 0; iEtaReg < numEtaRegions_; iEtaReg++) {
         for (unsigned int iPhiSec = 0; iPhiSec < numPhiSectors_; iPhiSec++) {
           hisNumTrksPerSect_[tName]->Fill(nTrksPerSec(iPhiSec, iEtaReg));
@@ -1520,7 +1521,7 @@ namespace tmtt {
     }
 
     profStubsOnTracks_[tName]->Fill(1.0, nStubsOnTracks);
-    if (TMTT) {
+    if (algoTMTT) {
       for (unsigned int iEtaReg = 0; iEtaReg < numEtaRegions_; iEtaReg++) {
         for (unsigned int iPhiSec = 0; iPhiSec < numPhiSectors_; iPhiSec++) {
           hisStubsOnTracksPerSect_[tName]->Fill(nStubsOnTrksInSec(iPhiSec, iEtaReg));
@@ -1538,9 +1539,9 @@ namespace tmtt {
 
     // Plot number of tracks & number of stubs per output HT opto-link.
 
-    if (TMTT && not withRZfilter) {
+    if (algoTMTT && not withRZfilter) {
       static std::atomic<bool> firstMess = true;
-      const unsigned int numPhiSecPerNon = numPhiSectors_ / numPhiNonants;
+      //const unsigned int numPhiSecPerNon = numPhiSectors_ / numPhiNonants;
       // Hard-wired bodge
       const unsigned int nLinks = houghNbinsPt_ / 2;  // Hard-wired to number of course HT bins. Check.
 
@@ -1583,7 +1584,7 @@ namespace tmtt {
       hisNumTracksVsQoverPt_[tName]->Fill(trk.qOverPt());  // Plot reconstructed q/Pt of track cands.
       hisStubsPerTrack_[tName]->Fill(trk.getNumStubs());   // Stubs per track.
       const TP* tp = trk.getMatchedTP();
-      if (TMTT) {
+      if (algoTMTT) {
         // For genuine tracks, check how often they have too many stubs to be stored in cell memory. (Perhaps worse for high Pt particles in jets?).
         if (tp != nullptr) {
           if (tp->useForAlgEff())
@@ -1688,7 +1689,7 @@ namespace tmtt {
           iSecRecoed.insert({trk->iPhiSec(), trk->iEtaReg()});
         nSecsMatchingTPs = iSecRecoed.size();
 
-        if (TMTT) {
+        if (algoTMTT) {
           for (const auto& p : iSecRecoed) {
             unsigned int nTrkInSec = 0;
             for (const L1track3D* trk : matchedTrks) {
@@ -1846,7 +1847,7 @@ namespace tmtt {
       }
     }
 
-    if (TMTT) {
+    if (algoTMTT) {
       // Diagnose reason why not all viable tracking particles were reconstructed.
       const map<const TP*, string> diagnosis = this->diagnoseTracking(inputData.getTPs(), tracks, withRZfilter);
       for (const auto& iter : diagnosis) {
@@ -2354,7 +2355,7 @@ namespace tmtt {
 
     for (const string& fitName : trackFitters_) {
       // Define lambda function to facilitate adding "fitName" histogram names.
-      auto addn = [fitName](string s) { return TString::Format("%s_%s", s.c_str(), fitName.c_str()); };
+      auto addn = [fitName](const string& s) { return TString::Format("%s_%s", s.c_str(), fitName.c_str()); };
 
       //std::cout << "Booking histograms for " << fitName << std::endl;
       TFileDirectory inputDir = fs_->mkdir(fitName);
@@ -3322,9 +3323,9 @@ namespace tmtt {
 
   //=== Produce plots of tracking efficiency after HT or after r-z track filter (run at end of job).
 
-  TFileDirectory Histos::plotTrackEfficiency(string tName) {
+  TFileDirectory Histos::plotTrackEfficiency(const string& tName) {
     // Define lambda function to facilitate adding "tName" to directory & histogram names.
-    auto addn = [tName](string s) { return TString::Format("%s_%s", s.c_str(), tName.c_str()); };
+    auto addn = [tName](const string& s) { return TString::Format("%s_%s", s.c_str(), tName.c_str()); };
 
     TFileDirectory inputDir = fs_->mkdir(addn("Effi").Data());
     // Plot tracking efficiency
@@ -3501,9 +3502,9 @@ namespace tmtt {
 
   //=== Produce plots of tracking efficiency after track fit (run at end of job).
 
-  TFileDirectory Histos::plotTrackEffAfterFit(string fitName) {
+  TFileDirectory Histos::plotTrackEffAfterFit(const string& fitName) {
     // Define lambda function to facilitate adding "fitName" to directory & histogram names.
-    auto addn = [fitName](string s) { return TString::Format("%s_%s", s.c_str(), fitName.c_str()); };
+    auto addn = [fitName](const string& s) { return TString::Format("%s_%s", s.c_str(), fitName.c_str()); };
 
     TFileDirectory inputDir = fs_->mkdir(addn("Effi").Data());
     // Plot tracking efficiency
@@ -3680,7 +3681,7 @@ namespace tmtt {
 
   //=== Print summary of track-finding performance after track pattern reco.
 
-  void Histos::printTrackPerformance(string tName) {
+  void Histos::printTrackPerformance(const string& tName) {
     float numTrackCands = profNumTrackCands_[tName]->GetBinContent(1);   // No. of track cands
     float numTrackCandsErr = profNumTrackCands_[tName]->GetBinError(1);  // No. of track cands uncertainty
     float numMatchedTrackCandsIncDups =
@@ -3728,7 +3729,7 @@ namespace tmtt {
 
   //=== Print summary of track-finding performance after helix fit for given track fitter.
 
-  void Histos::printFitTrackPerformance(string fitName) {
+  void Histos::printFitTrackPerformance(const string& fitName) {
     float numFitTracks = profNumFitTracks_[fitName]->GetBinContent(1);   // No. of track cands
     float numFitTracksErr = profNumFitTracks_[fitName]->GetBinError(1);  // No. of track cands uncertainty
     float numMatchedFitTracksIncDups =
@@ -3925,6 +3926,9 @@ namespace tmtt {
     // Check if GP B approximation cfg params are inconsistent.
     if (bApproxMistake_)
       cout << endl << "WARNING: BApprox cfg params are inconsistent - see printout above." << endl;
+
+    // Restore original ROOT default cfg.
+    TH1::SetDefaultSumw2(oldSumW2opt_);
   }
 
   //=== Determine "B" parameter, used in GP firmware to allow for tilted modules.

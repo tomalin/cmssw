@@ -16,10 +16,6 @@
 #include "L1Trigger/TrackFindingTMTT/interface/StubWindowSuggest.h"
 
 #include "FWCore/Framework/interface/ESHandle.h"
-#include "FWCore/Framework/interface/Event.h"
-#include "FWCore/Framework/interface/EventSetup.h"
-#include "MagneticField/Engine/interface/MagneticField.h"
-#include "MagneticField/Records/interface/IdealMagneticFieldRecord.h"
 
 #include "L1Trigger/TrackFindingTMTT/interfaceDemo/DigiConverter.h"
 
@@ -41,16 +37,31 @@ using boost::numeric::ublas::matrix;
 
 namespace demo {
 
-  DigiProducer::DigiProducer(const edm::ParameterSet& iConfig)
-      : tpInputTag(consumes<TrackingParticleCollection>(iConfig.getParameter<edm::InputTag>("tpInputTag"))),
-        stubInputTag(consumes<tmtt::DetSetVec>(iConfig.getParameter<edm::InputTag>("stubInputTag"))),
-        stubTruthInputTag(consumes<tmtt::TTStubAssMap>(iConfig.getParameter<edm::InputTag>("stubTruthInputTag"))),
-        clusterTruthInputTag(
-            consumes<tmtt::TTClusterAssMap>(iConfig.getParameter<edm::InputTag>("clusterTruthInputTag"))),
-        genJetInputTag_(consumes<reco::GenJetCollection>(iConfig.getParameter<edm::InputTag>("genJetInputTag"))),
-        trackerGeometryInfo_() {
+  DigiProducer::DigiProducer(const edm::ParameterSet& iConfig) {
+
+    using namespace edm;
+
     // Get configuration parameters
     settings_ = new tmtt::Settings(iConfig);
+  
+    // Get tokens for ES data access.
+    magneticFieldToken_ = esConsumes<MagneticField, IdealMagneticFieldRecord, 
+				     Transition::BeginRun>(settings_->magneticFieldInputTag());
+    trackerGeometryToken_ = esConsumes<TrackerGeometry, TrackerDigiGeometryRecord, 
+				       Transition::BeginRun>(settings_->trackerGeometryInputTag());
+    trackerTopologyToken_ = esConsumes<TrackerTopology, TrackerTopologyRcd,
+				       Transition::BeginRun>(settings_->trackerTopologyInputTag());
+
+    // Get tokens for ED data access.
+    stubToken_ = consumes<TTStubDetSetVec>(settings_->stubInputTag()); 
+    if (settings_->enableMCtruth()) {
+      // These lines use lots of CPU, even if no use of truth info is made later.
+      tpToken_ = consumes<TrackingParticleCollection>(settings_->tpInputTag());
+      stubTruthToken_ = consumes<TTStubAssMap>(settings_->stubTruthInputTag());
+      clusterTruthToken_ = consumes<TTClusterAssMap>(settings_->clusterTruthInputTag());
+      genJetToken_ = consumes<reco::GenJetCollection>(settings_->genJetInputTag());
+    }
+
     trackFitters_ = settings_->trackFitters();
     useRZfilter_ = settings_->useRZfilter();
     runRZfilter_ = (useRZfilter_.size() > 0);  // Do any fitters require an r-z track filter to be run?
@@ -89,14 +100,11 @@ namespace demo {
   }
 
   void DigiProducer::beginRun(const edm::Run& iRun, const edm::EventSetup& iSetup) {
-    // Get the B-field and store its value in the Settings class.
 
-    edm::ESHandle<MagneticField> magneticFieldHandle;
-    iSetup.get<IdealMagneticFieldRecord>().get(magneticFieldHandle);
-    const MagneticField* theMagneticField = magneticFieldHandle.product();
+    // Get the B-field and store its value in the Settings class.
+    const MagneticField* theMagneticField = &(iSetup.getData(magneticFieldToken_));
     float bField = theMagneticField->inTesla(GlobalPoint(0, 0, 0)).z();  // B field in Tesla.
     cout << endl << "--- B field = " << bField << " Tesla ---" << endl << endl;
-
     settings_->setBfield(bField);
 
     // Initialize track fitting algorithm at start of run (especially with B-field dependent variables).
@@ -104,22 +112,17 @@ namespace demo {
       fitterWorkerMap_[fitterName]->initRun();
     }
 
-    // Print info on tilted modules
-    edm::ESHandle<TrackerGeometry> trackerGeometryHandle;
-    iSetup.get<TrackerDigiGeometryRecord>().get(trackerGeometryHandle);
-    const TrackerGeometry* trackerGeometry = trackerGeometryHandle.product();
-
-    edm::ESHandle<TrackerTopology> trackerTopologyHandle;
-    iSetup.get<TrackerTopologyRcd>().get(trackerTopologyHandle);
-    const TrackerTopology* trackerTopology = trackerTopologyHandle.product();
-
-    trackerGeometryInfo_.getTiltedModuleInfo(settings_, trackerTopology, trackerGeometry);
+    // Get tracker geometry
+    trackerGeometry_ = &(iSetup.getData(trackerGeometryToken_));
+    trackerTopology_ = &(iSetup.getData(trackerTopologyToken_));
+    trackerGeometryInfo_.getTiltedModuleInfo(settings_, trackerTopology_, trackerGeometry_);
   }
 
   void DigiProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
+
     // Note useful info about MC truth particles and about reconstructed stubs .
-    tmtt::InputData inputData(
-        iEvent, iSetup, settings_, tpInputTag, stubInputTag, stubTruthInputTag, clusterTruthInputTag, genJetInputTag_);
+    tmtt::InputData inputData(iEvent, iSetup, settings_, trackerGeometry_, trackerTopology_,
+	tpToken_, stubToken_, stubTruthToken_, clusterTruthToken_, genJetToken_);
 
     const vector<tmtt::TP>& vTPs = inputData.getTPs();
     const vector<const tmtt::Stub*>& vStubs = inputData.getStubs();

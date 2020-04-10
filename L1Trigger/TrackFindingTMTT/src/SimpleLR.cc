@@ -13,7 +13,9 @@
 #include <algorithm>
 #include <limits>
 
-using namespace tmtt;
+using namespace std;
+
+namespace tmtt {
 
 static bool pair_compare(std::pair<const Stub*, float> a, std::pair<const Stub*, float> b) {
   return (a.second < b.second);
@@ -447,8 +449,8 @@ L1fittedTrack SimpleLR::fit(const L1track3D& l1track3D) {
     accepted = false;
 
   // Kinematic cuts -- NOT YET IN FIRMWARE!!!
-  const float tolerance = 0.1;
-  if (fabs(qOverPt) > 1. / (settings_->houghMinPt() - 0.1))
+  constexpr float tolerance = 0.1;
+  if (fabs(qOverPt) > 1. / (settings_->houghMinPt() - tolerance))
     accepted = false;
   if (fabs(z0) > 20.)
     accepted = false;
@@ -492,4 +494,6 @@ L1fittedTrack SimpleLR::fit(const L1track3D& l1track3D) {
   }
 
   return fitTrk;
+}
+
 }
