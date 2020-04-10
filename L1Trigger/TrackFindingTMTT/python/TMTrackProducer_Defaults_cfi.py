@@ -9,6 +9,12 @@ import FWCore.ParameterSet.Config as cms
 
 TMTrackProducer_params = cms.PSet(
 
+  # Tags for ES products
+  magneticFieldInputTag   = cms.ESInputTag( "VolumeBasedMagneticFieldESProducer", "" ), 
+  trackerGeometryInputTag = cms.ESInputTag( "trackerGeometry", "" ), 
+  trackerTopologyInputTag = cms.ESInputTag( "trackerTopology", "" ), 
+
+  # Tags for ED products
   tpInputTag = cms.InputTag("mix", "MergedTrackTruth"),
   stubInputTag = cms.InputTag("TTStubsFromPhase2TrackerDigis", "StubAccepted"),
   stubTruthInputTag = cms.InputTag("TTStubAssociatorFromPixelDigis", "StubAccepted"),
@@ -311,8 +317,6 @@ TMTrackProducer_params = cms.PSet(
      #
      # Maximum allowed number of iterations of LR fitter.
      MaxIterationsLR                 = cms.uint32( 8 ),
-     # Internal histograms are filled if it is True
-     LRFillInternalHists             = cms.bool(False),
      # If False: residual of a stub is the max of its r-phi & r-z residuals. 
      # If True: the residual is the mean of these residuals.
      CombineResiduals                = cms.bool( True ),
@@ -361,8 +365,6 @@ TMTrackProducer_params = cms.PSet(
      #
      # Larger number has more debug printout. "1" is useful for understanding why tracks are lost, best combined with TrackFitCheat=True.
      KalmanDebugLevel        = cms.uint32(0),
-     # Internal histograms are filled if it is True
-     KalmanFillInternalHists  = cms.bool(False),
      # Fit will reject fitted tracks unless it can assign at least this number of stubs to them.
      KalmanMinNumStubs       = cms.uint32(4),
      # Fit will attempt to add up to this nummber of stubs to each fitted tracks, but won't bother adding more.
