@@ -51,8 +51,7 @@ constexpr double matx_inner[25] = {
   /* If using 5 param helix fit, get track params with beam-spot constraint & track fit chi2 from applying it. */
   /* (N.B. chi2rz unchanged by constraint) */
 
-  std::vector<double> KFParamsComb::getTrackParams_BeamConstr(const KalmanState* state,
-                                                                        double& chi2rphi) const {
+  std::vector<double> KFParamsComb::getTrackParams_BeamConstr(const KalmanState* state, double& chi2rphi) const {
     if (nPar_ == 5) {
       std::vector<double> y(nPar_);
       std::vector<double> x = state->xa();

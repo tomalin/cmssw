@@ -59,8 +59,8 @@ class TrackFitGeneric;*/
     const edm::EDGetTokenT<tmtt::TTClusterAssMap> clusterTruthToken_;
     const edm::EDGetTokenT<reco::GenJetCollection> genJetToken_;
 
-    const TrackerGeometry* trackerGeometry_; 
-    const TrackerTopology* trackerTopology_;
+    const TrackerGeometry *trackerGeometry_;
+    const TrackerTopology *trackerTopology_;
 
     // Configuration parameters
     tmtt::Settings *settings_;
@@ -69,7 +69,7 @@ class TrackFitGeneric;*/
     bool runRZfilter_;
 
     tmtt::Histos *hists_;
-   std::map<std::string, tmtt::TrackFitGeneric *> fitterWorkerMap_;
+    std::map<std::string, tmtt::TrackFitGeneric *> fitterWorkerMap_;
 
     tmtt::TrackerGeometryInfo trackerGeometryInfo_;
   };

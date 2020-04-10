@@ -113,11 +113,11 @@ namespace tmtt {
   protected:
     // Given a range in one of the coordinates specified by coordRange, calculate the corresponding range of bins. The other arguments specify the axis. And also if some cells nominally associated to stub are to be killed.
     virtual std::pair<unsigned int, unsigned int> convertCoordRangeToBinRange(std::pair<float, float> coordRange,
-                                                                         unsigned int nBinsAxis,
-                                                                         float coordAxisMin,
-                                                                         float coordAxisBinSize,
-                                                                         unsigned int killSomeHTcells,
-                                                                         bool debug = false) const;
+                                                                              unsigned int nBinsAxis,
+                                                                              float coordAxisMin,
+                                                                              float coordAxisBinSize,
+                                                                              unsigned int killSomeHTcells,
+                                                                              bool debug = false) const;
 
   private:
     // Return a list of all track candidates found in this array, giving access to all the stubs on each one

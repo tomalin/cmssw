@@ -32,8 +32,8 @@ namespace tmtt {
   InputData::InputData(const edm::Event& iEvent,
                        const edm::EventSetup& iSetup,
                        Settings* settings,
-		       const TrackerGeometry* trackerGeometry,
-		       const TrackerTopology* trackerTopology,
+                       const TrackerGeometry* trackerGeometry,
+                       const TrackerTopology* trackerTopology,
                        const edm::EDGetTokenT<TrackingParticleCollection> tpToken,
                        const edm::EDGetTokenT<TTStubDetSetVec> stubToken,
                        const edm::EDGetTokenT<TTStubAssMap> stubTruthToken,
@@ -102,7 +102,8 @@ namespace tmtt {
 
     unsigned int stubCount = 0;
 
-    for (TTStubDetSetVec::const_iterator p_module = ttStubHandle->begin(); p_module != ttStubHandle->end(); p_module++) {
+    for (TTStubDetSetVec::const_iterator p_module = ttStubHandle->begin(); p_module != ttStubHandle->end();
+         p_module++) {
       for (DetSet::const_iterator p_ttstub = p_module->begin(); p_ttstub != p_module->end(); p_ttstub++) {
         TTStubRef ttStubRef = edmNew::makeRefTo(ttStubHandle, p_ttstub);
 

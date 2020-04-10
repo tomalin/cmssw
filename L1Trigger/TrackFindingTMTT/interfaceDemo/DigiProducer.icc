@@ -38,22 +38,21 @@ using boost::numeric::ublas::matrix;
 namespace demo {
 
   DigiProducer::DigiProducer(const edm::ParameterSet& iConfig) {
-
     using namespace edm;
 
     // Get configuration parameters
     settings_ = new tmtt::Settings(iConfig);
-  
+
     // Get tokens for ES data access.
-    magneticFieldToken_ = esConsumes<MagneticField, IdealMagneticFieldRecord, 
-				     Transition::BeginRun>(settings_->magneticFieldInputTag());
-    trackerGeometryToken_ = esConsumes<TrackerGeometry, TrackerDigiGeometryRecord, 
-				       Transition::BeginRun>(settings_->trackerGeometryInputTag());
-    trackerTopologyToken_ = esConsumes<TrackerTopology, TrackerTopologyRcd,
-				       Transition::BeginRun>(settings_->trackerTopologyInputTag());
+    magneticFieldToken_ =
+        esConsumes<MagneticField, IdealMagneticFieldRecord, Transition::BeginRun>(settings_->magneticFieldInputTag());
+    trackerGeometryToken_ = esConsumes<TrackerGeometry, TrackerDigiGeometryRecord, Transition::BeginRun>(
+        settings_->trackerGeometryInputTag());
+    trackerTopologyToken_ =
+        esConsumes<TrackerTopology, TrackerTopologyRcd, Transition::BeginRun>(settings_->trackerTopologyInputTag());
 
     // Get tokens for ED data access.
-    stubToken_ = consumes<TTStubDetSetVec>(settings_->stubInputTag()); 
+    stubToken_ = consumes<TTStubDetSetVec>(settings_->stubInputTag());
     if (settings_->enableMCtruth()) {
       // These lines use lots of CPU, even if no use of truth info is made later.
       tpToken_ = consumes<TrackingParticleCollection>(settings_->tpInputTag());
@@ -100,7 +99,6 @@ namespace demo {
   }
 
   void DigiProducer::beginRun(const edm::Run& iRun, const edm::EventSetup& iSetup) {
-
     // Get the B-field and store its value in the Settings class.
     const MagneticField* theMagneticField = &(iSetup.getData(magneticFieldToken_));
     float bField = theMagneticField->inTesla(GlobalPoint(0, 0, 0)).z();  // B field in Tesla.
@@ -119,10 +117,17 @@ namespace demo {
   }
 
   void DigiProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
-
     // Note useful info about MC truth particles and about reconstructed stubs .
-    tmtt::InputData inputData(iEvent, iSetup, settings_, trackerGeometry_, trackerTopology_,
-	tpToken_, stubToken_, stubTruthToken_, clusterTruthToken_, genJetToken_);
+    tmtt::InputData inputData(iEvent,
+                              iSetup,
+                              settings_,
+                              trackerGeometry_,
+                              trackerTopology_,
+                              tpToken_,
+                              stubToken_,
+                              stubTruthToken_,
+                              clusterTruthToken_,
+                              genJetToken_);
 
     const vector<tmtt::TP>& vTPs = inputData.getTPs();
     const vector<const tmtt::Stub*>& vStubs = inputData.getStubs();

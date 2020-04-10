@@ -161,7 +161,7 @@ namespace tmtt {
     const vector<bool> psVsType = {true, true, true, true, false, true, false, false};
     const vector<bool> tiltedVsType = {false, true, false, true, false, false, false, false};
     if (pitchVsType.size() != sepVsType.size())
-      throw cms::Exception("LogicError")<<"DigitalStub: module type array size wrong"<<endl;
+      throw cms::Exception("LogicError") << "DigitalStub: module type array size wrong" << endl;
     const float tol = 0.001;  // Tolerance
     for (unsigned int i = 0; i < pitchVsType.size(); i++) {
       if (fabs(pitch - pitchVsType[i]) < tol && fabs(sep - sepVsType[i]) < tol && barrel == barrelVsType[i] &&
@@ -170,16 +170,16 @@ namespace tmtt {
       }
     }
     if (moduleType_ == 999)
-      throw cms::Exception("LogicError")<<"DigitalStub: unknown module type: "
-          << "pitch=" << pitch << " separation=" << sep << " barrel=" << barrel << " tilted=" << tiltedBarrel
-          << " PS=" << psModule << endl;
+      throw cms::Exception("LogicError") << "DigitalStub: unknown module type: "
+                                         << "pitch=" << pitch << " separation=" << sep << " barrel=" << barrel
+                                         << " tilted=" << tiltedBarrel << " PS=" << psModule << endl;
   }
 
   //=== Digitize stub for input to Geographic Processor, with stub phi coord. measured relative to phi nonant that contains specified phi sector.
 
   void DigitalStub::makeGPinput(unsigned int iPhiSec) {
     if (!ranInit_)
-      throw cms::Exception("LogicError")<<"DigitalStub: You forgot to call init() before makeGPinput()!"<<endl;
+      throw cms::Exception("LogicError") << "DigitalStub: You forgot to call init() before makeGPinput()!" << endl;
 
     unsigned int iPhiNon =
         floor(iPhiSec * numPhiNonants_ / numPhiSectors_);  // Find nonant corresponding to this sector.
@@ -229,7 +229,7 @@ namespace tmtt {
 
   void DigitalStub::makeHTinput(unsigned int iPhiSec) {
     if (!ranInit_)
-      throw cms::Exception("LogicError")<<"DigitalStub: You forgot to call init() before makeHTinput()!"<<endl;
+      throw cms::Exception("LogicError") << "DigitalStub: You forgot to call init() before makeHTinput()!" << endl;
 
     // Digitize for GP input if not already done, since some variables are shared by GP & HT.
     this->makeGPinput(iPhiSec);
@@ -318,7 +318,7 @@ namespace tmtt {
 
   void DigitalStub::makeSForTFinput(string SForTF) {
     if (!ranInit_)
-      throw cms::Exception("LogicError")<<"DigitalStub: You forgot to call init() before makeSForTFinput()!"<<endl;
+      throw cms::Exception("LogicError") << "DigitalStub: You forgot to call init() before makeSForTFinput()!" << endl;
 
     // Save CPU by not digitizing stub again if already done.
     if (ranMakeSForTFinput_ != SForTF) {
@@ -363,7 +363,7 @@ namespace tmtt {
 
   void DigitalStub::makeDRinput(unsigned int stubId) {
     if (!ranInit_)
-      throw cms::Exception("LogicError")<<"DigitalStub: You forgot to call init() before makeDRinput()!"<<endl;
+      throw cms::Exception("LogicError") << "DigitalStub: You forgot to call init() before makeDRinput()!" << endl;
 
     ranMakeDRinput_ = true;  // Note we ran makeDRinput().
     stubId_ = stubId;
@@ -422,20 +422,20 @@ namespace tmtt {
   void DigitalStub::checkInRange() const {
     // All ranges are centred at zero, except for rho, which is +ve-definate.
     if (fabs(phiS_orig_) >= 0.5 * phiSRange_)
-      throw cms::Exception("BadConfig")<<"DigitalStub: Stub phiS is out of assumed digitization range."
-          << " |phiS| = " << fabs(phiS_orig_) << " > " << 0.5 * phiSRange_ << endl;
+      throw cms::Exception("BadConfig") << "DigitalStub: Stub phiS is out of assumed digitization range."
+                                        << " |phiS| = " << fabs(phiS_orig_) << " > " << 0.5 * phiSRange_ << endl;
     if (fabs(rt_orig_) >= 0.5 * rtRange_)
-      throw cms::Exception("BadConfig")<<"DigitalStub: Stub rT is out of assumed digitization range."
-          << " |rt| = " << fabs(rt_orig_) << " > " << 0.5 * rtRange_ << endl;
+      throw cms::Exception("BadConfig") << "DigitalStub: Stub rT is out of assumed digitization range."
+                                        << " |rt| = " << fabs(rt_orig_) << " > " << 0.5 * rtRange_ << endl;
     if (fabs(z_orig_) >= 0.5 * zRange_)
-      throw cms::Exception("BadConfig")<<"DigitalStub: Stub z is out of assumed digitization range."
-          << " |z| = " << fabs(z_orig_) << " > " << 0.5 * zRange_ << endl;
+      throw cms::Exception("BadConfig") << "DigitalStub: Stub z is out of assumed digitization range."
+                                        << " |z| = " << fabs(z_orig_) << " > " << 0.5 * zRange_ << endl;
     if (fabs(phiO_orig_) >= 0.5 * phiORange_)
-      throw cms::Exception("BadConfig")<<"DigitalStub: Stub phiO is out of assumed digitization range."
-          << " |phiO| = " << fabs(phiO_orig_) << " > " << 0.5 * phiORange_ << endl;
+      throw cms::Exception("BadConfig") << "DigitalStub: Stub phiO is out of assumed digitization range."
+                                        << " |phiO| = " << fabs(phiO_orig_) << " > " << 0.5 * phiORange_ << endl;
     if (fabs(bend_orig_) >= 0.5 * bendRange_)
-      throw cms::Exception("BadConfig")<<"DigitalStub: Stub bend is out of assumed digitization range."
-          << " |bend| = " << fabs(bend_orig_) << " > " << 0.5 * bendRange_ << endl;
+      throw cms::Exception("BadConfig") << "DigitalStub: Stub bend is out of assumed digitization range."
+                                        << " |bend| = " << fabs(bend_orig_) << " > " << 0.5 * bendRange_ << endl;
   }
 
   //=== Check that digitisation followed by undigitisation doesn't change significantly the stub coordinates.

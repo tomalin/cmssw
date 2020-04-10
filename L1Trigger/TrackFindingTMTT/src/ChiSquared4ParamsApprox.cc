@@ -38,7 +38,7 @@ namespace tmtt {
         //D(j, INVR)
         //D(j, PHI0)
         D(j, T) = ri;  // ri; // Fine for now
-        D(j, Z0) = 1;   // Fine
+        D(j, Z0) = 1;  // Fine
         j++;
       } else {
         //here we handle a disk hit
@@ -64,8 +64,8 @@ namespace tmtt {
 
         D(j, INVR) = -0.167 * ri * ri * ri * rInv;  // Tweaking of constant?
         D(j, PHI0) = 0;                             // Exact
-        D(j, T) = -ri * tInv;                    // Fine;
-        D(j, Z0) = -1 * tInv;                     // Fine
+        D(j, T) = -ri * tInv;                       // Fine;
+        D(j, Z0) = -1 * tInv;                       // Fine
         j++;
         //second the rphi position
         D(j, INVR) = -0.5 * ri * ri;  // Needs fine tuning, was (phimultiplier*-0.5*(zi-z0)/t+rmultiplier*drdrinv);
@@ -95,7 +95,7 @@ namespace tmtt {
   TVectorD ChiSquared4ParamsApprox::residuals(const TVectorD& x) {
     unsigned int n = stubs_.size();
 
-    TVectorD delta(2*n);
+    TVectorD delta(2 * n);
 
     double rInv = x[INVR];
     double phi0 = x[PHI0];

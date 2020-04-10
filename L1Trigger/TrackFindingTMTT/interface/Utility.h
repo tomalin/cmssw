@@ -42,8 +42,12 @@ namespace tmtt {
 
     // Determine the minimum number of layers a track candidate must have stubs in to be defined as a track.
     // The first argument indicates from what type of algorithm this function is called: "HT", "SEED", "DUP" or "FIT".
-    unsigned int numLayerCut(
-        std::string algo, const Settings* settings, unsigned int iPhiSec, unsigned int iEtaReg, float invPt, float eta = 0.);
+    unsigned int numLayerCut(std::string algo,
+                             const Settings* settings,
+                             unsigned int iPhiSec,
+                             unsigned int iEtaReg,
+                             float invPt,
+                             float eta = 0.);
   }  // namespace Utility
 
 }  // namespace tmtt

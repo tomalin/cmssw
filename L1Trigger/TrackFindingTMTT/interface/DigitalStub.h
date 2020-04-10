@@ -231,25 +231,27 @@ namespace tmtt {
     // Check that makeGPinput() or makeHTinput() are called before accessing digitized stub info.
     void okGP() const {
       if (!ranMakeGPinput_)
-        throw cms::Exception("LogicError")<<"DigitalStub: You forgot to call makeGPinput() or makeHTinput()!"<<std::endl;
+        throw cms::Exception("LogicError")
+            << "DigitalStub: You forgot to call makeGPinput() or makeHTinput()!" << std::endl;
     }
     void okHT() const {
       if (!ranMakeHTinput_)
-        throw cms::Exception("LogicError")<<"DigitalStub: You forgot to call makeGPinput() or makeHTinput()!"<<std::endl;
+        throw cms::Exception("LogicError")
+            << "DigitalStub: You forgot to call makeGPinput() or makeHTinput()!" << std::endl;
     }
     void okSForTF() const {
       if (ranMakeSForTFinput_ == "")
-        throw cms::Exception("LogicError")<<"DigitalStub: You forgot to call makeSForTFinput()!"<<std::endl;
+        throw cms::Exception("LogicError") << "DigitalStub: You forgot to call makeSForTFinput()!" << std::endl;
     }
     void okDR() const {
       if (!ranMakeDRinput_)
-        throw cms::Exception("LogicError")<<"DigitalStub: You forgot to call makeDRinput()!"<<std::endl;
+        throw cms::Exception("LogicError") << "DigitalStub: You forgot to call makeDRinput()!" << std::endl;
     }
 
     // Check that init() is called before accessing original pre-digitization variables.
     void okin() const {
       if (!ranInit_)
-        throw cms::Exception("LogicError")<<"DigitalStub: You forgot to call init()!"<<std::endl;
+        throw cms::Exception("LogicError") << "DigitalStub: You forgot to call init()!" << std::endl;
     }
 
   private:

@@ -23,14 +23,14 @@ namespace tmtt {
     ~Settings() {}
 
     // Input tags for ES & ED data.
-    edm::ESInputTag magneticFieldInputTag() const { return magneticFieldInputTag_;}
-    edm::ESInputTag trackerGeometryInputTag() const { return trackerGeometryInputTag_;}
-    edm::ESInputTag trackerTopologyInputTag() const { return trackerTopologyInputTag_;}
-    edm::InputTag stubInputTag() const { return stubInputTag_;}
-    edm::InputTag tpInputTag() const { return tpInputTag_;}
-    edm::InputTag stubTruthInputTag() const { return stubTruthInputTag_;}
-    edm::InputTag clusterTruthInputTag() const { return clusterTruthInputTag_;}
-    edm::InputTag genJetInputTag() const { return genJetInputTag_;}
+    edm::ESInputTag magneticFieldInputTag() const { return magneticFieldInputTag_; }
+    edm::ESInputTag trackerGeometryInputTag() const { return trackerGeometryInputTag_; }
+    edm::ESInputTag trackerTopologyInputTag() const { return trackerTopologyInputTag_; }
+    edm::InputTag stubInputTag() const { return stubInputTag_; }
+    edm::InputTag tpInputTag() const { return tpInputTag_; }
+    edm::InputTag stubTruthInputTag() const { return stubTruthInputTag_; }
+    edm::InputTag clusterTruthInputTag() const { return clusterTruthInputTag_; }
+    edm::InputTag genJetInputTag() const { return genJetInputTag_; }
 
     //=== General settings.
 
@@ -453,7 +453,8 @@ namespace tmtt {
     void setBfield(float bField) { bField_ = bField; }
     float getBfield() const {
       if (bField_ == 0.)
-        throw cms::Exception("LogicError")<<"Settings: You attempted to access the B field before it was initialized"<<std::endl;
+        throw cms::Exception("LogicError")
+            << "Settings: You attempted to access the B field before it was initialized" << std::endl;
       return bField_;
     }
 
@@ -476,7 +477,6 @@ namespace tmtt {
     }
 
   private:
-
     // Input tags for ES & ED data.
     const edm::ESInputTag magneticFieldInputTag_;
     const edm::ESInputTag trackerGeometryInputTag_;

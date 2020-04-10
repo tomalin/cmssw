@@ -81,7 +81,8 @@ namespace tmtt {
                                                                   unsigned int iEtaReg) const {
     // Check that this track is valid.
     if (!trk.accepted())
-      throw cms::Exception("LogicError")<<"ConverterToTTTrack ERROR: requested to convert invalid L1fittedTrack"<<endl;
+      throw cms::Exception("LogicError") << "ConverterToTTTrack ERROR: requested to convert invalid L1fittedTrack"
+                                         << endl;
 
     // Get references to stubs on this track.
     std::vector<TTStubRef> ttstubrefs = this->getStubRefs(trk);

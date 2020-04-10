@@ -40,7 +40,6 @@ namespace tmtt {
     virtual void endJob();
 
   private:
-
     // ES tokens
     edm::ESGetToken<MagneticField, IdealMagneticFieldRecord> magneticFieldToken_;
     edm::ESGetToken<TrackerGeometry, TrackerDigiGeometryRecord> trackerGeometryToken_;
@@ -52,17 +51,17 @@ namespace tmtt {
     edm::EDGetTokenT<TTClusterAssMap> clusterTruthToken_;
     edm::EDGetTokenT<reco::GenJetCollection> genJetToken_;
 
-    const TrackerGeometry* trackerGeometry_; 
-    const TrackerTopology* trackerTopology_;
+    const TrackerGeometry *trackerGeometry_;
+    const TrackerTopology *trackerTopology_;
 
     // Configuration parameters
     Settings *settings_;
-   std::vector<std::string> trackFitters_;
-   std::vector<std::string> useRZfilter_;
+    std::vector<std::string> trackFitters_;
+    std::vector<std::string> useRZfilter_;
     bool runRZfilter_;
 
     Histos *hists_;
-   std::map<std::string, TrackFitGeneric *> fitterWorkerMap_;
+    std::map<std::string, TrackFitGeneric *> fitterWorkerMap_;
 
     TrackerGeometryInfo trackerGeometryInfo_;
   };

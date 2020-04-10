@@ -15,7 +15,6 @@
 namespace tmtt {
 
   L1ChiSquared::L1ChiSquared(const Settings* settings, const uint nPar) : TrackFitGeneric(settings), chiSq_(0.0) {
-
     // Bad stub killing settings
     numFittingIterations_ = getSettings()->numTrackFitIterations();
     killTrackFitWorstHit_ = getSettings()->killTrackFitWorstHit();
@@ -53,7 +52,6 @@ namespace tmtt {
     TVectorD x = seed(l1track3D);
 
     for (int i = 0; i < numFittingIterations_; i++) {
-
       TMatrixD d = D(x);
       TMatrixD dTrans(TMatrixD::kTransposed, d);
       TMatrixD dtVinv = dTrans * Vinv();
@@ -68,9 +66,9 @@ namespace tmtt {
       calculateChiSq(resids);
       calculateDeltaChiSq(deltaX, covX);
 
-      if (i < numFittingIterations_ - 1) { // Don't kill stub if will not refit.
+      if (i < numFittingIterations_ - 1) {  // Don't kill stub if will not refit.
 
-	resids = residuals(x);  // update resids & largestresid_
+        resids = residuals(x);  // update resids & largestresid_
 
         bool killWorstStub = false;
         if (killTrackFitWorstHit_) {
@@ -112,8 +110,8 @@ namespace tmtt {
                                  4,
                                  valid);
           }
-	} else {
-	  break;
+        } else {
+          break;
         }
       }
     }
@@ -128,7 +126,7 @@ namespace tmtt {
                            l1track3D,
                            stubs_,
                            hitPattern,
-                           x[INVR]/(getSettings()->invPtToInvR()),
+                           x[INVR] / (getSettings()->invPtToInvR()),
                            0,
                            x[PHI0],
                            x[Z0],

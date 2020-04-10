@@ -32,7 +32,8 @@ namespace tmtt {
 
   //=== Store cfg parameters.
 
-Histos::Histos(const Settings* settings) : settings_(settings), oldSumW2opt_(false), plotFirst_(true), bApproxMistake_(false) {
+  Histos::Histos(const Settings* settings)
+      : settings_(settings), oldSumW2opt_(false), plotFirst_(true), bApproxMistake_(false) {
     genMinStubLayers_ = settings->genMinStubLayers();
     numPhiSectors_ = settings->numPhiSectors();
     numEtaRegions_ = settings->numEtaRegions();
@@ -915,8 +916,8 @@ Histos::Histos(const Settings* settings) : settings_(settings), oldSumW2opt_(fal
 
       if (!settings_->allowOver2EtaSecs()) {
         if (nEtaSecs > 2)
-          throw cms::Exception("LogicError")<<
-              "Histos ERROR: Stub assigned to more than 2 eta regions. Please redefine eta regions to avoid this!"
+          throw cms::Exception("LogicError")
+              << "Histos ERROR: Stub assigned to more than 2 eta regions. Please redefine eta regions to avoid this!"
               << " stub r=" << stub->r() << " eta=" << stub->eta() << endl;
       }
     }
@@ -1452,7 +1453,7 @@ Histos::Histos(const Settings* settings) : settings_(settings), oldSumW2opt_(fal
   void Histos::fillTrackCands(const InputData& inputData, const vector<L1track3D>& tracks, string tName) {
     bool withRZfilter = (tName == "RZ");
 
-    bool algoTMTT = (tName == "HT" || tName == "RZ"); // Check if running TMTT or Hybrid L1 tracking.
+    bool algoTMTT = (tName == "HT" || tName == "RZ");  // Check if running TMTT or Hybrid L1 tracking.
 
     // Now fill histograms for studying tracking in general.
 

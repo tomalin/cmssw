@@ -112,7 +112,8 @@ namespace tmtt {
       if (rzFilterName_ == "SeedFilter") {
         filteredStubs = this->seedFilter(filteredStubs, trkIN.qOverPt(), print);
       } else {
-        throw cms::Exception("BadConfig")<<"TrkRzFilter: ERROR unknown r-z track filter requested: " << rzFilterName_ << endl;
+        throw cms::Exception("BadConfig")
+            << "TrkRzFilter: ERROR unknown r-z track filter requested: " << rzFilterName_ << endl;
       }
 
       // Check if track still has stubs in enough layers after filter.
@@ -186,14 +187,15 @@ namespace tmtt {
                     std::end(SecondSeedLayers)) {
               numSeedsPerStub++;
               numSeedCombinations++;  //Increase filter cycles counter
-              if (print) cout << "s0: "
+              if (print)
+                cout << "s0: "
                      << "z: " << s0->z() << ", r: " << s0->r() << ", id:" << s0->layerId() << " ****** s1: "
                      << "z: " << s1->z() << ", r: " << s1->r() << ", id:" << s1->layerId() << endl;
               //double sumSeedDist = 0.;
               //double oldSumSeedDist = 1000000.;  //Define variable used to estimate the quality of seeds
-              vector<const Stub*> tempStubs;     //Create a temporary container for stubs
-              tempStubs.push_back(s0);           //Store the first seeding stub in the temporary container
-              tempStubs.push_back(s1);           //Store the second seeding stub in the temporary container
+              vector<const Stub*> tempStubs;  //Create a temporary container for stubs
+              tempStubs.push_back(s0);        //Store the first seeding stub in the temporary container
+              tempStubs.push_back(s1);        //Store the second seeding stub in the temporary container
 
               double z0 =
                   s1->z() +

@@ -181,7 +181,7 @@ namespace tmtt {
 
   void DigitalTrack::makeDigitalTrack() {
     if (!ranInit_)
-      throw cms::Exception("LogicError")<<"DigitalTrack: You forgot to call init() before makeDigitalTrack()!";
+      throw cms::Exception("LogicError") << "DigitalTrack: You forgot to call init() before makeDigitalTrack()!";
 
     ranMake_ = true;  // Note we ran makeDigitalTrack()
 
@@ -291,34 +291,38 @@ namespace tmtt {
   void DigitalTrack::checkInRange() const {
     if (accepted_) {  // Don't bother apply to tracks rejected by the fitter.
       if (fabs(oneOver2r_orig_) >= 0.5 * oneOver2rRange_)
-        throw cms::Exception("BadConfig")<<"DigitalTrack: Track oneOver2r is out of assumed digitization range."
+        throw cms::Exception("BadConfig")
+            << "DigitalTrack: Track oneOver2r is out of assumed digitization range."
             << " |oneOver2r| = " << fabs(oneOver2r_orig_) << " > " << 0.5 * oneOver2rRange_
             << "; Fitter=" << fitterName_ << "; track accepted = " << accepted_ << endl;
       if (consistentSect_) {  // don't bother if track will fail sector consistency cut.
         if (fabs(phi0rel_orig_) >= 0.5 * phi0Range_)
-          throw cms::Exception("BadConfig")<<"DigitalTrack: Track phi0rel is out of assumed digitization range."
-              << " |phi0rel| = " << fabs(phi0rel_orig_) << " > " << 0.5 * phi0Range_ << "; Fitter=" << fitterName_
-              << "; track accepted = " << accepted_ << endl;
+          throw cms::Exception("BadConfig") << "DigitalTrack: Track phi0rel is out of assumed digitization range."
+                                            << " |phi0rel| = " << fabs(phi0rel_orig_) << " > " << 0.5 * phi0Range_
+                                            << "; Fitter=" << fitterName_ << "; track accepted = " << accepted_ << endl;
       }
       if (fabs(z0_orig_) >= 0.5 * z0Range_)
-        throw cms::Exception("BadConfig")<<"DigitalTrack:  Track z0 is out of assumed digitization range."
-            << " |z0| = " << fabs(z0_orig_) << " > " << 0.5 * z0Range_ << "; Fitter=" << fitterName_
-            << "; track accepted = " << accepted_ << endl;
+        throw cms::Exception("BadConfig") << "DigitalTrack:  Track z0 is out of assumed digitization range."
+                                          << " |z0| = " << fabs(z0_orig_) << " > " << 0.5 * z0Range_
+                                          << "; Fitter=" << fitterName_ << "; track accepted = " << accepted_ << endl;
       if (fabs(d0_orig_) >= 0.5 * d0Range_)
-        throw cms::Exception("BadConfig")<<"DigitalTrack:  Track d0 is out of assumed digitization range."
-            << " |d0| = " << fabs(d0_orig_) << " > " << 0.5 * d0Range_ << "; Fitter=" << fitterName_
-            << "; track accepted = " << accepted_ << endl;
+        throw cms::Exception("BadConfig") << "DigitalTrack:  Track d0 is out of assumed digitization range."
+                                          << " |d0| = " << fabs(d0_orig_) << " > " << 0.5 * d0Range_
+                                          << "; Fitter=" << fitterName_ << "; track accepted = " << accepted_ << endl;
       if (fabs(tanLambda_orig_) >= 0.5 * tanLambdaRange_)
-        throw cms::Exception("BadConfig")<<"DigitalTrack: Track tanLambda is out of assumed digitization range."
+        throw cms::Exception("BadConfig")
+            << "DigitalTrack: Track tanLambda is out of assumed digitization range."
             << " |tanLambda| = " << fabs(tanLambda_orig_) << " > " << 0.5 * tanLambdaRange_
             << "; Fitter=" << fitterName_ << "; track accepted = " << accepted_ << endl;
       if (accepted_) {  // Tracks declared invalid by fitter can have very large original chi2.
         if (chisquaredRphi_orig_ >= chisquaredRange_ or chisquaredRphi_orig_ < 0.)
-          throw cms::Exception("BadConfig")<<"DigitalTrack: Track chisquaredRphi is out of assumed digitization range."
+          throw cms::Exception("BadConfig")
+              << "DigitalTrack: Track chisquaredRphi is out of assumed digitization range."
               << " chisquaredRphi = " << chisquaredRphi_orig_ << " > " << chisquaredRange_ << " or < 0"
               << "; Fitter=" << fitterName_ << "; track accepted = " << accepted_ << endl;
         if (chisquaredRz_orig_ >= chisquaredRange_ or chisquaredRz_orig_ < 0.)
-          throw cms::Exception("BadConfig")<<"DigitalTrack: Track chisquaredRz is out of assumed digitization range."
+          throw cms::Exception("BadConfig")
+              << "DigitalTrack: Track chisquaredRz is out of assumed digitization range."
               << " chisquaredRz = " << chisquaredRz_orig_ << " > " << chisquaredRange_ << " or < 0"
               << "; Fitter=" << fitterName_ << "; track accepted = " << accepted_ << endl;
       }

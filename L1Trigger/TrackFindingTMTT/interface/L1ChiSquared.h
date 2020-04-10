@@ -18,7 +18,6 @@
 namespace tmtt {
 
   class L1ChiSquared : public TrackFitGeneric {
-
   public:
     enum PAR_IDS { INVR, PHI0, T, Z0, D0 };
 
@@ -30,9 +29,9 @@ namespace tmtt {
   protected:
     /* Methods */
     virtual TVectorD seed(const L1track3D& l1track3D) = 0;
-    virtual TVectorD residuals(const TVectorD& x) = 0; // Stub residuals/uncertainty
-    virtual TMatrixD D(const TVectorD& x) = 0;  // derivatives
-    virtual TMatrixD Vinv() = 0;                    // Covariances
+    virtual TVectorD residuals(const TVectorD& x) = 0;  // Stub residuals/uncertainty
+    virtual TMatrixD D(const TVectorD& x) = 0;          // derivatives
+    virtual TMatrixD Vinv() = 0;                        // Covariances
 
     /* Variables */
     std::vector<const Stub*> stubs_;

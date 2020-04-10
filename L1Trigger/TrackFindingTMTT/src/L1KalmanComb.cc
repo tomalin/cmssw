@@ -173,8 +173,8 @@ namespace tmtt {
     const unsigned int nGPlayID = 7;
 
     if (nEta != numEtaRegions_)
-      throw cms::Exception("LogicError")<<
-	"ERROR L1KalmanComb::getKalmanLayer hardwired value of nEta differs from NumEtaRegions cfg param"<<endl;
+      throw cms::Exception("LogicError")
+          << "ERROR L1KalmanComb::getKalmanLayer hardwired value of nEta differs from NumEtaRegions cfg param" << endl;
 
     // In cases where identical GP encoded layer ID present in this sector from both barrel & endcap, this array filled considering barrel. The endcap is fixed by subsequent code.
 
@@ -348,12 +348,12 @@ namespace tmtt {
 
     std::vector<const StubCluster *> stubcls;
 
-    std::map<unsigned int, std::vector<const Stub*> > stubsByLay;
-    for (const Stub* stub : stubs) {
+    std::map<unsigned int, std::vector<const Stub *>> stubsByLay;
+    for (const Stub *stub : stubs) {
       stubsByLay[stub->layerId()].push_back(stub);
     }
-    for (const auto& p : stubsByLay) {
-      const std::vector<const Stub*>& layer_stubs = p.second;
+    for (const auto &p : stubsByLay) {
+      const std::vector<const Stub *> &layer_stubs = p.second;
 
 #ifdef MERGE_STUBS
       unsigned int layerId = p.first;

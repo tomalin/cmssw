@@ -170,7 +170,7 @@ namespace tmtt {
       iCoordBinMin = floor((coordAvg - coordAxisMin) / coordAxisBinSize);
       iCoordBinMax = iCoordBinMin;
     } else {
-      throw cms::Exception("BadConfig")<<"HT: invalid KillSomeHTCells option in cfg"<<endl;
+      throw cms::Exception("BadConfig") << "HT: invalid KillSomeHTCells option in cfg" << endl;
     }
 
     if (debug)

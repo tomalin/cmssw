@@ -43,7 +43,7 @@ namespace tmtt {
           if (layerID >= 0 && layerID < maxLayerID) {
             foundLayers[layerID] = true;
           } else {
-            throw cms::Exception("LogicError")<<"Utility::invalid layer ID"<<endl;
+            throw cms::Exception("LogicError") << "Utility::invalid layer ID" << endl;
           }
         }
       }
@@ -57,7 +57,7 @@ namespace tmtt {
           if (layerID >= 0 && layerID < maxLayerID) {
             foundLayers[layerID] = true;
           } else {
-            throw cms::Exception("LogicError")<<"Utility::invalid layer ID"<<endl;
+            throw cms::Exception("LogicError") << "Utility::invalid layer ID" << endl;
           }
         }
       }
@@ -194,7 +194,8 @@ namespace tmtt {
 
       return nLayCut;
     } else {
-      throw cms::Exception("LogicError")<<"Utility::numLayerCut() called with invalid algo argument! " << algo << endl;
+      throw cms::Exception("LogicError") << "Utility::numLayerCut() called with invalid algo argument! " << algo
+                                         << endl;
     }
   }
 

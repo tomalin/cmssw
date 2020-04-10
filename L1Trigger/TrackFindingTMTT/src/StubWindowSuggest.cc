@@ -37,8 +37,10 @@ namespace tmtt {
     if (stub->trackerGeometryVersion() >= 5) {  // Tilted barrel
       barrelNTilt_ = barrelNTilt_init;
     } else {
-      throw cms::Exception("LogicError")<<
-          "StubWindowSuggest: the tracker geometry you are using is not yet known to StubWindowSuggest. Please update constant barrelNTilt_T*_init inside it. Geometry=" << stub->trackerGeometryVersion() << endl;
+      throw cms::Exception("LogicError")
+          << "StubWindowSuggest: the tracker geometry you are using is not yet known to StubWindowSuggest. Please "
+             "update constant barrelNTilt_T*_init inside it. Geometry="
+          << stub->trackerGeometryVersion() << endl;
     }
 
     // This code should be kept almost identical to that in

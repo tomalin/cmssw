@@ -19,13 +19,14 @@ namespace tmtt {
 
   private:
     // Do load balancing
-    unsigned int linkIDLoadBalanced(unsigned int link,
-                                    unsigned int mBin,
-                                    unsigned int cBin,
-                                    unsigned int numStubs,
-                                    std::map<std::pair<unsigned int, unsigned int>, unsigned int>& numStubsPerLinkStage1,
-                                    std::map<std::pair<unsigned int, unsigned int>, unsigned int>& numStubsPerLinkStage2,
-                                    bool test = false) const;
+    unsigned int linkIDLoadBalanced(
+        unsigned int link,
+        unsigned int mBin,
+        unsigned int cBin,
+        unsigned int numStubs,
+        std::map<std::pair<unsigned int, unsigned int>, unsigned int>& numStubsPerLinkStage1,
+        std::map<std::pair<unsigned int, unsigned int>, unsigned int>& numStubsPerLinkStage2,
+        bool test = false) const;
 
   private:
     const Settings* settings_;  // Configuration parameters

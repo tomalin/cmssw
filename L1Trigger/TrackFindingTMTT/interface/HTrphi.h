@@ -86,7 +86,9 @@ namespace tmtt {
 
   private:
     // For a given Q/Pt bin, find the range of phi bins that a given stub is consistent with.
-    std::pair<unsigned int, unsigned int> iPhiRange(const Stub* stub, unsigned int iQoverPtBin, bool debug = false) const;
+    std::pair<unsigned int, unsigned int> iPhiRange(const Stub* stub,
+                                                    unsigned int iQoverPtBin,
+                                                    bool debug = false) const;
 
     // Check that limitations of firmware would not prevent stub being stored correctly in this HT column.
     void countFirmwareErrors(unsigned int iQoverPtBin, unsigned int iPhiTrkBinMin, unsigned int iPhiTrkBinMax);

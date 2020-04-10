@@ -303,12 +303,13 @@ namespace tmtt {
     // No HT firmware can access directly the stub bend info.
     void check1() const {
       if (digitizeWarningsOn_ && digitizedForHTinput_)
-        throw cms::Exception("LogicError")<<"Stub: You can't access digitized bend variable within HT firmware!"<<std::endl;
+        throw cms::Exception("LogicError")
+            << "Stub: You can't access digitized bend variable within HT firmware!" << std::endl;
     }
     // If using daisy-chain firmware, then it makes no sense to access the digiitzed values of dphi within HT.
     void check2() const {
       if (digitizeWarningsOn_ && digitizedForHTinput_)
-        throw cms::Exception("LogicError")<<"Stub: You can't access digitized dphi within the HT or KF!"<<std::endl;
+        throw cms::Exception("LogicError") << "Stub: You can't access digitized dphi within the HT or KF!" << std::endl;
     }
 
   private:
@@ -376,7 +377,8 @@ namespace tmtt {
     DigitalStub digitalStub_;   // Class used to digitize stub if required.
     bool digitizedForGPinput_;  // Has this stub been digitized for GP input?
     bool digitizedForHTinput_;  // Has this stub been digitized for HT input?
-    std::string digitizedForSForTFinput_;  // Has this stub been digitized for seed filter or track fitter input? If so, this was its name.
+    std::string
+        digitizedForSForTFinput_;  // Has this stub been digitized for seed filter or track fitter input? If so, this was its name.
     bool digitizedForDRinput_;  // Has this stub been digitized for seed filter input?
     bool digitizeWarningsOn_;   // Enable warnings about accessing non-digitized quantities.
 

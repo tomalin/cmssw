@@ -10,10 +10,10 @@
 namespace tmtt {
 
   class KFParamsComb : public L1KalmanComb {
-
   public:
-    KFParamsComb(const Settings* settings, const uint nPar, const std::string& fitterName) : L1KalmanComb(settings, nPar, fitterName) {}
-  
+    KFParamsComb(const Settings* settings, const uint nPar, const std::string& fitterName)
+        : L1KalmanComb(settings, nPar, fitterName) {}
+
     virtual ~KFParamsComb() {}
 
   protected:

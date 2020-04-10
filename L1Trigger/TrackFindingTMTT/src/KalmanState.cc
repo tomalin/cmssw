@@ -217,7 +217,8 @@ namespace tmtt {
     }
     os << endl;
     os << "xa = ( ";
-    for (unsigned j = 0; j < xa_.size() - 1; j++) os << xa_[j] << ", ";
+    for (unsigned j = 0; j < xa_.size() - 1; j++)
+      os << xa_[j] << ", ";
     os << xa_.back() << " )" << endl;
 
     os << "xcov" << endl;
@@ -235,7 +236,8 @@ namespace tmtt {
       os << "[" << stub->r() << ", " << stub->phi() << ", " << stub->z() << "] ";
       os << " assoc TP indices = [ ";
       std::set<const TP *> tps = stub->assocTPs();
-      for (auto tp : tps) os << tp->index() << " ";
+      for (auto tp : tps)
+        os << tp->index() << " ";
       os << "] ";
       os << endl;
     }
@@ -243,7 +245,7 @@ namespace tmtt {
       os << "\tTP index = " << tp->index() << " useForAlgEff = " << useForAlgEff << " ";
       os << "rel. residual ";
       for (unsigned int i = 0; i < y.size(); i++) {
-	os << helixNames[i] << ":" << (y[i] - tp_x[i])/tp_x[i] << " ";
+        os << helixNames[i] << ":" << (y[i] - tp_x[i]) / tp_x[i] << " ";
       }
     } else {
       os << "\tTP index = ";
@@ -255,7 +257,8 @@ namespace tmtt {
       os << "[" << stubCluster_->r() << ", " << stubCluster_->phi() << ", " << stubCluster_->z() << "] ";
       os << " assoc TP indices = [ ";
       std::set<const TP *> tps = stubCluster_->assocTPs();
-      for (auto tp : tps) os << tp->index() << " ";
+      for (auto tp : tps)
+        os << tp->index() << " ";
       os << "] ";
     } else {
       os << "\tvirtual stub";

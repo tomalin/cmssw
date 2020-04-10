@@ -47,7 +47,8 @@ namespace tmtt {
       return new KFParamsCombCallHLS(settings, 5, fitter);
 #endif
     } else {
-      throw cms::Exception("BadConfig")<<"TrackFitGeneric: ERROR you requested unknown track fitter: " << fitter << endl;
+      throw cms::Exception("BadConfig") << "TrackFitGeneric: ERROR you requested unknown track fitter: " << fitter
+                                        << endl;
     }
   }
 

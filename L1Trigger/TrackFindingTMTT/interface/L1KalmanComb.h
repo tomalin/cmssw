@@ -25,7 +25,6 @@ namespace tmtt {
   class StubCluster;
 
   class L1KalmanComb : public TrackFitGeneric {
-
   public:
     enum PAR_IDS { INV2R, PHI0, T, Z0, D0 };
     enum PAR_IDS_VAR { QOVERPT };
@@ -40,10 +39,10 @@ namespace tmtt {
       this->deleteStubClusters();
     }
 
-    L1KalmanComb(const L1KalmanComb& kf) = delete; // Disable copy & move of this class.
-    L1KalmanComb(L1KalmanComb&& kf) = delete;
-    L1KalmanComb& operator=(const L1KalmanComb& kf) = delete;
-    L1KalmanComb& operator=(L1KalmanComb&& kf) = delete;
+    L1KalmanComb(const L1KalmanComb &kf) = delete;  // Disable copy & move of this class.
+    L1KalmanComb(L1KalmanComb &&kf) = delete;
+    L1KalmanComb &operator=(const L1KalmanComb &kf) = delete;
+    L1KalmanComb &operator=(L1KalmanComb &&kf) = delete;
 
     L1fittedTrack fit(const L1track3D &l1track3D);
 
@@ -52,8 +51,7 @@ namespace tmtt {
     virtual std::vector<double> getTrackParams(const KalmanState *state) const = 0;
 
     // Get track params with beam-spot constraint & chi2 (r-phi) after applying it..
-    virtual std::vector<double> getTrackParams_BeamConstr(const KalmanState *state,
-                                                                    double &chi2rphi_bcon) const {
+    virtual std::vector<double> getTrackParams_BeamConstr(const KalmanState *state, double &chi2rphi_bcon) const {
       chi2rphi_bcon = 0.0;
       return (this->getTrackParams(state));  // Returns unconstrained result, unless derived class overrides it.
     }

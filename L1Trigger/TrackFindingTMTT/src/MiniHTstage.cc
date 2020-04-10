@@ -40,7 +40,9 @@ namespace tmtt {
       } else if (muxOutputsHT_ == 2) {
         nHTlinksPerNonant_ = (busySectorMbinRanges_.size() - 1) * numPhiSecPerNon_;
       } else {
-        throw cms::Exception("BadConfig")<<"MiniHTState: hard-wired MHT load balancing can't be enabled as assumes HT output MUX scheme >= 2"<<endl;
+        throw cms::Exception("BadConfig")
+            << "MiniHTState: hard-wired MHT load balancing can't be enabled as assumes HT output MUX scheme >= 2"
+            << endl;
       }
     }
   }

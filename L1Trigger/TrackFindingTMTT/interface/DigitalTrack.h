@@ -19,7 +19,6 @@ namespace tmtt {
   //====================================================================================================
 
   class DigitalTrack {
-
   public:
     // Note configuration parameters.
     DigitalTrack(const Settings* settings);
@@ -304,11 +303,11 @@ namespace tmtt {
     // Check DigitalTrack correctly initialized;
     void okin() const {
       if (!ranInit_)
-        throw cms::Exception("LogicError")<<"DigitalTrack: You forgot to call init()!"<<std::endl;
+        throw cms::Exception("LogicError") << "DigitalTrack: You forgot to call init()!" << std::endl;
     }
     void ok() const {
       if (!ranMake_)
-        throw cms::Exception("LogicError")<<"DigitalTrack: You forgot to call makeDigitalTrack()!"<<std::endl;
+        throw cms::Exception("LogicError") << "DigitalTrack: You forgot to call makeDigitalTrack()!" << std::endl;
     }
 
     // Get digitisation configuration parameters for the specific track fitter being used here.

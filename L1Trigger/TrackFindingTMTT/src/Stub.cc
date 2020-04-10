@@ -128,7 +128,7 @@ namespace tmtt {
     DetId stackDetid = ttStubRef->getDetId();
     DetId geoDetId(stackDetid.rawId() + 1);
     if (not(trackerTopology->isLower(geoDetId) && trackerTopology->stack(geoDetId) == stackDetid))
-      throw cms::Exception("LogicError")<<"Stub: determination of detId went wrong"<<endl;
+      throw cms::Exception("LogicError") << "Stub: determination of detId went wrong" << endl;
 
     const GeomDetUnit* det0 = trackerGeometry->idToDetUnit(geoDetId);
     // To get other module, can do this
@@ -146,9 +146,10 @@ namespace tmtt {
 
     if (r_ < settings_->trackerInnerRadius() || r_ > settings_->trackerOuterRadius() ||
         fabs(z_) > settings_->trackerHalfLength()) {
-      throw cms::Exception("BadConfig")<<
-          "Stub: Stub found outside assumed tracker volume. Please update tracker dimensions specified in Settings.h!"
-          << " r=" << r_ << " z=" << z_ << " " << ttStubRef->getDetId().subdetId() << endl;
+      throw cms::Exception("BadConfig") << "Stub: Stub found outside assumed tracker volume. Please update tracker "
+                                           "dimensions specified in Settings.h!"
+                                        << " r=" << r_ << " z=" << z_ << " " << ttStubRef->getDetId().subdetId()
+                                        << endl;
     }
 
     // Set info about the module this stub is in
@@ -656,7 +657,7 @@ namespace tmtt {
       lay -= 8;
 
     if (lay < 1 || lay > 7)
-      throw cms::Exception("LogicError")<<"Stub: Reduced layer ID out of expected range"<<endl;
+      throw cms::Exception("LogicError") << "Stub: Reduced layer ID out of expected range" << endl;
 
     return lay;
   }

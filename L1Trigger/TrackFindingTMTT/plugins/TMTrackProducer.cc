@@ -29,24 +29,22 @@ using boost::numeric::ublas::matrix;
 
 namespace tmtt {
 
-TMTrackProducer::TMTrackProducer(const edm::ParameterSet& iConfig) :
-trackerGeometryInfo_()
- {
-   using namespace edm;
+  TMTrackProducer::TMTrackProducer(const edm::ParameterSet& iConfig) : trackerGeometryInfo_() {
+    using namespace edm;
 
     // Get configuration parameters
     settings_ = new Settings(iConfig);
 
     // Get tokens for ES data access.
-    magneticFieldToken_ = esConsumes<MagneticField, IdealMagneticFieldRecord, 
-				     Transition::BeginRun>(settings_->magneticFieldInputTag());
-    trackerGeometryToken_ = esConsumes<TrackerGeometry, TrackerDigiGeometryRecord, 
-				       Transition::BeginRun>(settings_->trackerGeometryInputTag());
-    trackerTopologyToken_ = esConsumes<TrackerTopology, TrackerTopologyRcd,
-				       Transition::BeginRun>(settings_->trackerTopologyInputTag());
+    magneticFieldToken_ =
+        esConsumes<MagneticField, IdealMagneticFieldRecord, Transition::BeginRun>(settings_->magneticFieldInputTag());
+    trackerGeometryToken_ = esConsumes<TrackerGeometry, TrackerDigiGeometryRecord, Transition::BeginRun>(
+        settings_->trackerGeometryInputTag());
+    trackerTopologyToken_ =
+        esConsumes<TrackerTopology, TrackerTopologyRcd, Transition::BeginRun>(settings_->trackerTopologyInputTag());
 
     // Get tokens for ED data access.
-    stubToken_ = consumes<TTStubDetSetVec>(settings_->stubInputTag()); 
+    stubToken_ = consumes<TTStubDetSetVec>(settings_->stubInputTag());
     if (settings_->enableMCtruth()) {
       // These lines use lots of CPU, even if no use of truth info is made later.
       tpToken_ = consumes<TrackingParticleCollection>(settings_->tpInputTag());
@@ -108,10 +106,17 @@ trackerGeometryInfo_()
   }
 
   void TMTrackProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
-
     // Note useful info about MC truth particles and about reconstructed stubs .
-    InputData inputData(iEvent, iSetup, settings_, trackerGeometry_, trackerTopology_,
-	tpToken_, stubToken_, stubTruthToken_, clusterTruthToken_, genJetToken_);
+    InputData inputData(iEvent,
+                        iSetup,
+                        settings_,
+                        trackerGeometry_,
+                        trackerTopology_,
+                        tpToken_,
+                        stubToken_,
+                        stubTruthToken_,
+                        clusterTruthToken_,
+                        genJetToken_);
 
     const vector<TP>& vTPs = inputData.getTPs();
     const vector<const Stub*>& vStubs = inputData.getStubs();

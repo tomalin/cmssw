@@ -114,8 +114,8 @@ namespace tmtt {
     // Returns list of tracking particles that were not reconstructed and an integer indicating why.
     // Only considers TP used for algorithmic efficiency measurement.
     virtual std::map<const TP*, std::string> diagnoseTracking(const std::vector<TP>& allTPs,
-                                                    const std::vector<L1track3D>& tracks,
-                                                    bool withRZfilter) const;
+                                                              const std::vector<L1track3D>& tracks,
+                                                              bool withRZfilter) const;
 
   protected:
     // Configuration parameters.
