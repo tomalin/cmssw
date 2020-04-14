@@ -17,37 +17,6 @@ namespace tmtt {
     // Set helix parameters.
     const unsigned int nPar4 = 4;  // Number of helix parameters determined by HT.
 
-    /*
-  // Create TTTrack object using these stubs. 
-  TTTrack< Ref_Phase2TrackerDigi_ > track(ttstubrefs);
-
-  // Note which (eta,phi) sector this track was reconstructed in by HT.
-  track.setSector(iPhiSec);
-  track.setWedge(iEtaReg);
-
-  // Set helix parameters.
-  const unsigned int nPar = trk.nHelixParam(); // Number of helix parameters determined by HT.
-  // Get and store fitted track parameters 
-  GlobalPoint bsPosition(-trk.d0()*sin(trk.phi0()),
-			  trk.d0()*cos(trk.phi0()),
-			  trk.z0()); // Point of closest approach of track to beam-line.
-  track.setPOCA(bsPosition, nPar);
-  float pt = trk.pt(); // pt
-  track.setMomentum(
-		    GlobalVector(
-				 GlobalVector::Cylindrical(
-							   pt,
-							   trk.phi0(), // phi
-							   pt*trk.tanLambda()  // pz
-							   )
-				 ),
-		    nPar
-		    );
-  track.setRInv(invPtToInvR_ * trk.qOverPt(), nPar);
-  track.setChi2(trk.chi2(), nPar);
-  track.setStubPtConsistency(-1, nPar);
-  */
-
     // new TTTrack constructor
     double tmp_rinv = invPtToInvR_ * trk.qOverPt();
     double tmp_phi = trk.phi0();
@@ -88,36 +57,6 @@ namespace tmtt {
     std::vector<TTStubRef> ttstubrefs = this->getStubRefs(trk);
 
     const unsigned int nPar = trk.nHelixParam();  // Number of helix parameters determined by HT.
-
-    /*
-  // Create TTTrack object using these stubs. 
-  TTTrack< Ref_Phase2TrackerDigi_ > track(ttstubrefs);
-
-  // Note which (eta,phi) sector this track was reconstructed in by HT.
-  track.setSector(iPhiSec);
-  track.setWedge(iEtaReg);
-
-  // Set helix parameters.
-  // Get and store fitted track parameters 
-  GlobalPoint bsPosition(-trk.d0()*sin(trk.phi0()),
-			  trk.d0()*cos(trk.phi0()),
-			  trk.z0()); // Point of closest approach of track to beam-line.
-  track.setPOCA(bsPosition, nPar);
-  float pt = trk.pt(); // pt
-  track.setMomentum(
-		    GlobalVector(
-				 GlobalVector::Cylindrical(
-							   pt,
-							   trk.phi0(), // phi
-							   pt*trk.tanLambda()  // pz
-							   )
-				 ),
-		    nPar
-		    );
-  track.setRInv(invPtToInvR_ * trk.qOverPt(), nPar);
-  track.setChi2(trk.chi2(), nPar);
-  track.setStubPtConsistency(-1, nPar);
-  */
 
     // new TTTrack constructor
     double tmp_rinv = invPtToInvR_ * trk.qOverPt();

@@ -60,7 +60,7 @@ namespace tmtt {
     double chi2rphi() const { return chi2rphi_; }
     double chi2rz() const { return chi2rz_; }
     unsigned nStubLayers() const { return n_stubs_; }
-    L1track3D candidate() const { return l1track3D_; }
+    const L1track3D& candidate() const { return l1track3D_; }
     unsigned int hitPattern() const { return hitPattern_; }  // Bit-encoded KF layers the fitted track has stubs in.
 
     bool good(const TP *tp) const;

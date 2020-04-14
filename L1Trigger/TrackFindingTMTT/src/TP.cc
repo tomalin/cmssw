@@ -12,7 +12,7 @@ namespace tmtt {
   //=== Store useful info about this tracking particle
 
   TP::TP(const TrackingParticlePtr& tpPtr, unsigned int index_in_vTPs, const Settings* settings)
-      : TrackingParticlePtr(tpPtr),
+      : trackingParticlePtr_(tpPtr),
         index_in_vTPs_(index_in_vTPs),
         settings_(settings),
         pdgId_(tpPtr->pdgId()),
@@ -92,8 +92,7 @@ namespace tmtt {
                                                                           false,
                                                                           genPdgIdsAll);
 
-    const TrackingParticlePtr tp_ptr(*this);  // cast to base class.
-    use_ = trackingParticleSelector(*tp_ptr);
+    use_ = trackingParticleSelector(*trackingParticlePtr_);
   }
 
   //=== Check if this tracking particle can be used to measure the L1 tracking efficiency.
@@ -116,8 +115,7 @@ namespace tmtt {
                                                                             false,
                                                                             settings_->genPdgIds());
 
-      const TrackingParticlePtr tp_ptr(*this);  // cast to base class.
-      useForEff_ = trackingParticleSelector(*tp_ptr);
+      useForEff_ = trackingParticleSelector(*trackingParticlePtr_);
 
       // Add additional cut on particle transverse impact parameter.
       if (fabs(d0_) > settings_->genMaxD0())

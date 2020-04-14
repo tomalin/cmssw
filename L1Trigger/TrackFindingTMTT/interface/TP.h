@@ -19,13 +19,16 @@ namespace tmtt {
 
   typedef edm::Ptr<TrackingParticle> TrackingParticlePtr;
 
-  class TP : public TrackingParticlePtr {
+  class TP {
   public:
     // Fill useful info about tracking particle.
     TP(const TrackingParticlePtr& tpPtr, unsigned int index_in_vTPs, const Settings* settings);
     ~TP() {}
 
-    bool operator==(const TP& tpOther) { return (this->index() == tpOther.index()); }
+    // Return pointer to original tracking particle.
+    const TrackingParticlePtr& trackingParticlePtr() const {return trackingParticlePtr_;}
+
+    bool operator==(const TP& tpOther) const { return (this->index() == tpOther.index()); }
 
     // Fill truth info with association from tracking particle to stubs.
     void fillTruth(const std::vector<Stub>& vStubs);
@@ -98,6 +101,9 @@ namespace tmtt {
     void calcNumLayers() { nLayersWithStubs_ = Utility::countLayers(settings_, assocStubs_, false); }
 
   private:
+
+    TrackingParticlePtr trackingParticlePtr_; // Pointer to original TrackingParticle.
+
     unsigned int index_in_vTPs_;  // location of this TP in InputData::vTPs
 
     const Settings* settings_;  // Configuration parameters

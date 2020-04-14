@@ -78,7 +78,7 @@ namespace tmtt {
              const Settings* settings,
              const TrackerGeometry* trackerGeometry,
              const TrackerTopology* trackerTopology)
-      : TTStubRef(ttStubRef),
+      : ttStubRef_(ttStubRef),
         settings_(settings),
         index_in_vStubs_(index_in_vStubs),
         assocTP_(nullptr),  // Initialize in case job is using no MC truth info.
@@ -102,7 +102,7 @@ namespace tmtt {
     }
 
     // Get coordinates of stub.
-    const TTStub<Ref_Phase2TrackerDigi_>* ttStubP = ttStubRef.get();
+    const TTStub<Ref_Phase2TrackerDigi_>* ttStubP = ttStubRef_.get();
 
     // The stub gives access to the DetId of the stacked module, but we want the DetId of the lower of
     // the two sensors in the module.
@@ -115,7 +115,7 @@ namespace tmtt {
       if (detid.subdetId() != StripSubdetector::TOB && detid.subdetId() != StripSubdetector::TID) continue; // Phase 2 Outer Tracker uses TOB for entire barrel & TID for entire endcap.
       if ( trackerTopology->isLower(detid) ) { // Select only lower of the two sensors in a module.
           DetId stackDetid = trackerTopology->stack(detid); // Det ID of stacked module containing stub.
-          if ( ttStubRef->getDetId() == stackDetid ) {
+          if ( ttStubRef_->getDetId() == stackDetid ) {
               geoDetId = detid; // Note Det ID of lower sensor in stacked module containing stub.
               break;
           }
@@ -125,7 +125,7 @@ namespace tmtt {
   */
 
     // This is a faster way we found of doing the conversion. It seems to work ...
-    DetId stackDetid = ttStubRef->getDetId();
+    DetId stackDetid = ttStubRef_->getDetId();
     DetId geoDetId(stackDetid.rawId() + 1);
     if (not(trackerTopology->isLower(geoDetId) && trackerTopology->stack(geoDetId) == stackDetid))
       throw cms::Exception("LogicError") << "Stub: determination of detId went wrong" << endl;
@@ -136,7 +136,7 @@ namespace tmtt {
 
     const PixelGeomDetUnit* theGeomDet = dynamic_cast<const PixelGeomDetUnit*>(det0);
     const PixelTopology* topol = dynamic_cast<const PixelTopology*>(&(theGeomDet->specificTopology()));
-    MeasurementPoint measurementPoint = ttStubRef->clusterRef(0)->findAverageLocalCoordinatesCentered();
+    MeasurementPoint measurementPoint = ttStubRef_->clusterRef(0)->findAverageLocalCoordinatesCentered();
     LocalPoint clustlp = topol->localPosition(measurementPoint);
     GlobalPoint pos = theGeomDet->surface().toGlobal(clustlp);
 
@@ -148,7 +148,7 @@ namespace tmtt {
         fabs(z_) > settings_->trackerHalfLength()) {
       throw cms::Exception("BadConfig") << "Stub: Stub found outside assumed tracker volume. Please update tracker "
                                            "dimensions specified in Settings.h!"
-                                        << " r=" << r_ << " z=" << z_ << " " << ttStubRef->getDetId().subdetId()
+                                        << " r=" << r_ << " z=" << z_ << " " << ttStubRef_->getDetId().subdetId()
                                         << endl;
     }
 
@@ -211,7 +211,7 @@ namespace tmtt {
 
     // Get stub bend that is available in front-end electronics, where bend is displacement between
     // two hits in stubs in units of strip pitch.
-    bendInFrontend_ = ttStubRef->bendFE();
+    bendInFrontend_ = ttStubRef_->bendFE();
     if ((not barrel_) && pos.z() > 0)
       bendInFrontend_ *= -1;
     // EJC Bend in barrel seems to be flipped in tilted geom.
@@ -228,7 +228,7 @@ namespace tmtt {
           bendInFrontend_, degradedBend, rejectStub, numMergedBend_);  // sets value of last 3 arguments.
       bend_ = degradedBend;
     } else if (settings->degradeBendRes() == 1) {
-      bend_ = ttStubRef->bendBE();  // Degraded bend from official CMS recipe.
+      bend_ = ttStubRef_->bendBE();  // Degraded bend from official CMS recipe.
       if ((not barrel_) && pos.z() > 0)
         bend_ *= -1;
       if (barrel_)
@@ -506,8 +506,7 @@ namespace tmtt {
 
     // Or emulate stubs in dead tracker regions using communal emulation shared with Tracklet.
     if (settings_->killScenario() > 0) {
-      TTStubRef ttStubRef(*this);  // Cast to base class
-      bool kill = stubKiller_.killStub(ttStubRef.get());
+      bool kill = stubKiller_.killStub(ttStubRef_.get());
       if (kill)
         frontendPass_ = false;
     }
@@ -528,16 +527,15 @@ namespace tmtt {
   void Stub::fillTruth(const map<edm::Ptr<TrackingParticle>, const TP*>& translateTP,
                        const edm::Handle<TTStubAssMap>& mcTruthTTStubHandle,
                        const edm::Handle<TTClusterAssMap>& mcTruthTTClusterHandle) {
-    TTStubRef ttStubRef(*this);  // Cast to base class
 
     //--- Fill assocTP_ info. If both clusters in this stub were produced by the same single tracking particle, find out which one it was.
 
-    bool genuine = mcTruthTTStubHandle->isGenuine(ttStubRef);  // Same TP contributed to both clusters?
+    bool genuine = mcTruthTTStubHandle->isGenuine(ttStubRef_);  // Same TP contributed to both clusters?
     assocTP_ = nullptr;
 
     // Require same TP contributed to both clusters.
     if (genuine) {
-      edm::Ptr<TrackingParticle> tpPtr = mcTruthTTStubHandle->findTrackingParticlePtr(ttStubRef);
+      edm::Ptr<TrackingParticle> tpPtr = mcTruthTTStubHandle->findTrackingParticlePtr(ttStubRef_);
       if (translateTP.find(tpPtr) != translateTP.end()) {
         assocTP_ = translateTP.at(tpPtr);
         // N.B. Since not all tracking particles are stored in InputData::vTPs_, sometimes no match will be found.
@@ -555,7 +553,7 @@ namespace tmtt {
       // We consider stubs in which this TP contributed to either cluster.
 
       for (unsigned int iClus = 0; iClus <= 1; iClus++) {  // Loop over both clusters that make up stub.
-        const TTClusterRef& ttClusterRef = ttStubRef->clusterRef(iClus);
+        const TTClusterRef& ttClusterRef = ttStubRef_->clusterRef(iClus);
 
         // Now identify all TP's contributing to either cluster in stub.
         vector<edm::Ptr<TrackingParticle> > vecTpPtr = mcTruthTTClusterHandle->findTrackingParticlePtrs(ttClusterRef);
@@ -572,7 +570,7 @@ namespace tmtt {
     //--- Also note which tracking particles produced the two clusters that make up the stub
 
     for (unsigned int iClus = 0; iClus <= 1; iClus++) {  // Loop over both clusters that make up stub.
-      const TTClusterRef& ttClusterRef = ttStubRef->clusterRef(iClus);
+      const TTClusterRef& ttClusterRef = ttStubRef_->clusterRef(iClus);
 
       bool genuineCluster = mcTruthTTClusterHandle->isGenuine(ttClusterRef);  // Only 1 TP made cluster?
       assocTPofCluster_[iClus] = nullptr;

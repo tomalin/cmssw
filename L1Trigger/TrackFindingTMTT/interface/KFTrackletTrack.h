@@ -73,12 +73,7 @@ namespace tmtt {
           numUpdateCalls_(0),
           numIterations_(0) {
       // Doesn't make sense to assign stubs to track if fitter rejected it.
-      if (!accepted)
-        stubs_.clear();
-      //nLayers_   = Utility::countLayers(settings, stubs); // Count tracker layers these stubs are in
-      //   matchedTP_ = Utility::matchingTP(settings, stubs, nMatchedLayers_, matchedStubs_); // Find associated truth particle & calculate info about match.
-      // secTmp_.init(settings, iPhiSec, iEtaReg); //Sector class used to check if fitted track trajectory is in expected sector.
-      // htRphiTmp_.init(settings, iPhiSec, iEtaReg, secTmp_.etaMin(), secTmp_.etaMax(), secTmp_.phiCentre()); // HT class used to identify HT cell that corresponds to fitted helix parameters.
+      if (!accepted) stubs_.clear();
     }
 
     KFTrackletTrack(){};  // Creates track object, but doesn't std::set any variables.

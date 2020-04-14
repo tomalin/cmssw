@@ -83,7 +83,7 @@ namespace tmtt {
 
     if (enableMCtruth_) {
       for (const TP& tp : vTPs_) {
-        TrackingParticlePtr tpPtr(tp);
+        const TrackingParticlePtr& tpPtr = tp.trackingParticlePtr();
         translateTP[tpPtr] = &tp;
       }
     }

@@ -41,8 +41,8 @@ namespace tmtt {
     std::vector<TTStubRef> getStubRefs(const T& trk) const {
       std::vector<TTStubRef> ttstubrefs;
       const std::vector<const Stub*> stubs = trk.getStubs();
-      for (size_t ii = 0; ii < stubs.size(); ii++) {
-        TTStubRef ref = *stubs.at(ii);
+      for (const Stub* s : stubs) {
+        const TTStubRef& ref = s->ttStubRef();
         ttstubrefs.push_back(ref);
       }
 

@@ -45,7 +45,7 @@ namespace tmtt {
 
   //=== Represents a Tracker stub (=pair of hits)
 
-  class Stub : public TTStubRef {
+  class Stub {
   public:
     // Store useful info about the stub (for use with HYBRID code), with hard-wired constants to allow use outside CMSSW.
     Stub(double phi,
@@ -70,6 +70,9 @@ namespace tmtt {
          const TrackerTopology* trackerTopology);
 
     ~Stub() {}
+
+    // Return reference to original TTStub.
+    const TTStubRef& ttStubRef() const {return ttStubRef_;} 
 
     bool operator==(const Stub& stubOther) { return (this->index() == stubOther.index()); }
 
@@ -313,6 +316,8 @@ namespace tmtt {
     }
 
   private:
+    TTStubRef ttStubRef_; // Reference to original TTStub
+
     const Settings* settings_;  // configuration parameters.
 
     unsigned int index_in_vStubs_;  // location of this stub in InputData::vStubs

@@ -164,11 +164,9 @@ namespace tmtt {
     std::vector<const Stub*> vFilteredStubs_;  // Ditto after all requested stub filters (e.g. bend filter)
 
     unsigned int numFilteredLayersInCell_;  // How many tracker layers these filtered stubs are in
-    unsigned int
-        numFilteredLayersInCellBestSubSec_;  // Ditto, but requiring all stubs to be in same subsector to be counted. This number is the highest layer count found in any of the subsectors in this sector.
-
-    std::map<const Stub*, std::vector<bool>>
-        subSectors_;  // Indicate which subsectors within the sector this stub is consistent with.
+    // Ditto, but requiring all stubs to be in same subsector to be counted. This number is the highest layer count found in any of the subsectors in this sector.
+    unsigned int numFilteredLayersInCellBestSubSec_;  
+    std::map<const Stub*, std::vector<bool>> subSectors_;  // Subsectors in sector this stub is consistent with.
   };
 
 }  // namespace tmtt
