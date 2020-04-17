@@ -1,11 +1,10 @@
 #include <L1Trigger/TrackFindingTMTT/plugins/TMTrackProducer.h>
 #include <L1Trigger/TrackFindingTMTT/interface/InputData.h>
-#include <L1Trigger/TrackFindingTMTT/interface/Settings.h>
-#include <L1Trigger/TrackFindingTMTT/interface/Histos.h>
 #include <L1Trigger/TrackFindingTMTT/interface/Sector.h>
 #include <L1Trigger/TrackFindingTMTT/interface/HTrphi.h>
 #include <L1Trigger/TrackFindingTMTT/interface/Get3Dtracks.h>
 #include <L1Trigger/TrackFindingTMTT/interface/KillDupFitTrks.h>
+#include <L1Trigger/TrackFindingTMTT/interface/TrackFitFactory.h>
 #include <L1Trigger/TrackFindingTMTT/interface/TrackFitGeneric.h>
 #include <L1Trigger/TrackFindingTMTT/interface/L1fittedTrack.h>
 #include <L1Trigger/TrackFindingTMTT/interface/ConverterToTTTrack.h>
@@ -14,6 +13,7 @@
 #include "L1Trigger/TrackFindingTMTT/interface/MiniHTstage.h"
 #include "L1Trigger/TrackFindingTMTT/interface/StubWindowSuggest.h"
 
+#include "FWCore/MessageService/interface/MessageLogger.h"
 #include "FWCore/Framework/interface/ESHandle.h"
 
 #include "boost/numeric/ublas/matrix.hpp"
@@ -29,46 +29,44 @@ using boost::numeric::ublas::matrix;
 
 namespace tmtt {
 
-  TMTrackProducer::TMTrackProducer(const edm::ParameterSet& iConfig) : trackerGeometryInfo_() {
+TMTrackProducer::TMTrackProducer(const edm::ParameterSet& iConfig) : 
+  settings_(iConfig), // Set configuration parameters
+  hists_(&settings_)  // Initialize histograms
+{
     using namespace edm;
-
-    // Get configuration parameters
-    settings_ = new Settings(iConfig);
 
     // Get tokens for ES data access.
     magneticFieldToken_ =
-        esConsumes<MagneticField, IdealMagneticFieldRecord, Transition::BeginRun>(settings_->magneticFieldInputTag());
+        esConsumes<MagneticField, IdealMagneticFieldRecord, Transition::BeginRun>(settings_.magneticFieldInputTag());
     trackerGeometryToken_ = esConsumes<TrackerGeometry, TrackerDigiGeometryRecord, Transition::BeginRun>(
-        settings_->trackerGeometryInputTag());
+        settings_.trackerGeometryInputTag());
     trackerTopologyToken_ =
-        esConsumes<TrackerTopology, TrackerTopologyRcd, Transition::BeginRun>(settings_->trackerTopologyInputTag());
+        esConsumes<TrackerTopology, TrackerTopologyRcd, Transition::BeginRun>(settings_.trackerTopologyInputTag());
 
     // Get tokens for ED data access.
-    stubToken_ = consumes<TTStubDetSetVec>(settings_->stubInputTag());
-    if (settings_->enableMCtruth()) {
+    stubToken_ = consumes<TTStubDetSetVec>(settings_.stubInputTag());
+    if (settings_.enableMCtruth()) {
       // These lines use lots of CPU, even if no use of truth info is made later.
-      tpToken_ = consumes<TrackingParticleCollection>(settings_->tpInputTag());
-      stubTruthToken_ = consumes<TTStubAssMap>(settings_->stubTruthInputTag());
-      clusterTruthToken_ = consumes<TTClusterAssMap>(settings_->clusterTruthInputTag());
-      genJetToken_ = consumes<reco::GenJetCollection>(settings_->genJetInputTag());
+      tpToken_ = consumes<TrackingParticleCollection>(settings_.tpInputTag());
+      stubTruthToken_ = consumes<TTStubAssMap>(settings_.stubTruthInputTag());
+      clusterTruthToken_ = consumes<TTClusterAssMap>(settings_.clusterTruthInputTag());
+      genJetToken_ = consumes<reco::GenJetCollection>(settings_.genJetInputTag());
     }
 
-    trackFitters_ = settings_->trackFitters();
-    useRZfilter_ = settings_->useRZfilter();
-    runRZfilter_ = (useRZfilter_.size() > 0);  // Do any fitters require an r-z track filter to be run?
+    trackFitters_ = settings_.trackFitters();
+    useRZfilter_ = settings_.useRZfilter();
+    runRZfilter_ = (not useRZfilter_.empty());  // Do any fitters require an r-z track filter to be run?
 
     // Tame debug printout.
     cout.setf(ios::fixed, ios::floatfield);
     cout.precision(4);
 
     // Book histograms.
-    hists_ = new Histos(settings_);
-    hists_->book();
+    hists_.book();
 
-    // Create track fitting algorithm (& internal histograms if it uses them)
+    // Create track fitting algorithm
     for (const string& fitterName : trackFitters_) {
-      fitterWorkerMap_[fitterName] = TrackFitGeneric::create(fitterName, settings_);
-      fitterWorkerMap_[fitterName]->bookHists();
+      fitterWorkerMap_[fitterName] = trackFitFactory::create(fitterName, &settings_);
     }
 
     //--- Define EDM output to be written to file (if required)
@@ -92,24 +90,19 @@ namespace tmtt {
     const MagneticField* theMagneticField = &(iSetup.getData(magneticFieldToken_));
     float bField = theMagneticField->inTesla(GlobalPoint(0, 0, 0)).z();  // B field in Tesla.
     cout << endl << "--- B field = " << bField << " Tesla ---" << endl << endl;
-    settings_->setBfield(bField);
-
-    // Initialize track fitting algorithm at start of run (especially with B-field dependent variables).
-    for (const string& fitterName : trackFitters_) {
-      fitterWorkerMap_[fitterName]->initRun();
-    }
+    settings_.setBfield(bField);
 
     // Get tracker geometry
     trackerGeometry_ = &(iSetup.getData(trackerGeometryToken_));
     trackerTopology_ = &(iSetup.getData(trackerTopologyToken_));
-    trackerGeometryInfo_.getTiltedModuleInfo(settings_, trackerTopology_, trackerGeometry_);
+    trackerGeometryInfo_.getTiltedModuleInfo(&settings_, trackerTopology_, trackerGeometry_);
   }
 
   void TMTrackProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
     // Note useful info about MC truth particles and about reconstructed stubs .
     InputData inputData(iEvent,
                         iSetup,
-                        settings_,
+                        &settings_,
                         trackerGeometry_,
                         trackerTopology_,
                         tpToken_,
@@ -122,20 +115,20 @@ namespace tmtt {
     const vector<const Stub*>& vStubs = inputData.getStubs();
 
     // Creates matrix of Sector objects, which decide which stubs are in which (eta,phi) sector
-    matrix<Sector> mSectors(settings_->numPhiSectors(), settings_->numEtaRegions());
+    matrix<Sector> mSectors(settings_.numPhiSectors(), settings_.numEtaRegions());
     // Create matrix of r-phi Hough-Transform arrays, with one-to-one correspondence to sectors.
-    matrix<HTrphi> mHtRphis(settings_->numPhiSectors(), settings_->numEtaRegions());
+    matrix<HTrphi> mHtRphis(settings_.numPhiSectors(), settings_.numEtaRegions());
     // Create matrix of Get3Dtracks objects, to run optional r-z track filter, with one-to-one correspondence to sectors.
-    matrix<Get3Dtracks> mGet3Dtrks(settings_->numPhiSectors(), settings_->numEtaRegions());
+    matrix<Get3Dtracks> mGet3Dtrks(settings_.numPhiSectors(), settings_.numEtaRegions());
 
     //=== Initialization
     // Create utility for converting L1 tracks from our private format to official CMSSW EDM format.
-    const ConverterToTTTrack converter(settings_);
+    const ConverterToTTTrack converter(&settings_);
 #ifdef OutputHT_TTracks
     // Storage for EDM L1 track collection to be produced directly from HT output.
-    std::unique_ptr<TTTrackCollection> htTTTracksForOutput(new TTTrackCollection);
+    auto htTTTracksForOutput = std::make_unique<TTTrackCollection>();
     // Storage for EDM L1 track collection to be produced directly from r-z track filter output (if run).
-    std::unique_ptr<TTTrackCollection> rzTTTracksForOutput(new TTTrackCollection);
+    auto rzTTTracksForOutput = std::make_unique<TTTrackCollection>();
 #endif
     // Storage for EDM L1 track collection to be produced from fitted tracks (one for each fit algorithm being used).
     // auto_ptr cant be stored in std containers, so use C one, together with map noting which element corresponds to which algorithm.
@@ -144,7 +137,7 @@ namespace tmtt {
     map<string, unsigned int> locationInsideArray;
     unsigned int ialg = 0;
     for (const string& fitterName : trackFitters_) {
-      std::unique_ptr<TTTrackCollection> fitTTTracksForOutput(new TTTrackCollection);
+      auto fitTTTracksForOutput = std::make_unique<TTTrackCollection>();
       allFitTTTracksForOutput[ialg] = std::move(fitTTTracksForOutput);
       locationInsideArray[fitterName] = ialg++;
     }
@@ -152,22 +145,22 @@ namespace tmtt {
     //=== Do tracking in the r-phi Hough transform within each sector.
 
     // Fill Hough-Transform arrays with stubs.
-    for (unsigned int iPhiSec = 0; iPhiSec < settings_->numPhiSectors(); iPhiSec++) {
-      for (unsigned int iEtaReg = 0; iEtaReg < settings_->numEtaRegions(); iEtaReg++) {
+    for (unsigned int iPhiSec = 0; iPhiSec < settings_.numPhiSectors(); iPhiSec++) {
+      for (unsigned int iEtaReg = 0; iEtaReg < settings_.numEtaRegions(); iEtaReg++) {
         Sector& sector = mSectors(iPhiSec, iEtaReg);
         HTrphi& htRphi = mHtRphis(iPhiSec, iEtaReg);
 
         // Initialize constants for this sector.
-        sector.init(settings_, iPhiSec, iEtaReg);
-        htRphi.init(settings_, iPhiSec, iEtaReg, sector.etaMin(), sector.etaMax(), sector.phiCentre());
+        sector.init(&settings_, iPhiSec, iEtaReg);
+        htRphi.init(&settings_, iPhiSec, iEtaReg, sector.etaMin(), sector.etaMax(), sector.phiCentre());
 
         // Check sector is enabled (always true, except if user disabled some for special studies).
-        if (settings_->isHTRPhiEtaRegWhitelisted(iEtaReg)) {
+        if (settings_.isHTRPhiEtaRegWhitelisted(iEtaReg)) {
           for (const Stub* stub : vStubs) {
             // Digitize stub as would be at input to GP. This doesn't need the nonant number, since we assumed an integer number of
             // phi digitisation  bins inside an nonant. N.B. This changes the coordinates & bend stored in the stub.
             // The cast allows us to ignore the "const".
-            if (settings_->enableDigitize())
+            if (settings_.enableDigitize())
               (const_cast<Stub*>(stub))->digitizeForGPinput(iPhiSec);
 
             // Check if stub is inside this sector
@@ -178,7 +171,7 @@ namespace tmtt {
               const vector<bool> inEtaSubSecs = sector.insideEtaSubSecs(stub);
 
               // Digitize stub if as would be at input to HT, which slightly degrades its coord. & bend resolution, affecting the HT performance.
-              if (settings_->enableDigitize())
+              if (settings_.enableDigitize())
                 (const_cast<Stub*>(stub))->digitizeForHTinput(iPhiSec);
 
               // Store stub in Hough transform array for this sector, indicating its compatibility with eta subsectors with sector.
@@ -192,24 +185,24 @@ namespace tmtt {
       }
     }
 
-    if (settings_->muxOutputsHT() > 0) {
+    if (settings_.muxOutputsHT() > 0) {
       // Multiplex outputs of several HT onto one pair of output opto-links.
       // This only affects tracking performance if option busySectorKill is enabled, so that tracks that
       // can't be sent down the link within the time-multiplexed period are killed.
-      MuxHToutputs muxHT(settings_);
+      MuxHToutputs muxHT(&settings_);
       muxHT.exec(mHtRphis);
     }
 
     // Optionally, run 2nd stage mini HT -- WITHOUT TRUNCATION ???
-    if (settings_->miniHTstage()) {
-      MiniHTstage miniHTstage(settings_);
+    if (settings_.miniHTstage()) {
+      MiniHTstage miniHTstage(&settings_);
       miniHTstage.exec(mHtRphis);
     }
 
     //=== Make 3D tracks, optionally running r-z track filters (such as Seed Filter) & duplicate track removal.
 
-    for (unsigned int iPhiSec = 0; iPhiSec < settings_->numPhiSectors(); iPhiSec++) {
-      for (unsigned int iEtaReg = 0; iEtaReg < settings_->numEtaRegions(); iEtaReg++) {
+    for (unsigned int iPhiSec = 0; iPhiSec < settings_.numPhiSectors(); iPhiSec++) {
+      for (unsigned int iEtaReg = 0; iEtaReg < settings_.numEtaRegions(); iEtaReg++) {
         const Sector& sector = mSectors(iPhiSec, iEtaReg);
 
         // Get tracks found by r-phi HT.
@@ -218,7 +211,7 @@ namespace tmtt {
 
         Get3Dtracks& get3Dtrk = mGet3Dtrks(iPhiSec, iEtaReg);
         // Initialize utility for making 3D tracks from 2D ones.
-        get3Dtrk.init(settings_, iPhiSec, iEtaReg, sector.etaMin(), sector.etaMax(), sector.phiCentre());
+        get3Dtrk.init(&settings_, iPhiSec, iEtaReg, sector.etaMin(), sector.etaMax(), sector.phiCentre());
 
         // Convert 2D tracks found by HT to 3D tracks (optionally by running r-z filters & duplicate track removal)
         get3Dtrk.run(vecTracksRphi);
@@ -245,7 +238,7 @@ namespace tmtt {
 
     // Initialize the duplicate track removal algorithm that can optionally be run after the track fit.
     KillDupFitTrks killDupFitTrks;
-    killDupFitTrks.init(settings_, settings_->dupTrkAlgFit());
+    killDupFitTrks.init(&settings_, settings_.dupTrkAlgFit());
 
     //=== Do a helix fit to all the track candidates.
 
@@ -255,8 +248,8 @@ namespace tmtt {
       fittedTracks[fitterName] = vector<L1fittedTrack>();
     }
 
-    for (unsigned int iPhiSec = 0; iPhiSec < settings_->numPhiSectors(); iPhiSec++) {
-      for (unsigned int iEtaReg = 0; iEtaReg < settings_->numEtaRegions(); iEtaReg++) {
+    for (unsigned int iPhiSec = 0; iPhiSec < settings_.numPhiSectors(); iPhiSec++) {
+      for (unsigned int iEtaReg = 0; iEtaReg < settings_.numEtaRegions(); iEtaReg++) {
         const Get3Dtracks& get3Dtrk = mGet3Dtrks(iPhiSec, iEtaReg);
 
         // Loop over all the fitting algorithms we are trying.
@@ -270,13 +263,9 @@ namespace tmtt {
           // Fit all tracks in this sector
           vector<L1fittedTrack> fittedTracksInSec;
           for (const L1track3D& trk : vecTrk3D) {
-            // IRT
-            //bool OK = (trk.getMatchedTP() != nullptr && trk.getMatchedTP()->pt() > 50 && fabs(trk.getMatchedTP()->eta()) > 1.4 && fabs(trk.getMatchedTP()->eta()) < 1.8);
-            //if (trk.getNumStubs() != trk.getNumLayers()) OK = false;
-            //if (not OK) continue;
 
             // Ensure stubs assigned to this track is digitized with respect to the phi sector the track is in.
-            if (settings_->enableDigitize()) {
+            if (settings_.enableDigitize()) {
               const vector<const Stub*>& stubsOnTrk = trk.getStubs();
               for (const Stub* s : stubsOnTrk) {
                 (const_cast<Stub*>(s))->digitizeForHTinput(iPhiSec);
@@ -289,7 +278,7 @@ namespace tmtt {
 
             if (fitTrack.accepted()) {  // If fitter accepted track, then store it.
               // Optionally digitize fitted track, degrading slightly resolution.
-              if (settings_->enableDigitize())
+              if (settings_.enableDigitize())
                 fitTrack.digitizeTrack(fitterName);
               // Store fitted tracks, such that there is one fittedTracks corresponding to each HT tracks.
               // N.B. Tracks rejected by the fit are also stored, but marked.
@@ -314,11 +303,11 @@ namespace tmtt {
     // Debug printout
     unsigned int static nEvents = 0;
     nEvents++;
-    if (settings_->debug() >= 1 && nEvents <= 1000) {
+    if (settings_.debug() >= 1 && nEvents <= 1000) {
       cout << "INPUT #TPs = " << vTPs.size() << " #STUBs = " << vStubs.size() << endl;
       unsigned int numHTtracks = 0;
-      for (unsigned int iPhiSec = 0; iPhiSec < settings_->numPhiSectors(); iPhiSec++) {
-        for (unsigned int iEtaReg = 0; iEtaReg < settings_->numEtaRegions(); iEtaReg++) {
+      for (unsigned int iPhiSec = 0; iPhiSec < settings_.numPhiSectors(); iPhiSec++) {
+        for (unsigned int iEtaReg = 0; iEtaReg < settings_.numEtaRegions(); iEtaReg++) {
           const Get3Dtracks& get3Dtrk = mGet3Dtrks(iPhiSec, iEtaReg);
           numHTtracks += get3Dtrk.trackCands3D(false).size();
         }
@@ -333,12 +322,11 @@ namespace tmtt {
 
     // Allow histogramming to plot undigitized variables.
     for (const Stub* stub : vStubs) {
-      if (settings_->enableDigitize())
-        (const_cast<Stub*>(stub))->setDigitizeWarningsOn(false);
+      if (settings_.enableDigitize()) (const_cast<Stub*>(stub))->setDigitizeWarningsOn(false);
     }
 
     // Fill histograms to monitor input data & tracking performance.
-    hists_->fill(inputData, mSectors, mHtRphis, mGet3Dtrks, fittedTracks);
+    hists_.fill(inputData, mSectors, mHtRphis, mGet3Dtrks, fittedTracks);
 
     //=== Store output EDM track and hardware stub collections.
 #ifdef OutputHT_TTracks
@@ -354,28 +342,17 @@ namespace tmtt {
 
   void TMTrackProducer::endJob() {
     // Print stub window sizes that TMTT recommends CMS uses in FE chips.
-    if (settings_->printStubWindows())
-      StubWindowSuggest::printResults();
-
-    // Optional debug printout from track fitters at end of job.
-    for (const string& fitterName : trackFitters_) {
-      fitterWorkerMap_[fitterName]->endJob();
-    }
+    if (settings_.printStubWindows()) StubWindowSuggest::printResults();
 
     // Print job summary
-    hists_->trackerGeometryAnalysis(trackerGeometryInfo_);
-    hists_->endJobAnalysis();
-
-    for (const string& fitterName : trackFitters_) {
-      //cout << "# of duplicated stubs = " << fitterWorkerMap_[fitterName]->nDupStubs() << endl;
-      delete fitterWorkerMap_[string(fitterName)];
-    }
+    hists_.trackerGeometryAnalysis(trackerGeometryInfo_);
+    hists_.endJobAnalysis();
 
     cout << endl
-         << "Number of (eta,phi) sectors used = (" << settings_->numEtaRegions() << "," << settings_->numPhiSectors()
+         << "Number of (eta,phi) sectors used = (" << settings_.numEtaRegions() << "," << settings_.numPhiSectors()
          << ")" << endl;
   }
 
-  DEFINE_FWK_MODULE(TMTrackProducer);
-
 }  // namespace tmtt
+
+DEFINE_FWK_MODULE(tmtt::TMTrackProducer);

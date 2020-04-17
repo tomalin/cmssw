@@ -11,6 +11,8 @@
 #include "SimDataFormats/TrackingAnalysis/interface/TrackingParticle.h"
 #include "SimTracker/TrackTriggerAssociation/interface/TTClusterAssociationMap.h"
 #include "SimTracker/TrackTriggerAssociation/interface/TTStubAssociationMap.h"
+#include <L1Trigger/TrackFindingTMTT/interface/Settings.h>
+#include <L1Trigger/TrackFindingTMTT/interface/Histos.h>
 #include "L1Trigger/TrackFindingTMTT/interface/Stub.h"
 #include "L1Trigger/TrackFindingTMTT/interface/L1track3D.h"
 #include "L1Trigger/TrackFindingTMTT/interface/TrackerGeometryInfo.h"
@@ -20,11 +22,10 @@
 #include <vector>
 #include <map>
 #include <string>
+#include <memory>
 
 namespace tmtt {
 
-  class Settings;
-  class Histos;
   class TrackFitGeneric;
 
   class TMTrackProducer : public edm::EDProducer {
@@ -55,13 +56,13 @@ namespace tmtt {
     const TrackerTopology *trackerTopology_;
 
     // Configuration parameters
-    Settings *settings_;
+    Settings settings_;
     std::vector<std::string> trackFitters_;
     std::vector<std::string> useRZfilter_;
     bool runRZfilter_;
 
-    Histos *hists_;
-    std::map<std::string, TrackFitGeneric *> fitterWorkerMap_;
+    Histos hists_;
+    std::map<std::string, std::unique_ptr<TrackFitGeneric>> fitterWorkerMap_;
 
     TrackerGeometryInfo trackerGeometryInfo_;
   };

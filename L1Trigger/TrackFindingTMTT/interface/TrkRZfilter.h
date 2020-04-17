@@ -69,8 +69,8 @@ namespace tmtt {
     //=== Extra information about each track input to filter. (Only use after you have first called filterTracks).
 
     // Number of seed combinations considered by the Seed Filter for each input track.
-    std::vector<unsigned int> numSeedCombsPerTrk() const { return numSeedCombsPerTrk_; }
-    std::vector<unsigned int> numGoodSeedCombsPerTrk() const {
+    const std::vector<unsigned int>& numSeedCombsPerTrk() const { return numSeedCombsPerTrk_; }
+    const std::vector<unsigned int>& numGoodSeedCombsPerTrk() const {
       return numGoodSeedCombsPerTrk_;
     }  // Only counts seeds compatible with beam-spot.
 

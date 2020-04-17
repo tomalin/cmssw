@@ -24,7 +24,7 @@ namespace tmtt {
                     const TrackerGeometry* trackerGeometry);
 
     bool killStub(const TTStub<Ref_Phase2TrackerDigi_>* stub,
-                  const std::vector<int> layersToKill,
+                  const std::vector<int>& layersToKill,
                   const double minPhiToKill,
                   const double maxPhiToKill,
                   const double minZToKill,
@@ -38,7 +38,7 @@ namespace tmtt {
 
     bool killStubInDeadModule(const TTStub<Ref_Phase2TrackerDigi_>* stub);
 
-    std::map<DetId, float> getListOfDeadModules() { return deadModules_; }
+    const std::map<DetId, float>& getListOfDeadModules() { return deadModules_; }
 
   private:
     void chooseModulesToKill();

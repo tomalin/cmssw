@@ -5,9 +5,6 @@
 #ifndef L1Trigger_TrackFindingTMTT_TrackFitGeneric_h
 #define L1Trigger_TrackFindingTMTT_TrackFitGeneric_h
 
-// Don't fit track candidates if they have more than this number of stubs.
-#define __MAX_STUBS_PER_TRK__ 30
-
 #include "L1Trigger/TrackFindingTMTT/interface/L1fittedTrack.h"
 #include "L1Trigger/TrackFindingTMTT/interface/L1track3D.h"
 
@@ -21,30 +18,25 @@ namespace tmtt {
   class TrackFitGeneric {
   public:
     // Set configuration parameters.
-    TrackFitGeneric(const Settings* settings, const std::string& fitterName = "");
+    TrackFitGeneric(const Settings* settings, const std::string& fitterName = "") : settings_(settings), fitterName_(fitterName) {}
 
     virtual ~TrackFitGeneric() {}
 
     // Static method to produce a fitter based on a std::string
     //  static std::auto_ptr<TrackFitGeneric> create(std::string, const Settings* settings);
     static TrackFitGeneric* create(std::string, const Settings* settings);
-    virtual void bookHists() {}
 
-    virtual void initRun() {}
     // Fit a track candidate obtained from the Hough Transform.
-    virtual L1fittedTrack fit(const L1track3D& l1track3D);
-
-    // Optional debug printout at end of job.
-    virtual void endJob() {}
+    virtual L1fittedTrack fit(const L1track3D& l1track3D) {return L1fittedTrack();}
 
     const Settings* getSettings() const { return settings_; }
-    unsigned nDupStubs() const { return nDupStubs_; }
 
-  protected:
+    const std::string fitterName() const { return fitterName_; }
+
+  private:
     // Configuration parameters
     const Settings* settings_;
     const std::string fitterName_;
-    unsigned nDupStubs_;
   };
 
 }  // namespace tmtt

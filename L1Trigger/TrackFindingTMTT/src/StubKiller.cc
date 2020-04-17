@@ -13,7 +13,6 @@ namespace tmtt {
       : killScenario_(0),
         trackerTopology_(0),
         trackerGeometry_(0),
-        layersToKill_(vector<int>()),
         minPhiToKill_(0),
         maxPhiToKill_(0),
         minZToKill_(0),
@@ -171,7 +170,7 @@ namespace tmtt {
   // fractionOfStubsToKillEverywhere - The fraction of stubs to kill throughout the tracker
 
   bool StubKiller::killStub(const TTStub<Ref_Phase2TrackerDigi_>* stub,
-                            const vector<int> layersToKill,
+                            const vector<int>& layersToKill,
                             const double minPhiToKill,
                             const double maxPhiToKill,
                             const double minZToKill,

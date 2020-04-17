@@ -35,7 +35,7 @@ namespace tmtt {
     // and the number of helix parameters being fitted (=5 if d0 is fitted, or =4 if d0 is not fitted).
     // Also specify phi sector and eta region used by track-finding code that this track was in.
     // And if track fit declared this to be a valid track (enough stubs left on track after fit etc.).
-    KFTrackletTrack(const L1track3D& l1track3D,
+    KFTrackletTrack(const L1track3D* l1track3D,
                     const std::vector<const Stub*>& stubs,
                     unsigned int hitPattern,
                     float qOverPt,
@@ -67,14 +67,11 @@ namespace tmtt {
           nHelixParam_(nHelixParam),
           iPhiSec_(iPhiSec),
           iEtaReg_(iEtaReg),
-          optoLinkID_(l1track3D.optoLinkID()),
+          optoLinkID_(l1track3D->optoLinkID()),
           accepted_(accepted),
           nSkippedLayers_(0),
           numUpdateCalls_(0),
-          numIterations_(0) {
-      // Doesn't make sense to assign stubs to track if fitter rejected it.
-      if (!accepted) stubs_.clear();
-    }
+          numIterations_(0) {}
 
     KFTrackletTrack(){};  // Creates track object, but doesn't std::set any variables.
 
@@ -101,7 +98,7 @@ namespace tmtt {
       numUpdateCalls = numUpdateCalls_;
     }
 
-    const L1track3D& getL1track3D() const { return l1track3D_; }
+    const L1track3D* getL1track3D() const { return l1track3D_; }
 
     // Get stubs on fitted track (can differ from those on HT track if track fit kicked out stubs with bad residuals)
     const std::vector<const Stub*>& getStubs() const { return stubs_; }
@@ -110,7 +107,7 @@ namespace tmtt {
     // Get number of tracker layers these stubs are in.
     unsigned int getNumLayers() const { return nLayers_; }
     // Get number of stubs deleted from track candidate by fitter (because they had large residuals)
-    unsigned int getNumKilledStubs() const { return l1track3D_.getNumStubs() - this->getNumStubs(); }
+    unsigned int getNumKilledStubs() const { return l1track3D_->getNumStubs() - this->getNumStubs(); }
 
     // Get bit-encoded hit pattern (where layer number assigned by increasing distance from origin, according to layers track expected to cross).
     unsigned int getHitPattern() const { return hitPattern_; }
@@ -215,7 +212,7 @@ namespace tmtt {
     const Settings* settings_;
 
     //--- The 3D hough-transform track candidate which was fitted.
-    L1track3D l1track3D_;
+    const L1track3D* l1track3D_;
 
     //--- The stubs on the fitted track (can differ from those on HT track if fit kicked off stubs with bad residuals)
     std::vector<const Stub*> stubs_;

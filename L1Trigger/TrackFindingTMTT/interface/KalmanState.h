@@ -29,7 +29,7 @@ namespace tmtt {
                 const StubCluster *stubcl,
                 double chi2rphi,
                 double chi2rz,
-                L1KalmanComb *fitter,
+                const L1KalmanComb *fitter,
                 GET_TRACK_PARAMS f);
     KalmanState(const KalmanState &p);
     ~KalmanState() {}
@@ -46,13 +46,13 @@ namespace tmtt {
     double z() const { return z_; }
     const KalmanState *last_state() const { return last_state_; }
     // Helix parameters (1/2R, phi relative to sector, z0, tanLambda)
-    std::vector<double> xa() const { return xa_; }
+    const std::vector<double>& xa() const { return xa_; }
     // Covariance matrix on helix params.
-    TMatrixD pxxa() const { return pxxa_; }
+    const TMatrixD& pxxa() const { return pxxa_; }
     // Kalman Gain matrix
-    TMatrixD K() const { return K_; }
+    const TMatrixD& K() const { return K_; }
     // Hit position covariance matrix.
-    TMatrixD dcov() const { return dcov_; }
+    const TMatrixD& dcov() const { return dcov_; }
     // Hit
     const StubCluster *stubCluster() const { return stubCluster_; }
     double chi2() const { return chi2rphi_ + chi2rz_; }
@@ -67,7 +67,7 @@ namespace tmtt {
     double reducedChi2() const;
     const KalmanState *last_update_state() const;
     std::vector<const Stub *> stubs() const;
-    L1KalmanComb *fitter() const { return fitter_; }
+    const L1KalmanComb *fitter() const { return fitter_; }
     GET_TRACK_PARAMS fXtoTrackParams() const { return fXtoTrackParams_; };
 
     static bool orderChi2(const KalmanState *left, const KalmanState *right);
@@ -89,6 +89,7 @@ namespace tmtt {
     unsigned layerId_;
     unsigned endcapRing_;
     double r_;
+    double z_;
     const KalmanState *last_state_;
     std::vector<double> xa_;
     TMatrixD pxxa_;
@@ -99,11 +100,10 @@ namespace tmtt {
     double chi2rz_;
     unsigned int kalmanChi2RphiScale_;
     unsigned n_stubs_;
-    L1KalmanComb *fitter_;
+    const L1KalmanComb *fitter_;
     GET_TRACK_PARAMS fXtoTrackParams_;
     bool barrel_;
     unsigned n_skipped_;
-    double z_;
     L1track3D l1track3D_;
     unsigned int hitPattern_;
 

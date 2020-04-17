@@ -1472,7 +1472,6 @@ namespace tmtt {
     //=== Count track candidates found in the tracker.
 
     const unsigned int numPhiNonants = settings_->numPhiNonants();
-    ;
     matrix<unsigned int> nTrksPerSec(numPhiSectors_, numEtaRegions_, 0);
     vector<unsigned int> nTrksPerEtaReg(numEtaRegions_, 0);
     vector<unsigned int> nTrksPerNonant(numPhiNonants, 0);
@@ -2872,7 +2871,7 @@ namespace tmtt {
         //--- Compare fitted tracks that match truth particles to those that don't.
 
         // Get original HT track candidate prior to fit for comparison.
-        const L1track3D& htTrk = fitTrk.getL1track3D();
+        const L1track3D* htTrk = fitTrk.getL1track3D();
 
         // Get matched truth particle, if any.
         const TP* tp = fitTrk.getMatchedTP();
@@ -2919,11 +2918,11 @@ namespace tmtt {
           }
 
           // Compared fitted track helix params with seed track from HT.
-          hisFitVsSeedQinvPtMatched_[fitName]->Fill(htTrk.qOverPt(), fitTrk.qOverPt());
-          hisFitVsSeedPhi0Matched_[fitName]->Fill(htTrk.phi0(), fitTrk.phi0());
-          hisFitVsSeedD0Matched_[fitName]->Fill(htTrk.d0(), fitTrk.d0());
-          hisFitVsSeedZ0Matched_[fitName]->Fill(htTrk.z0(), fitTrk.z0());
-          hisFitVsSeedEtaMatched_[fitName]->Fill(htTrk.eta(), fitTrk.eta());
+          hisFitVsSeedQinvPtMatched_[fitName]->Fill(htTrk->qOverPt(), fitTrk.qOverPt());
+          hisFitVsSeedPhi0Matched_[fitName]->Fill(htTrk->phi0(), fitTrk.phi0());
+          hisFitVsSeedD0Matched_[fitName]->Fill(htTrk->d0(), fitTrk.d0());
+          hisFitVsSeedZ0Matched_[fitName]->Fill(htTrk->z0(), fitTrk.z0());
+          hisFitVsSeedEtaMatched_[fitName]->Fill(htTrk->eta(), fitTrk.eta());
 
           // Study incorrect hits on matched tracks.
           hisNumStubsVsPurityMatched_[fitName]->Fill(fitTrk.getNumStubs(), fitTrk.getPurity());
@@ -2970,11 +2969,11 @@ namespace tmtt {
             }
           }
 
-          hisFitVsSeedQinvPtUnmatched_[fitName]->Fill(htTrk.qOverPt(), fitTrk.qOverPt());
-          hisFitVsSeedPhi0Unmatched_[fitName]->Fill(htTrk.phi0(), fitTrk.phi0());
-          hisFitVsSeedD0Unmatched_[fitName]->Fill(htTrk.d0(), fitTrk.d0());
-          hisFitVsSeedZ0Unmatched_[fitName]->Fill(htTrk.z0(), fitTrk.z0());
-          hisFitVsSeedEtaUnmatched_[fitName]->Fill(htTrk.eta(), fitTrk.eta());
+          hisFitVsSeedQinvPtUnmatched_[fitName]->Fill(htTrk->qOverPt(), fitTrk.qOverPt());
+          hisFitVsSeedPhi0Unmatched_[fitName]->Fill(htTrk->phi0(), fitTrk.phi0());
+          hisFitVsSeedD0Unmatched_[fitName]->Fill(htTrk->d0(), fitTrk.d0());
+          hisFitVsSeedZ0Unmatched_[fitName]->Fill(htTrk->z0(), fitTrk.z0());
+          hisFitVsSeedEtaUnmatched_[fitName]->Fill(htTrk->eta(), fitTrk.eta());
         }
 
         // Study how incorrect stubs on track affect fit chi2.
@@ -3096,7 +3095,7 @@ namespace tmtt {
               sigmaPhi2_proj += phiExtra2;
             } else {
               // Fit uses Pt of L1track3D to estimate scattering.
-              double phiExtra_fit = settings_->kalmanMultiScattTerm() / (fitTrk.getL1track3D().pt());
+              double phiExtra_fit = settings_->kalmanMultiScattTerm() / (fitTrk.getL1track3D()->pt());
               double phiExtra2_fit = phiExtra_fit * phiExtra_fit;
               sigmaPhi2_proj += phiExtra2_fit;
             }

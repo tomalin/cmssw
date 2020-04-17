@@ -22,9 +22,9 @@ TMTrackProducer_params = cms.PSet(
   genJetInputTag = cms.InputTag("ak4GenJets", ""),
 
   # Enable all use of MC truth info (disable to save CPU)
-  EnableMCtruth = cms.bool(True),
+    EnableMCtruth = cms.bool(False),
   # Enable output histograms & job tracking performance summary (disable to save CPU)
-  EnableHistos = cms.bool(True),
+    EnableHistos = cms.bool(False),
 
   #=== Cuts on MC truth particles (i.e., tracking particles) used for tracking efficiency measurements.
 
@@ -339,7 +339,7 @@ TMTrackProducer_params = cms.PSet(
      #--- Additional options for Davide Cieri's Simple Linear Regression track fitter ---
      #
      # Digitize Simple Linear Regression variables and calculation. (Disabled if EnableDigitize=False).
-     DigitizeSLR         = cms.bool(True),
+     DigitizeSLR         = cms.bool(False), # Disable, as was never retuned for nonants
      # Number of bits to be used in hardware to compute the division needed to calculate the helix  params
      DividerBitsHelix    = cms.uint32(23),
      DividerBitsHelixZ   = cms.uint32(23),

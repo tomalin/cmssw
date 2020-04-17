@@ -73,7 +73,7 @@ namespace tmtt {
           storedHalfWindow = bendHalfWind;
       } else  // Classic barrel window otherwise
       {
-        // Modified by TMTT group, to expland arrays if necessary, divide by 2, & update the stored window sizes.
+        // Modified by TMTT group, to expand arrays if necessary, divide by 2, & update the stored window sizes.
         if (barrelCut_.size() < (layer + 1))
           barrelCut_.resize(layer + 1, 0.);
         double& storedHalfWindow = barrelCut_.at(layer);

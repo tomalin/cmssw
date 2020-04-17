@@ -6,20 +6,10 @@ using namespace std;
 
 namespace tmtt {
 
-  KalmanState::KalmanState()
-      : kLayerNext_(0),
-        layerId_(0),
-        xa_(0),
-        pxxa_(),
-        K_(),
-        dcov_(),
-        stubCluster_(0),
-        chi2rphi_(0),
-        chi2rz_(0),
-        fitter_(0),
+KalmanState::KalmanState() : kLayerNext_(0), layerId_(0), last_state_(nullptr), stubCluster_(nullptr),
+        chi2rphi_(0), chi2rz_(0), fitter_(nullptr),
         fXtoTrackParams_(0),
-        barrel_(true),
-        n_skipped_(0) {}
+	barrel_(true), n_skipped_(0), hitPattern_(0) {}
 
   KalmanState::KalmanState(const L1track3D &candidate,
                            unsigned n_skipped,
@@ -33,14 +23,14 @@ namespace tmtt {
                            const StubCluster *stubCluster,
                            double chi2rphi,
                            double chi2rz,
-                           L1KalmanComb *fitter,
-                           GET_TRACK_PARAMS f) {
-    l1track3D_ = candidate;
-    n_skipped_ = n_skipped;
-    kLayerNext_ = kLayer_next;
-    layerId_ = layerId;
-    last_state_ = last_state;
-    xa_ = x;
+                           const L1KalmanComb *fitter,
+                           GET_TRACK_PARAMS f) :        
+    kLayerNext_(kLayer_next), layerId_(layerId), last_state_(last_state),
+    xa_(x), stubCluster_(stubCluster), 
+    chi2rphi_(chi2rphi), chi2rz_(chi2rz), fitter_(fitter),
+    fXtoTrackParams_(f),
+    n_skipped_(n_skipped), l1track3D_(candidate)
+  {
     pxxa_.Clear();
     pxxa_.ResizeTo(pxx.GetNrows(), pxx.GetNcols());
     pxxa_ = pxx;
@@ -48,9 +38,6 @@ namespace tmtt {
     K_ = K;
     dcov_.ResizeTo(dcov.GetNrows(), dcov.GetNcols());
     dcov_ = dcov;
-    stubCluster_ = stubCluster;
-    chi2rphi_ = chi2rphi;
-    chi2rz_ = chi2rz;
     kalmanChi2RphiScale_ = fitter->getSettings()->kalmanChi2RphiScale();
 
     hitPattern_ = 0;
@@ -59,15 +46,12 @@ namespace tmtt {
     if (stubCluster != nullptr)
       hitPattern_ |= (1 << (stubCluster->layerKF()));
 
-    // EJC CLANG complains about this line,
-    // const KalmanState *state = this;
-
     r_ = 0.1;
     z_ = 0;
     barrel_ = true;
     endcapRing_ = 0;
 
-    if (stubCluster) {
+    if (stubCluster != nullptr) {
       r_ = stubCluster->r();
       z_ = stubCluster->z();
       barrel_ = stubCluster->barrel();
@@ -75,39 +59,21 @@ namespace tmtt {
     }
 
     n_stubs_ = kLayerNext_ - n_skipped_;
-
-    fitter_ = fitter;
-    fXtoTrackParams_ = f;
   }
 
-  KalmanState::KalmanState(const KalmanState &p) {
-    l1track3D_ = p.candidate();
-    n_skipped_ = p.nSkippedLayers();
-    kLayerNext_ = p.nextLayer();
-    layerId_ = p.layerId();
-    endcapRing_ = p.endcapRing();
-    r_ = p.r();
-    z_ = p.z();
-    last_state_ = p.last_state();
-    xa_ = p.xa();
-    pxxa_ = p.pxxa();
-    K_ = p.K();
-    dcov_ = p.dcov();
-    stubCluster_ = p.stubCluster();
-    chi2rphi_ = p.chi2rphi();
-    chi2rz_ = p.chi2rz();
-    n_stubs_ = p.nStubLayers();
-    fitter_ = p.fitter();
-    fXtoTrackParams_ = p.fXtoTrackParams();
-    barrel_ = p.barrel();
-  }
+  KalmanState::KalmanState(const KalmanState &p) : 
+    kLayerNext_(p.nextLayer()), layerId_(p.layerId()),
+    endcapRing_(p.endcapRing()), r_(p.r()), z_(p.z()), last_state_(p.last_state()),
+    xa_(p.xa()), pxxa_(p.pxxa()), K_(p.K()), dcov_(p.dcov()),
+    stubCluster_(p.stubCluster()),
+    chi2rphi_(p.chi2rphi()), chi2rz_(p.chi2rz()), n_stubs_(p.nStubLayers()),
+    fitter_(p.fitter()), fXtoTrackParams_(p.fXtoTrackParams()),
+    barrel_(p.barrel()), n_skipped_(p.nSkippedLayers()),
+    l1track3D_(p.candidate()) {}
 
   KalmanState &KalmanState::operator=(const KalmanState &other) {
-    if (&other == this)
-      return *this;
+    if (&other == this) return *this;
 
-    l1track3D_ = other.candidate();
-    n_skipped_ = other.nSkippedLayers();
     kLayerNext_ = other.nextLayer();
     layerId_ = other.layerId();
     endcapRing_ = other.endcapRing();
@@ -125,6 +91,8 @@ namespace tmtt {
     fitter_ = other.fitter();
     fXtoTrackParams_ = other.fXtoTrackParams();
     barrel_ = other.barrel();
+    n_skipped_ = other.nSkippedLayers();
+    l1track3D_ = other.candidate();
     return *this;
   }
 

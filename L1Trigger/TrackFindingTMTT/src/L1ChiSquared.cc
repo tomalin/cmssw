@@ -95,20 +95,9 @@ namespace tmtt {
           unsigned int nLayers = Utility::countLayers(getSettings(), stubs_);  // Count tracker layers with stubs
           bool valid = nLayers >= minStubLayersRed_;
 
-          if (!valid) {
-            const unsigned int hitPattern = 0;  // FIX: Needs setting
-            return L1fittedTrack(getSettings(),
-                                 l1track3D,
-                                 stubs_,
-                                 hitPattern,
-                                 l1track3D.qOverPt(),
-                                 0.,
-                                 l1track3D.phi0(),
-                                 l1track3D.z0(),
-                                 l1track3D.tanLambda(),
-                                 999999.,
-                                 4,
-                                 valid);
+          if (not valid) {
+	    L1fittedTrack rejectedTrk;
+	    return rejectedTrk;
           }
         } else {
           break;
@@ -118,10 +107,11 @@ namespace tmtt {
 
     // Reject tracks with too many killed stubs
     unsigned int nLayers = Utility::countLayers(getSettings(), stubs_);  // Count tracker layers with stubs
-    bool valid4par = nLayers >= minStubLayersRed_;
+    bool valid = nLayers >= minStubLayersRed_;
 
-    const unsigned int hitPattern = 0;  // FIX: Needs setting
-    if (valid4par) {
+    if (valid) {
+      const unsigned int hitPattern = 0;  // FIX: Needs setting
+      const float chi2rz = 0; // FIX: Needs setting
       return L1fittedTrack(getSettings(),
                            l1track3D,
                            stubs_,
@@ -132,21 +122,11 @@ namespace tmtt {
                            x[Z0],
                            x[T],
                            chiSq_,
-                           nPar_,
-                           valid4par);
+			   chi2rz,
+                           nPar_);
     } else {
-      return L1fittedTrack(getSettings(),
-                           l1track3D,
-                           stubs_,
-                           hitPattern,
-                           l1track3D.qOverPt(),
-                           0.,
-                           l1track3D.phi0(),
-                           l1track3D.z0(),
-                           l1track3D.tanLambda(),
-                           999999.,
-                           4,
-                           valid4par);
+      L1fittedTrack rejectedTrk;
+      return rejectedTrk;
     }
   }
 

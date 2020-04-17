@@ -47,7 +47,7 @@ namespace tmtt {
     double genMaxVertZ() const { return genMaxVertZ_; }
     double genMaxD0() const { return genMaxD0_; }
     double genMaxZ0() const { return genMaxZ0_; }
-    std::vector<int> genPdgIds() const { return genPdgIds_; }
+    const std::vector<int>& genPdgIds() const { return genPdgIds_; }
     // Additional cut on MC truth tracks for algorithmic tracking efficiency measurements.
     unsigned int genMinStubLayers() const { return genMinStubLayers_; }  // Min. number of layers TP made stub in.
 
@@ -118,7 +118,7 @@ namespace tmtt {
 
     //=== Definition of eta sectors.
 
-    std::vector<double> etaRegions() const { return etaRegions_; }  // Boundaries of eta regions de
+    const std::vector<double>& etaRegions() const { return etaRegions_; }  // Boundaries of eta regions de
     unsigned int numEtaRegions() const { return (etaRegions_.size() - 1); }
     double chosenRofZ() const {
       return chosenRofZ_;
@@ -185,10 +185,10 @@ namespace tmtt {
     bool busySectorKill() const { return busySectorKill_; }
     unsigned int busySectorNumStubs() const { return busySectorNumStubs_; }
     // If this returns a non-empty std::vector, then the BusySectorNumStubs cut is instead applied to the subset of tracks appearing in the following m bin ranges (q/Pt) of the HT array. The sum of the entries in the std::vector should equal the number of m bins in the HT, although the entries will be rescaled if this is not the case. If the std::vector is empty, this option is disabled. (P.S. If the HT includes "merged" cells, then the m bin ranges specified here should correspond to the bins before merging).
-    std::vector<unsigned int> busySectorMbinRanges() const { return busySectorMbinRanges_; }
+    const std::vector<unsigned int>& busySectorMbinRanges() const { return busySectorMbinRanges_; }
     // If BusySecMbinOrder is empty, then the groupings specified in BusySectorMbinRanges are applied to the m bins in the order
     // 0,1,2,3,4,5 ... . If it is not empty, then they are grouped in the order specified here.
-    std::vector<unsigned int> busySectorMbinOrder() const { return busySectorMbinOrder_; }
+    const std::vector<unsigned int>& busySectorMbinOrder() const { return busySectorMbinOrder_; }
     // If this is True, and more than BusyInputSectorNumStubs() are input to the HT array from the GP, then
     // the excess stubs are killed. This is because HT hardware has finite readin time.
     bool busyInputSectorKill() const { return busyInputSectorKill_; }
@@ -228,7 +228,7 @@ namespace tmtt {
     // If this is std::set to > 10000, this option is disabled.
     double minPtToReduceLayers() const { return minPtToReduceLayers_; }
     // Change min. number of layers cut to (MinStubLayers - 1) for tracks in these rapidity sectors.
-    std::vector<unsigned int> etaSecsReduceLayers() const { return etaSecsReduceLayers_; }
+    const std::vector<unsigned int>& etaSecsReduceLayers() const { return etaSecsReduceLayers_; }
     // Define layers using layer ID (true) or by bins in radius of 5 cm width (false)?
     bool useLayerID() const { return useLayerID_; }
     //Reduce this layer ID, so that it takes no more than 8 different values in any eta region (simplifies firmware)?
@@ -264,10 +264,10 @@ namespace tmtt {
     //--- Options applicable to all track fitters ---
 
     // Track fitting algorithms to use. You can run several in parallel.
-    std::vector<std::string> trackFitters() const { return trackFitters_; }
+    const std::vector<std::string>& trackFitters() const { return trackFitters_; }
     // Indicate subset of fitters wanting r-z track filter to be run before them.
     // (Excludes fitters that are not run).
-    std::vector<std::string> useRZfilter() const { return useRZfilter_; }
+    const std::vector<std::string>& useRZfilter() const { return useRZfilter_; }
     // Print detailed summary of track fit performance at end of job (as opposed to a brief one)?
     bool detailedFitOutput() const { return detailedFitOutput_; }
     // Use MC truth to eliminate all fake tracks & all incorrect stubs assigned to tracks before doing fit.
@@ -410,7 +410,7 @@ namespace tmtt {
     double kf_tanlambdaRange() const { return kf_tanlambdaRange_; }
     unsigned int kf_chisquaredBits() const { return kf_chisquaredBits_; }
     double kf_chisquaredRange() const { return kf_chisquaredRange_; }
-    std::vector<double> kf_chisquaredBinEdges() const { return kf_chisquaredBinEdges_; }
+    const std::vector<double>& kf_chisquaredBinEdges() const { return kf_chisquaredBinEdges_; }
     // Skip track digitisation when fitted is not SimpleLR or KF?
     bool other_skipTrackDigi() const { return other_skipTrackDigi_; }
 

@@ -34,8 +34,8 @@ namespace tmtt {
     double barrelNTiltedModules() const { return barrelNTiltedModules_; }
     double barrelNLayersWithTiltedModules() const { return barrelNLayersWithTiltedModules_; }
 
-    std::vector<double> moduleZoR() const { return moduleZoR_; }
-    std::vector<double> moduleB() const { return moduleB_; }
+    const std::vector<double>& moduleZoR() const { return moduleZoR_; }
+    const std::vector<double>& moduleB() const { return moduleB_; }
 
   private:
     unsigned int barrelNTiltedModules_;

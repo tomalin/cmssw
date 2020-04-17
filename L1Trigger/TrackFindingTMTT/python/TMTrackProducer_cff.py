@@ -13,17 +13,18 @@ import FWCore.ParameterSet.Config as cms
 
 from L1Trigger.TrackFindingTMTT.TMTrackProducer_Defaults_cfi import TMTrackProducer_params
 
-TMTrackProducer = cms.EDProducer('TMTrackProducer',
+TMTrackProducer = cms.EDProducer('tmtt::TMTrackProducer',
   # Load cfg parameters from TMTrackProducer_Defaults_cfi.py
   TMTrackProducer_params
 )
 
 #===================================================================================================
-#=== Parameters changed from their default values.
+# Uncomment the following 2 lines to enable use of MC truth info & output histograms.
+# (This costs CPU, and is unnecessary if you only care about producing TTTrack collection).
 #===================================================================================================
 
-#--- Disable internal digitisation of SimpleLR fitter, as it was never retuned for nonants.
-TMTrackProducer.TrackFitSettings.DigitizeSLR = cms.bool(False)
+#TMTrackProducer.EnableMCtruth = cms.bool(True)
+#TMTrackProducer.EnableHistos  = cms.bool(True)
 
 #===================================================================================================
 #=== All the following parameters already have identical values in TMTrackProducer_Defaults_cfi .
@@ -32,10 +33,8 @@ TMTrackProducer.TrackFitSettings.DigitizeSLR = cms.bool(False)
 
 #--- Configure track fitting
 
-# Use only 4 or 5 parameter helix fit Kalman Filter (which automatically runs on tracks produced with no r-z track filter)
-#TMTrackProducer.TrackFitSettings.TrackFitters = cms.vstring("KF5ParamsComb", "KF4ParamsComb")
-# Use only Linear Regression Fitter (which automatically runs on tracks produced by r-z track filter).
-#TMTrackProducer.TrackFitSettings.TrackFitters = cms.vstring("SimpleLR")
+# Use only 4 parameter helix fit Kalman Filter (which automatically runs on tracks produced with no r-z track filter)
+#TMTrackProducer.TrackFitSettings.TrackFitters = cms.vstring("KF4ParamsComb")
 
 # Allow KF to assign stubs in up to this many layers to fitted tracks.
 #TMTrackProducer.TrackFitSettings.KalmanMaxNumStubs  = cms.uint32(6)

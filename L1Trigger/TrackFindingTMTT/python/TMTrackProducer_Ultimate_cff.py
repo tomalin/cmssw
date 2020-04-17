@@ -13,18 +13,18 @@ import FWCore.ParameterSet.Config as cms
 
 from L1Trigger.TrackFindingTMTT.TMTrackProducer_Defaults_cfi import TMTrackProducer_params
 
-TMTrackProducer = cms.EDProducer('TMTrackProducer',
+TMTrackProducer = cms.EDProducer('tmtt::TMTrackProducer',
   # Load cfg parameters from TMTrackProducer_Defaults_cfi.py
   TMTrackProducer_params
 )
 
 #===================================================================================================
-# Uncomment the following 2 lines to disable all use of MC truth info & all output histograms.
-# THIS SAVES CPU, SO IS GOOD IDEA IF YOU ONLY CARE ABOUT PRODUCING TTTrack COLLECTION!
+# Uncomment the following 2 lines to enable use of MC truth info & output histograms.
+# (This costs CPU, and is unnecessary if you only care about producing TTTrack collection).
 #===================================================================================================
 
-#TMTrackProducer.EnableMCtruth = cms.bool(False)
-#TMTrackProducer.EnableHistos  = cms.bool(False)
+#TMTrackProducer.EnableMCtruth = cms.bool(True)
+#TMTrackProducer.EnableHistos  = cms.bool(True)
 
 #===================================================================================================
 #=== The following override the default values.
@@ -43,9 +43,6 @@ TMTrackProducer.TrackFitSettings.KalmanHOhelixExp   = cms.bool(True)
 TMTrackProducer.TrackFitSettings.KalmanHOalpha      = cms.uint32(1)
 TMTrackProducer.TrackFitSettings.KalmanHOprojZcorr  = cms.uint32(1)
 TMTrackProducer.TrackFitSettings.KalmanHOdodgy      = cms.bool(False)
-
-# Disable internal digitisation of SimpleLR fitter, as was never retuned for nonants.
-TMTrackProducer.TrackFitSettings.DigitizeSLR = cms.bool(False)
 
 #--- Switch on 2nd stage Mini HT with 2 GeV Pt threshold & allow it to find tracks with stubs in as few as 4 layers.
 

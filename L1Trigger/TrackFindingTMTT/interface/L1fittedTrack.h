@@ -48,7 +48,7 @@ namespace tmtt {
                   bool accepted = true)
         : L1trackBase(),
           settings_(settings),
-          l1track3D_(l1track3D),
+          l1track3D_(&l1track3D),
           stubs_(stubs),
           hitPattern_(hitPattern),
           qOverPt_(qOverPt),
@@ -73,9 +73,6 @@ namespace tmtt {
           numIterations_(0),
           digitizedTrack_(false),
           digitalTrack_(settings) {
-      // Doesn't make sense to assign stubs to track if fitter rejected it.
-      if (!accepted)
-        stubs_.clear();
       nLayers_ = Utility::countLayers(settings, stubs);  // Count tracker layers these stubs are in
       matchedTP_ = Utility::matchingTP(settings,
                                        stubs,
@@ -101,7 +98,7 @@ namespace tmtt {
       this->setConsistentHTcell();
     }
 
-    L1fittedTrack() : L1trackBase(){};  // Creates track object, but doesn't std::set any variables.
+    L1fittedTrack() : L1trackBase(), accepted_(false) {};  // Creates rejected track object.
 
     ~L1fittedTrack() {}
 
@@ -168,7 +165,7 @@ namespace tmtt {
     //--- Provide direct access to some of the info it contains.
 
     // Get track candidate from HT (before fit).
-    const L1track3D& getL1track3D() const { return l1track3D_; }
+    const L1track3D* getL1track3D() const { return l1track3D_; }
 
     // Get stubs on fitted track (can differ from those on HT track if track fit kicked out stubs with bad residuals)
     const std::vector<const Stub*>& getStubs() const { return stubs_; }
@@ -177,7 +174,7 @@ namespace tmtt {
     // Get number of tracker layers these stubs are in.
     unsigned int getNumLayers() const { return nLayers_; }
     // Get number of stubs deleted from track candidate by fitter (because they had large residuals)
-    unsigned int getNumKilledStubs() const { return l1track3D_.getNumStubs() - this->getNumStubs(); }
+    unsigned int getNumKilledStubs() const { return l1track3D_->getNumStubs() - this->getNumStubs(); }
     // Get bit-encoded hit pattern (where layer number assigned by increasing distance from origin, according to layers track expected to cross).
     unsigned int getHitPattern() const { return hitPattern_; }
 
@@ -186,7 +183,7 @@ namespace tmtt {
     // (If fitted track is outside HT array, it it put in the closest bin inside it).
     std::pair<unsigned int, unsigned int> getCellLocationFit() const { return htRphiTmp_.getCell(this); }
     // Also get HT cell determined by Hough transform.
-    std::pair<unsigned int, unsigned int> getCellLocationHT() const { return l1track3D_.getCellLocationHT(); }
+    std::pair<unsigned int, unsigned int> getCellLocationHT() const { return l1track3D_->getCellLocationHT(); }
 
     //--- Get information about its association (if any) to a truth Tracking Particle.
     //--- Can differ from that of corresponding HT track, if track fit kicked out stubs with bad residuals.
@@ -203,9 +200,9 @@ namespace tmtt {
     float getPurity() const { return getNumMatchedStubs() / float(getNumStubs()); }
     // Get number of stubs matched to correct TP that were deleted from track candidate by fitter.
     unsigned int getNumKilledMatchedStubs() const {
-      unsigned int nStubCount = l1track3D_.getNumMatchedStubs();
+      unsigned int nStubCount = l1track3D_->getNumMatchedStubs();
       if (nStubCount > 0) {  // Original HT track candidate did match a truth particle
-        const TP* tp = l1track3D_.getMatchedTP();
+        const TP* tp = l1track3D_->getMatchedTP();
         for (const Stub* s : stubs_) {
           std::set<const TP*> assTPs = s->assocTPs();
           if (assTPs.find(tp) != assTPs.end())
@@ -304,7 +301,7 @@ namespace tmtt {
       std::pair<unsigned int, unsigned int> htCell = this->getCellLocationHT();
       bool consistent = (htCell == this->getCellLocationFit());
 
-      if (l1track3D_.mergedHTcell()) {
+      if (l1track3D_->mergedHTcell()) {
         // If this is a merged cell, check other elements of merged cell.
         std::pair<unsigned int, unsigned int> htCell10(htCell.first + 1, htCell.second);
         std::pair<unsigned int, unsigned int> htCell01(htCell.first, htCell.second + 1);
@@ -339,7 +336,7 @@ namespace tmtt {
     const Settings* settings_;
 
     //--- The 3D hough-transform track candidate which was fitted.
-    L1track3D l1track3D_;
+    const L1track3D* l1track3D_;
 
     //--- The stubs on the fitted track (can differ from those on HT track if fit kicked off stubs with bad residuals)
     std::vector<const Stub*> stubs_;

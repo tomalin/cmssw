@@ -19,17 +19,13 @@ namespace tmtt {
 
   class SimpleLR : public TrackFitGeneric {
   public:
-    SimpleLR(const Settings* settings) : TrackFitGeneric(settings), settings_(settings){};
+    SimpleLR(const Settings* settings);
 
     virtual ~SimpleLR(){};
-
-    virtual void initRun();
 
     L1fittedTrack fit(const L1track3D& l1track3D);
 
   protected:
-    const Settings* settings_;
-
     float phiSectorWidth_;
     float phiSectorCentre_;
     float phiNonantWidth_;

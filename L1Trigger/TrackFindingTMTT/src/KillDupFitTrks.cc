@@ -93,7 +93,7 @@ namespace tmtt {
             if (!memorizeAllHTcells) {
               pair<unsigned int, unsigned int> htCell = trk.getCellLocationHT();
               htCellUsed.insert(htCell);
-              if (trk.getL1track3D().mergedHTcell()) {
+              if (trk.getL1track3D()->mergedHTcell()) {
                 // If this is a merged cell, block the other elements too, in case a track found by the HT in an unmerged cell
                 // has a fitted cell there.
                 pair<unsigned int, unsigned int> htCell10(htCell.first + 1, htCell.second);
@@ -110,8 +110,8 @@ namespace tmtt {
                    << " c=" << trk.getCellLocationHT().second << "/" << trk.getCellLocationFit().second
                    << " Delta(m,c)=(" << int(trk.getCellLocationHT().first) - int(trk.getCellLocationFit().first) << ","
                    << int(trk.getCellLocationHT().second) - int(trk.getCellLocationFit().second)
-                   << ") pure=" << trk.getPurity() << " merged=" << trk.getL1track3D().mergedHTcell()
-                   << " #layers=" << trk.getL1track3D().getNumLayers() << " tp=" << tp->index() << " dupCell=("
+                   << ") pure=" << trk.getPurity() << " merged=" << trk.getL1track3D()->mergedHTcell()
+                   << " #layers=" << trk.getL1track3D()->getNumLayers() << " tp=" << tp->index() << " dupCell=("
                    << tpFound[tp->index()].first << "," << tpFound[tp->index()].second
                    << ") dup=" << tpFoundAtPass[tp->index()] << endl;
               // If the following two variables are non-zero in printout, then track has already been found,
@@ -136,8 +136,8 @@ namespace tmtt {
                    << " c=" << trk.getCellLocationHT().second << "/" << trk.getCellLocationFit().second
                    << " Delta(m,c)=(" << int(trk.getCellLocationHT().first) - int(trk.getCellLocationFit().first) << ","
                    << int(trk.getCellLocationHT().second) - int(trk.getCellLocationFit().second)
-                   << ") pure=" << trk.getPurity() << " merged=" << trk.getL1track3D().mergedHTcell()
-                   << " #layers=" << trk.getL1track3D().getNumLayers() << " tp=" << tp->index() << " dupCell=("
+                   << ") pure=" << trk.getPurity() << " merged=" << trk.getL1track3D()->mergedHTcell()
+                   << " #layers=" << trk.getL1track3D()->getNumLayers() << " tp=" << tp->index() << " dupCell=("
                    << tpFound[tp->index()].first << "," << tpFound[tp->index()].second
                    << ") dup=" << tpFoundAtPass[tp->index()] << endl;
             }
@@ -147,7 +147,7 @@ namespace tmtt {
             pair<unsigned int, unsigned int> htCell =
                 trk.getCellLocationFit();  // Intentionally used fit instead of HT here.
             htCellUsed.insert(htCell);
-            if (trk.getL1track3D().mergedHTcell()) {
+            if (trk.getL1track3D()->mergedHTcell()) {
               // If this is a merged cell, block the other elements too, in case a track found by the HT in an unmerged cell
               // has a fitted cell there.
               // N.B. NO GOOD REASON WHY "-1" IS NOT DONE HERE TOO. MIGHT REDUCE DUPLICATE RATE?
@@ -185,8 +185,8 @@ namespace tmtt {
                  << " c=" << trk->getCellLocationHT().second << "/" << trk->getCellLocationFit().second
                  << " Delta(m,c)=(" << int(trk->getCellLocationHT().first) - int(trk->getCellLocationFit().first) << ","
                  << int(trk->getCellLocationHT().second) - int(trk->getCellLocationFit().second)
-                 << ") pure=" << trk->getPurity() << " merged=" << trk->getL1track3D().mergedHTcell()
-                 << " #layers=" << trk->getL1track3D().getNumLayers() << " tp=" << tp->index() << " dupCell=("
+                 << ") pure=" << trk->getPurity() << " merged=" << trk->getL1track3D()->mergedHTcell()
+                 << " #layers=" << trk->getL1track3D()->getNumLayers() << " tp=" << tp->index() << " dupCell=("
                  << tpFound[tp->index()].first << "," << tpFound[tp->index()].second
                  << ") dup=" << tpFoundAtPass[tp->index()] << endl;
             if (tpFound.find(tp->index()) != tpFound.end())

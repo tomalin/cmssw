@@ -21,14 +21,14 @@ namespace tmtt {
     unsigned int layerKF() const { return layerKF_; }
 
     unsigned nStubs() const { return nstubs_; }
-    std::vector<const Stub *> stubs() const {
+    const std::vector<const Stub *>& stubs() const {
       return stubs_;
     }  // Returns original stubs that were usefd to make StubCluster.
     double r() const { return r_; }
     double phi() const { return phi_; }
     double z() const { return z_; }
     double eta() const { return eta_; }
-    std::set<const TP *> assocTPs() const { return assocTPs_; }
+    const std::set<const TP *>& assocTPs() const { return assocTPs_; }
     unsigned layerId() const { return layerId_; }
     unsigned layerIdReduced() const { return layerIdReduced_; }
     unsigned endcapRing() const { return endcapRing_; }

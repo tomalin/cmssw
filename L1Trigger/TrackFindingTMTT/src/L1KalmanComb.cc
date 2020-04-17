@@ -413,19 +413,18 @@ namespace tmtt {
       // Get track helix params.
       std::vector<double> trackParams = getTrackParams(cand);
 
-      L1fittedTrack returnTrk(getSettings(),
-                              l1track3D,
-                              cand->stubs(),
-                              cand->hitPattern(),
-                              trackParams[QOVERPT],
-                              trackParams[D0],
-                              trackParams[PHI0],
-                              trackParams[Z0],
-                              trackParams[T],
-                              cand->chi2rphi(),
-                              cand->chi2rz(),
-                              nPar_,
-                              true);
+      L1fittedTrack fitTrk(getSettings(),
+                           l1track3D,
+                           cand->stubs(),
+                           cand->hitPattern(),
+                           trackParams[QOVERPT],
+                           trackParams[D0],
+                           trackParams[PHI0],
+                           trackParams[Z0],
+                           trackParams[T],
+                           cand->chi2rphi(),
+                           cand->chi2rz(),
+                           nPar_);
 
       bool consistentHLS = false;  // No longer used
       //    if (this->isHLS()) {
@@ -433,18 +432,18 @@ namespace tmtt {
       //      cand->getHLSselect(mBinHelixHLS, cBinHelixHLS, consistentHLS);
       //      if( getSettings()->kalmanDebugLevel() >= 3 ){
       //        // Check if (m,c) corresponding to helix params are correctly calculated by HLS code.
-      //        bool HLS_OK = ((mBinHelixHLS == returnTrk.getCellLocationFit().first) && (cBinHelixHLS == returnTrk.getCellLocationFit().second));
+      //        bool HLS_OK = ((mBinHelixHLS == fitTrk.getCellLocationFit().first) && (cBinHelixHLS == fitTrk.getCellLocationFit().second));
       //        if (not HLS_OK) std::cout<<"WARNING HLS mBinHelix disagrees with C++:"
-      //                                 <<" (HLS,C++) m=("<<mBinHelixHLS<<","<<returnTrk.getCellLocationFit().first <<")"
-      //                                 <<" c=("<<cBinHelixHLS<<","<<returnTrk.getCellLocationFit().second<<")"<<endl;
+      //                                 <<" (HLS,C++) m=("<<mBinHelixHLS<<","<<fitTrk.getCellLocationFit().first <<")"
+      //                                 <<" c=("<<cBinHelixHLS<<","<<fitTrk.getCellLocationFit().second<<")"<<endl;
       //      }
       //    }
 
       // Store supplementary info, specific to KF fitter.
       if (this->isHLS() && nPar_ == 4) {
-        returnTrk.setInfoKF(cand->nSkippedLayers(), numUpdateCalls_, consistentHLS);
+        fitTrk.setInfoKF(cand->nSkippedLayers(), numUpdateCalls_, consistentHLS);
       } else {
-        returnTrk.setInfoKF(cand->nSkippedLayers(), numUpdateCalls_);
+        fitTrk.setInfoKF(cand->nSkippedLayers(), numUpdateCalls_);
       }
 
       // If doing 5 parameter fit, optionally also calculate helix params & chi2 with beam-spot constraint applied,
@@ -453,7 +452,7 @@ namespace tmtt {
         if (nPar_ == 5) {
           double chi2rphi_bcon = 0.;
           std::vector<double> trackParams_bcon = getTrackParams_BeamConstr(cand, chi2rphi_bcon);
-          returnTrk.setBeamConstr(trackParams_bcon[QOVERPT], trackParams_bcon[PHI0], chi2rphi_bcon);
+          fitTrk.setBeamConstr(trackParams_bcon[QOVERPT], trackParams_bcon[PHI0], chi2rphi_bcon);
         }
       }
 
@@ -462,30 +461,13 @@ namespace tmtt {
 
         // Bodge to take into account digitisation in sector consistency check.
         if (getSettings()->enableDigitize())
-          returnTrk.digitizeTrack("KF4ParamsComb");
+          fitTrk.digitizeTrack("KF4ParamsComb");
 
-        if (!returnTrk.consistentSector()) {
-          L1fittedTrack failedTrk(getSettings(),
-                                  l1track3D,
-                                  cand->stubs(),
-                                  cand->hitPattern(),
-                                  trackParams[QOVERPT],
-                                  trackParams[D0],
-                                  trackParams[PHI0],
-                                  trackParams[Z0],
-                                  trackParams[T],
-                                  cand->chi2rphi(),
-                                  cand->chi2rz(),
-                                  nPar_,
-                                  false);
-          if (this->isHLS() && nPar_ == 4) {
-            failedTrk.setInfoKF(cand->nSkippedLayers(), numUpdateCalls_, consistentHLS);
-          } else {
-            failedTrk.setInfoKF(cand->nSkippedLayers(), numUpdateCalls_);
-          }
+        if (!fitTrk.consistentSector()) {
           if (getSettings()->kalmanDebugLevel() >= 1)
             cout << "Track rejected by sector consistency test" << endl;
-          return failedTrk;
+          L1fittedTrack rejectedTrk;
+          return rejectedTrk;
         }
       }
 
@@ -496,21 +478,20 @@ namespace tmtt {
           cout << "TP for eff. : index " << tpa->index() << endl;
         }
         cout << "Candidate : " << endl;
-        if (tpa && tpa->useForAlgEff() && returnTrk.getPurity() != 1) {
+        if (tpa && tpa->useForAlgEff() && fitTrk.getPurity() != 1) {
           cout << "The candidate is not pure" << endl;
         }
         cand->dump(cout, tpa, true);
         cout << "------------------------------------" << endl;
       }
 
-      return returnTrk;
+      return fitTrk;
 
-    } else {
+    } else {  // Track rejected by fitter
+
       if (getSettings()->kalmanDebugLevel() >= 1) {
         bool goodTrack = (tpa && tpa->useForAlgEff());  // Matches truth particle.
         if (goodTrack) {
-          // Debug printout for Mark to understand why tracks are lost.
-
           int tpin = tpa->index();
           cout << "TRACK LOST: eta=" << l1track3D.iEtaReg() << " pt=" << l1track3D.pt() << " tp=" << tpin << endl;
 
@@ -544,21 +525,8 @@ namespace tmtt {
         }
       }
 
-      L1fittedTrack returnTrk(getSettings(),
-                              l1track3D,
-                              l1track3D.getStubs(),
-                              0,
-                              l1track3D.qOverPt(),
-                              0,
-                              l1track3D.phi0(),
-                              l1track3D.z0(),
-                              l1track3D.tanLambda(),
-                              9999,
-                              9999,
-                              nPar_,
-                              false);
-      returnTrk.setInfoKF(0, numUpdateCalls_);
-      return returnTrk;
+      L1fittedTrack rejectedTrk;
+      return rejectedTrk;
     }
   }
 
