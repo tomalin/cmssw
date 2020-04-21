@@ -112,8 +112,7 @@ namespace tmtt {
       if (rzFilterName_ == "SeedFilter") {
         filteredStubs = this->seedFilter(filteredStubs, trkIN.qOverPt(), print);
       } else {
-        throw cms::Exception("BadConfig")
-            << "TrkRzFilter: ERROR unknown r-z track filter requested: " << rzFilterName_ << endl;
+        throw cms::Exception("BadConfig") << "TrkRzFilter: ERROR unknown r-z track filter requested: " << rzFilterName_;
       }
 
       // Check if track still has stubs in enough layers after filter.
@@ -121,7 +120,7 @@ namespace tmtt {
       unsigned int numLayersAfterFilters = Utility::countLayers(settings_, filteredStubs);
       if (numLayersAfterFilters < settings_->minFilterLayers())
         trackAccepted = false;
-      //if (numLayersAfterFilters < Utility::numLayerCut("SEED", settings_, iPhiSec_, iEtaReg_, fabs(trkIN.qOverPt()))) trackAccepted = false;
+      //if (numLayersAfterFilters < Utility::numLayerCut(Utility::AlgoStep::SEED, settings_, iPhiSec_, iEtaReg_, std::abs(trkIN.qOverPt()))) trackAccepted = false;
 
       if (trackAccepted) {
         // Estimate r-z helix parameters from centre of eta-sector if no estimate provided by r-z filter.
@@ -169,7 +168,7 @@ namespace tmtt {
 
     unsigned int oldNumLay = 0;  //Number of Layers counter, used to keep the seed with more layers
 
-    std::sort(filtStubs.begin(), filtStubs.end(), SortStubsInLayer());
+    std::sort(filtStubs.begin(), filtStubs.end(), SortStubsByLayer());
 
     // Loop over stubs in the HT Cell
     for (const Stub* s0 : filtStubs) {
@@ -201,19 +200,19 @@ namespace tmtt {
                   s1->z() +
                   (-s1->z() + s0->z()) * s1->r() /
                       (s1->r() - s0->r());  // Estimate a value of z at the beam spot using the two seeding stubs
-              //double z0err = s1->zErr() + ( s1->zErr() + s0->zErr() )*s1->r()/fabs(s1->r()-s0->r()) + fabs(-s1->z()+s0->z())*(s1->rErr()*fabs(s1->r()-s0->r()) + s1->r()*(s1->rErr() + s0->rErr()) )/((s1->r()-s0->r())*(s1->r()-s0->r()));
+              //double z0err = s1->zErr() + ( s1->zErr() + s0->zErr() )*s1->r()/std::abs(s1->r()-s0->r()) + std::abs(-s1->z()+s0->z())*(s1->rErr()*std::abs(s1->r()-s0->r()) + s1->r()*(s1->rErr() + s0->rErr()) )/((s1->r()-s0->r())*(s1->r()-s0->r()));
               float zTrk =
                   s1->z() +
                   (-s1->z() + s0->z()) * (s1->r() - chosenRofZ_) /
                       (s1->r() - s0->r());  // Estimate a value of z at a chosen Radius using the two seeding stubs
-              // float zTrkErr = s1->zErr() + ( s1->zErr() + s0->zErr() )*fabs(s1->r()-chosenRofZ_)/fabs(s1->r()-s0->r()) + fabs(-s1->z()+s0->z())*(s1->rErr()*fabs(s1->r()-s0->r()) + fabs(s1->r()-chosenRofZ_)*(s1->rErr() + s0->rErr()) )/((s1->r()-s0->r())*(s1->r()-s0->r()));
-              float leftZtrk = zTrk * fabs(s1->r() - s0->r());
-              float rightZmin = zTrkMinSector_ * fabs(s1->r() - s0->r());
-              float rightZmax = zTrkMaxSector_ * fabs(s1->r() - s0->r());
+              // float zTrkErr = s1->zErr() + ( s1->zErr() + s0->zErr() )*std::abs(s1->r()-chosenRofZ_)/std::abs(s1->r()-s0->r()) + std::abs(-s1->z()+s0->z())*(s1->rErr()*std::abs(s1->r()-s0->r()) + std::abs(s1->r()-chosenRofZ_)*(s1->rErr() + s0->rErr()) )/((s1->r()-s0->r())*(s1->r()-s0->r()));
+              float leftZtrk = zTrk * std::abs(s1->r() - s0->r());
+              float rightZmin = zTrkMinSector_ * std::abs(s1->r() - s0->r());
+              float rightZmax = zTrkMaxSector_ * std::abs(s1->r() - s0->r());
 
               // If z0 is within the beamspot range loop over the other stubs in the cell
-              //if (fabs(z0)<=beamWindowZ_+z0err) {
-              if (fabs(z0) <= beamWindowZ_) {
+              //if (std::abs(z0)<=beamWindowZ_+z0err) {
+              if (std::abs(z0) <= beamWindowZ_) {
                 // Check track r-z helix parameters are consistent with it being assigned to current rapidity sector (kills duplicates due to overlapping sectors).
                 // if ( (! zTrkSectorCheck_) || (zTrk > zTrkMinSector_ - zTrkErr && zTrk < zTrkMaxSector_ + zTrkErr) ) {
                 if ((!zTrkSectorCheck_) || (leftZtrk > rightZmin && leftZtrk < rightZmax)) {
@@ -227,19 +226,19 @@ namespace tmtt {
                     // Calculate the seed and its tolerance
                     double seedDist =
                         (s->z() - s1->z()) * (s1->r() - s0->r()) - (s->r() - s1->r()) * (s1->z() - s0->z());
-                    double seedDistRes = (s->zErr() + s1->zErr()) * fabs(s1->r() - s0->r()) +
-                                         (s->rErr() + s1->rErr()) * fabs(s1->z() - s0->z()) +
-                                         (s0->zErr() + s1->zErr()) * fabs(s->r() - s1->r()) +
-                                         (s0->rErr() + s1->rErr()) * fabs(s->z() - s1->z());
+                    double seedDistRes = (s->zErr() + s1->zErr()) * std::abs(s1->r() - s0->r()) +
+                                         (s->rErr() + s1->rErr()) * std::abs(s1->z() - s0->z()) +
+                                         (s0->zErr() + s1->zErr()) * std::abs(s->r() - s1->r()) +
+                                         (s0->rErr() + s1->rErr()) * std::abs(s->z() - s1->z());
                     seedDistRes += seedResolution_;  // Add extra configurable contribution to assumed resolution.
                     //If seed is lower than the tolerance push back the stub (KEEP JUST ONE STUB PER LAYER, NOT ENABLED BY DEFAULT)
-                    if (fabs(seedDist) <= seedDistRes) {
+                    if (std::abs(seedDist) <= seedDistRes) {
                       // if(s->layerId()==LiD){
-                      //if(fabs(seedDist)<fabs(oldseed)){
+                      //if(std::abs(seedDist)<std::abs(oldseed)){
                       //tempStubs.pop_back();
                       //tempStubs.push_back(s);
                       //LiD = s->layerId();
-                      // sumSeedDist = sumSeedDist + fabs(seedDist) - fabs(oldseed);
+                      // sumSeedDist = sumSeedDist + std::abs(seedDist) - std::abs(oldseed);
                       // oldseed = seedDist;
                       //}
                       // } else {
@@ -247,14 +246,14 @@ namespace tmtt {
                         tempStubs.push_back(s);
                         LiD = s->layerId();
                         //  oldseed = seedDist;
-                        //sumSeedDist = sumSeedDist + fabs(seedDist);
+                        //sumSeedDist = sumSeedDist + std::abs(seedDist);
                       }
                     }
 
                     //If stub lies on the seeding line, store it in the tempstubs vector
-                    // if(fabs(seedDist) <= seedDistRes){
+                    // if(std::abs(seedDist) <= seedDistRes){
                     //   tempStubs.push_back(s);
-                    //   sumSeedDist = sumSeedDist + fabs(seedDist); //Increase the seed quality variable
+                    //   sumSeedDist = sumSeedDist + std::abs(seedDist); //Increase the seed quality variable
                     // }
                     // }
                   }
@@ -281,7 +280,8 @@ namespace tmtt {
                 //}
               } else {
                 // Check if the current seed satisfies the minimum layers requirement (Keep all seed algorithm)
-                if (numLayers >= Utility::numLayerCut("SEED", settings_, iPhiSec_, iEtaReg_, fabs(trkQoverPt))) {
+                if (numLayers >= Utility::numLayerCut(
+                                     Utility::AlgoStep::SEED, settings_, iPhiSec_, iEtaReg_, std::abs(trkQoverPt))) {
                   uniqueFilteredStubs.insert(tempStubs.begin(), tempStubs.end());  //Insert the uniqueStub set
 
                   // If these are the first seeding stubs store the values of z0 and tanLambda
@@ -316,7 +316,7 @@ namespace tmtt {
     //     std::vector<const Stub* > matchedFiltStubs;
     //     unsigned int nMatchedFiltLayersBest;
 
-    //     if(nMatchedLayersBest >= minNumMatchLayers_ && Utility::countLayers(settings_, filteredStubs) < Utility::numLayerCut("SEED", settings_, iPhiSec_, iEtaReg_, fabs(trkQoverPt))) {
+    //     if(nMatchedLayersBest >= minNumMatchLayers_ && Utility::countLayers(settings_, filteredStubs) < Utility::numLayerCut("Utility::AlgoStep::SEED, settings_, iPhiSec_, iEtaReg_, std::abs(trkQoverPt))) {
     //         cout << " ******* NOT ENOUGH LAYERS *******" << endl;
     //         cout << " ====== TP stubs ====== " << endl;
     //         for(const Stub* st: matchedStubs){

@@ -3,16 +3,16 @@
 
 #include <TMatrixD.h>
 #include "L1Trigger/TrackFindingTMTT/interface/Stub.h"
-#include "L1Trigger/TrackFindingTMTT/interface/L1KalmanComb.h"
+#include "L1Trigger/TrackFindingTMTT/interface/KFbase.h"
 #include <map>
 
 namespace tmtt {
 
-  class L1KalmanComb;
+  class KFbase;
   class KalmanState;
   class StubCluster;
 
-  typedef std::vector<double> (*GET_TRACK_PARAMS)(const L1KalmanComb *p, const KalmanState *state);
+  typedef std::vector<double> (*GET_TRACK_PARAMS)(const KFbase *p, const KalmanState *state);
 
   class KalmanState {
   public:
@@ -29,7 +29,7 @@ namespace tmtt {
                 const StubCluster *stubcl,
                 double chi2rphi,
                 double chi2rz,
-                const L1KalmanComb *fitter,
+                const KFbase *fitter,
                 GET_TRACK_PARAMS f);
     KalmanState(const KalmanState &p);
     ~KalmanState() {}
@@ -46,13 +46,13 @@ namespace tmtt {
     double z() const { return z_; }
     const KalmanState *last_state() const { return last_state_; }
     // Helix parameters (1/2R, phi relative to sector, z0, tanLambda)
-    const std::vector<double>& xa() const { return xa_; }
+    const std::vector<double> &xa() const { return xa_; }
     // Covariance matrix on helix params.
-    const TMatrixD& pxxa() const { return pxxa_; }
+    const TMatrixD &pxxa() const { return pxxa_; }
     // Kalman Gain matrix
-    const TMatrixD& K() const { return K_; }
+    const TMatrixD &K() const { return K_; }
     // Hit position covariance matrix.
-    const TMatrixD& dcov() const { return dcov_; }
+    const TMatrixD &dcov() const { return dcov_; }
     // Hit
     const StubCluster *stubCluster() const { return stubCluster_; }
     double chi2() const { return chi2rphi_ + chi2rz_; }
@@ -60,14 +60,14 @@ namespace tmtt {
     double chi2rphi() const { return chi2rphi_; }
     double chi2rz() const { return chi2rz_; }
     unsigned nStubLayers() const { return n_stubs_; }
-    const L1track3D& candidate() const { return l1track3D_; }
+    const L1track3D &candidate() const { return l1track3D_; }
     unsigned int hitPattern() const { return hitPattern_; }  // Bit-encoded KF layers the fitted track has stubs in.
 
     bool good(const TP *tp) const;
     double reducedChi2() const;
     const KalmanState *last_update_state() const;
     std::vector<const Stub *> stubs() const;
-    const L1KalmanComb *fitter() const { return fitter_; }
+    const KFbase *fitter() const { return fitter_; }
     GET_TRACK_PARAMS fXtoTrackParams() const { return fXtoTrackParams_; };
 
     static bool orderChi2(const KalmanState *left, const KalmanState *right);
@@ -100,7 +100,7 @@ namespace tmtt {
     double chi2rz_;
     unsigned int kalmanChi2RphiScale_;
     unsigned n_stubs_;
-    const L1KalmanComb *fitter_;
+    const KFbase *fitter_;
     GET_TRACK_PARAMS fXtoTrackParams_;
     bool barrel_;
     unsigned n_skipped_;

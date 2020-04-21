@@ -34,7 +34,7 @@ namespace tmtt {
     ~TMTrackProducer() {}
 
   private:
-    typedef std::vector<TTTrack<Ref_Phase2TrackerDigi_> > TTTrackCollection;
+    typedef std::vector<TTTrack<Ref_Phase2TrackerDigi_>> TTTrackCollection;
 
     virtual void beginRun(const edm::Run &, const edm::EventSetup &);
     virtual void produce(edm::Event &, const edm::EventSetup &);

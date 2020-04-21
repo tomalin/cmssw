@@ -15,8 +15,10 @@ namespace tmtt {
         const vector<DeadModuleDB::DeadBarrelRegion>& bRegions = deadBarrelRegions_.at(stub->layerId());
         for (const DeadModuleDB::DeadBarrelRegion& bDead : bRegions) {
           if (this->deltaPhiPos(stub->phi(), bDead.phiMin_) < this->deltaPhiPos(bDead.phiMax_, bDead.phiMin_) &&
-              stub->z() > bDead.zMin_ && stub->z() < bDead.zMax_)
+              stub->z() > bDead.zMin_ && stub->z() < bDead.zMax_) {
             dead = true;
+            break;
+          }
         }
       }
     } else {
@@ -24,8 +26,10 @@ namespace tmtt {
         const vector<DeadModuleDB::DeadEndcapRegion>& eRegions = deadEndcapRegions_.at(stub->layerId());
         for (const DeadModuleDB::DeadEndcapRegion& eDead : eRegions) {
           if (this->deltaPhiPos(stub->phi(), eDead.phiMin_) < this->deltaPhiPos(eDead.phiMax_, eDead.phiMin_) &&
-              stub->r() > eDead.rMin_ && stub->r() < eDead.rMax_)
+              stub->r() > eDead.rMin_ && stub->r() < eDead.rMax_) {
             dead = true;
+            break;
+          }
         }
       }
     }
@@ -57,8 +61,10 @@ namespace tmtt {
     // Example of how to declare sectors as dead.
     // N.B. Histograms "AlgEffVsPhiSec", "AlgEffVsEtaSec", "AlgEffFitVsPhiSec*" and "AlgEffFitVsEtaSec*"
     // will help you determine which sectors you need to declare here.
-    for (unsigned int iPhiSec = 9; iPhiSec <= 13; iPhiSec++) {
-      for (unsigned int iEtaReg = 5; iEtaReg <= 8; iEtaReg++) {
+    const std::pair<unsigned int, unsigned int> iPhiSecRange = {9, 13};
+    const std::pair<unsigned int, unsigned int> iEtaRegRange = {5, 8};
+    for (unsigned int iPhiSec = iPhiSecRange.first; iPhiSec <= iPhiSecRange.second; iPhiSec++) {
+      for (unsigned int iEtaReg = iEtaRegRange.first; iEtaReg <= iEtaRegRange.second; iEtaReg++) {
         reduceLayerCut_.insert(pair<unsigned int, unsigned int>(iPhiSec, iEtaReg));
       }
     }

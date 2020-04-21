@@ -2,7 +2,7 @@
 
 ///=== Written by: S. Summers, K. Uchida, M. Pesaresi, I.Tomalin
 
-#include "L1Trigger/TrackFindingTMTT/interface/L1KalmanComb.h"
+#include "L1Trigger/TrackFindingTMTT/interface/KFbase.h"
 #include "L1Trigger/TrackFindingTMTT/interface/Utility.h"
 
 #include <TMatrixD.h>
@@ -37,7 +37,7 @@ namespace tmtt {
   static bool orderStubsByR(const Stub *a, const Stub *b) { return (a->r() < b->r()); }
 #endif
 
-  void L1KalmanComb::printTPSummary(std::ostream &os, const TP *tp, bool addReturn) const {
+  void KFbase::printTPSummary(std::ostream &os, const TP *tp, bool addReturn) const {
     if (tp) {
       os << "TP ";
       //  os << "addr=" << tp << " ";
@@ -54,7 +54,7 @@ namespace tmtt {
     }
   }
 
-  void L1KalmanComb::printTP(std::ostream &os, const TP *tp) const {
+  void KFbase::printTP(std::ostream &os, const TP *tp) const {
     std::vector<double> tpParams(5);
     bool useForAlgEff(false);
     if (tp) {
@@ -78,7 +78,7 @@ namespace tmtt {
     os << endl;
   }
 
-  void L1KalmanComb::printStubLayers(std::ostream &os, std::vector<const Stub *> &stubs, unsigned int iEtaReg) const {
+  void KFbase::printStubLayers(std::ostream &os, std::vector<const Stub *> &stubs, unsigned int iEtaReg) const {
     if (stubs.size() == 0)
       os << "stub layers = []" << endl;
     else {
@@ -101,7 +101,7 @@ namespace tmtt {
     }
   }
 
-  void L1KalmanComb::printStubCluster(std::ostream &os, const StubCluster *stubCluster, bool addReturn) const {
+  void KFbase::printStubCluster(std::ostream &os, const StubCluster *stubCluster, bool addReturn) const {
     os << "stub: ";
     //   os << "addr=" << stub << " ";
     os << "index=" << stubCluster->stubs()[0]->index() << " ";
@@ -124,13 +124,13 @@ namespace tmtt {
       os << " | ";
   }
 
-  void L1KalmanComb::printStubClusters(std::ostream &os, std::vector<const StubCluster *> &stubClusters) const {
+  void KFbase::printStubClusters(std::ostream &os, std::vector<const StubCluster *> &stubClusters) const {
     for (auto &stubcl : stubClusters) {
       printStubCluster(os, stubcl);
     }
   }
 
-  void L1KalmanComb::printStub(std::ostream &os, const Stub *stub, bool addReturn) const {
+  void KFbase::printStub(std::ostream &os, const Stub *stub, bool addReturn) const {
     os << "stub ";
     //   os << "addr=" << stub << " ";
     os << "index=" << stub->index() << " ";
@@ -151,7 +151,7 @@ namespace tmtt {
       os << " | ";
   }
 
-  void L1KalmanComb::printStubs(std::ostream &os, std::vector<const Stub *> &stubs) const {
+  void KFbase::printStubs(std::ostream &os, std::vector<const Stub *> &stubs) const {
     for (auto &stub : stubs) {
       printStub(os, stub);
     }
@@ -159,7 +159,7 @@ namespace tmtt {
 
   //=== Get Kalman layer mapping (i.e. layer order in which stubs should be processed)
 
-  unsigned int L1KalmanComb::getKalmanLayer(
+  unsigned int KFbase::getKalmanLayer(
       unsigned int iEtaReg, unsigned int layerIDreduced, bool barrel, float r, float z) const {
     // index across is GP encoded layer ID (where barrel layers=1,2,7,5,4,3 & endcap wheels=3,4,5,6,7 & 0 never occurs)
     // index down is eta reg
@@ -174,7 +174,7 @@ namespace tmtt {
 
     if (nEta != numEtaRegions_)
       throw cms::Exception("LogicError")
-          << "ERROR L1KalmanComb::getKalmanLayer hardwired value of nEta differs from NumEtaRegions cfg param" << endl;
+          << "ERROR KFbase::getKalmanLayer hardwired value of nEta differs from NumEtaRegions cfg param";
 
     // In cases where identical GP encoded layer ID present in this sector from both barrel & endcap, this array filled considering barrel. The endcap is fixed by subsequent code.
 
@@ -239,17 +239,17 @@ namespace tmtt {
     switch ( kfEtaReg ) {
     case 4:
       if (layerIDreduced==3) {  // D1
-        float disk1_rCut = barrel5Radius*(fabs(z)/barrelHalfLength); 
+        float disk1_rCut = barrel5Radius*(std::abs(z)/barrelHalfLength); 
         if (r > disk1_rCut) kalmanLayer++;
       }
       break;
     case 5:
       if (layerIDreduced==3) { // D1
-        float disk1_rCut = barrel4Radius*(fabs(z)/barrelHalfLength); 
+        float disk1_rCut = barrel4Radius*(std::abs(z)/barrelHalfLength); 
         if (r > disk1_rCut) kalmanLayer++;
       }
       if (layerIDreduced==4) { // D2
-        float disk2_rCut = barrel4Radius*(fabs(z)/barrelHalfLength); 
+        float disk2_rCut = barrel4Radius*(std::abs(z)/barrelHalfLength); 
         if (r > disk2_rCut) kalmanLayer++;
       }
       break;
@@ -265,7 +265,7 @@ namespace tmtt {
   //=== Check if particles in given eta sector are uncertain to go through the given KF layer.
   //=== (If so, count layer for numbers of hit layers, but not for number of skipped layers).
 
-  bool L1KalmanComb::getKalmanAmbiguousLayer(unsigned int iEtaReg, unsigned int kfLayer) {
+  bool KFbase::getKalmanAmbiguousLayer(unsigned int iEtaReg, unsigned int kfLayer) {
     // Only helps in extreme forward sector, and there not significantly.
 
     /*
@@ -297,7 +297,7 @@ namespace tmtt {
     return ambiguous;
   }
 
-  L1KalmanComb::L1KalmanComb(const Settings *settings, const uint nPar, const string &fitterName, const uint nMeas)
+  KFbase::KFbase(const Settings *settings, const uint nPar, const string &fitterName, const uint nMeas)
       : TrackFitGeneric(settings, fitterName) {
     nPar_ = nPar;
     nMeas_ = nMeas;
@@ -307,7 +307,7 @@ namespace tmtt {
     iLastEtaReg_ = 999;
   }
 
-  L1fittedTrack L1KalmanComb::fit(const L1track3D &l1track3D) {
+  L1fittedTrack KFbase::fit(const L1track3D &l1track3D) {
     iLastPhiSec_ = iCurrentPhiSec_;
     iLastEtaReg_ = iCurrentEtaReg_;
     iCurrentPhiSec_ = l1track3D.iPhiSec();
@@ -315,10 +315,6 @@ namespace tmtt {
     resetStates();
     deleteStubClusters();
     numUpdateCalls_ = 0;
-
-    // Get cut on number of layers including variation due to dead sectors, pt dependence etc.
-    minStubLayersRed_ = Utility::numLayerCut(
-        "FIT", getSettings(), l1track3D.iPhiSec(), l1track3D.iEtaReg(), fabs(l1track3D.qOverPt()), l1track3D.eta());
 
     //TP
     const TP *tpa(0);
@@ -530,7 +526,7 @@ namespace tmtt {
     }
   }
 
-  std::vector<const KalmanState *> L1KalmanComb::doKF(const L1track3D &l1track3D,
+  std::vector<const KalmanState *> KFbase::doKF(const L1track3D &l1track3D,
                                                       const std::vector<const StubCluster *> &stubClusters,
                                                       const TP *tpa) {
 #ifdef RECALC_DEBUG
@@ -818,7 +814,7 @@ namespace tmtt {
   //--- Update a helix state by adding a stub.
   //--- ("layer" is not the layer of the stub being added now, but rather the next layer that will be searched after this stub has been added).
 
-  const KalmanState *L1KalmanComb::kalmanUpdate(
+  const KalmanState *KFbase::kalmanUpdate(
       unsigned skipped, unsigned layer, const StubCluster *stubCluster, const KalmanState &state, const TP *tpa) {
     if (getSettings()->kalmanDebugLevel() >= 4) {
       cout << "---------------" << endl;
@@ -929,7 +925,7 @@ namespace tmtt {
     return new_state;
   }
 
-  void L1KalmanComb::calcChi2(const KalmanState &state, double &chi2rphi, double &chi2rz) const {
+  void KFbase::calcChi2(const KalmanState &state, double &chi2rphi, double &chi2rz) const {
     if (getSettings()->kalmanDebugLevel() >= 4) {
       cout << "calcChi2 " << endl;
     }
@@ -984,7 +980,7 @@ namespace tmtt {
     return;
   }
 
-  void L1KalmanComb::getDeltaChi2(const TMatrixD &dcov,
+  void KFbase::getDeltaChi2(const TMatrixD &dcov,
                                   const std::vector<double> &delta,
                                   bool debug,
                                   double &deltaChi2rphi,
@@ -1024,11 +1020,11 @@ namespace tmtt {
     return;
   }
 
-  std::vector<double> L1KalmanComb::getTrackParams(const L1KalmanComb *p, const KalmanState *state) {
+  std::vector<double> KFbase::getTrackParams(const KFbase *p, const KalmanState *state) {
     return p->getTrackParams(state);
   }
 
-  std::vector<double> L1KalmanComb::Hx(const TMatrixD &pH, const std::vector<double> &x) const {
+  std::vector<double> KFbase::Hx(const TMatrixD &pH, const std::vector<double> &x) const {
     std::vector<double> m((unsigned)pH.GetNrows(), 0);
     if (pH.GetNcols() != (int)x.size()) {
       cerr << "Hx() : H and x have different dimensions" << endl;
@@ -1042,9 +1038,9 @@ namespace tmtt {
     return m;
   }
 
-  std::vector<double> L1KalmanComb::Fx(const TMatrixD &pF, const std::vector<double> &x) const { return Hx(pF, x); }
+  std::vector<double> KFbase::Fx(const TMatrixD &pF, const std::vector<double> &x) const { return Hx(pF, x); }
 
-  TMatrixD L1KalmanComb::HxxH(const TMatrixD &pH, const TMatrixD &xx) const {
+  TMatrixD KFbase::HxxH(const TMatrixD &pH, const TMatrixD &xx) const {
     int nd = (unsigned)pH.GetNrows();
     TMatrixD tmp(nd, nPar_);
     TMatrixD mHxxH(nd, nd);
@@ -1069,7 +1065,7 @@ namespace tmtt {
     return mHxxH;
   }
 
-  TMatrixD L1KalmanComb::GetKalmanMatrix(const TMatrixD &h, const TMatrixD &pxcov, const TMatrixD &dcov) const {
+  TMatrixD KFbase::GetKalmanMatrix(const TMatrixD &h, const TMatrixD &pxcov, const TMatrixD &dcov) const {
     TMatrixD pxcovht(pxcov.GetNrows(), 2);
     for (int i = 0; i < pxcov.GetNrows(); i++) {
       for (int j = 0; j < pxcov.GetNcols(); j++) {
@@ -1110,7 +1106,7 @@ namespace tmtt {
     return K;
   }
 
-  void L1KalmanComb::GetAdjustedState(const TMatrixD &K,
+  void KFbase::GetAdjustedState(const TMatrixD &K,
                                       const TMatrixD &pxcov,
                                       const std::vector<double> &x,
                                       const StubCluster *stubCluster,
@@ -1148,14 +1144,14 @@ namespace tmtt {
     }
   }
 
-  void L1KalmanComb::resetStates() {
+  void KFbase::resetStates() {
     for (unsigned int i = 0; i < state_list_.size(); i++) {
       delete state_list_.at(i);
     }
     state_list_.clear();
   }
 
-  const KalmanState *L1KalmanComb::mkState(const L1track3D &candidate,
+  const KalmanState *KFbase::mkState(const L1track3D &candidate,
                                            unsigned skipped,
                                            unsigned layer,
                                            unsigned layerId,
@@ -1192,7 +1188,7 @@ namespace tmtt {
     return new_state;
   }
 
-  std::vector<double> L1KalmanComb::residual(const StubCluster *stubCluster,
+  std::vector<double> KFbase::residual(const StubCluster *stubCluster,
                                              const std::vector<double> &x,
                                              double candQoverPt) const {
     std::vector<double> vd = d(stubCluster);  // Get (phi relative to sector, z) of hit.
@@ -1256,14 +1252,14 @@ namespace tmtt {
     return delta;
   }
 
-  void L1KalmanComb::deleteStubClusters() {
+  void KFbase::deleteStubClusters() {
     for (unsigned int i = 0; i < stbcl_list_.size(); i++) {
       delete stbcl_list_.at(i);
     }
     stbcl_list_.clear();
   }
 
-  double L1KalmanComb::DeltaRphiForClustering(unsigned layerId, unsigned endcapRing) {
+  double KFbase::DeltaRphiForClustering(unsigned layerId, unsigned endcapRing) {
     constexpr double barrel_drphi[6] = {0.05, 0.04, 0.05, 0.12, 0.13, 0.19};
     if (layerId < 10)
       return barrel_drphi[layerId - 1];
@@ -1273,13 +1269,13 @@ namespace tmtt {
     return ec_drphi[endcapRing - 1];
   };
 
-  double L1KalmanComb::DeltaRForClustering(unsigned endcapRing) {
+  double KFbase::DeltaRForClustering(unsigned endcapRing) {
     constexpr double ec_dr[16] = {
         0.52, 0.56, 0.59, 0.86, 0.66, 0.47, 0.55, 0.72, 1.53, 1.10, 2.72, 0.91, 2.69, 0.67, 0.09};
     return ec_dr[endcapRing - 1];
   }
 
-  bool L1KalmanComb::isOverlap(const Stub *a, const Stub *b, OVERLAP_TYPE type) {
+  bool KFbase::isOverlap(const Stub *a, const Stub *b, OVERLAP_TYPE type) {
     std::set<const TP *> a_tps = a->assocTPs();
     std::set<const TP *> b_tps = b->assocTPs();
     double drphi = DeltaRphiForClustering(a->layerId(), a->endcapRing());
@@ -1290,14 +1286,14 @@ namespace tmtt {
           return false;
 
         if (a->layerId() < 7) {
-          if (fabs(b->z() - a->z()) > 0.5 * b->stripLength() ||
-              fabs(reco::deltaPhi(b->phi(), sectorPhi()) * b->r() - reco::deltaPhi(a->phi(), sectorPhi()) * a->r()) >
-                  0.5 * b->stripPitch())
+          if (std::abs(b->z() - a->z()) > 0.5 * b->stripLength() ||
+              std::abs(reco::deltaPhi(b->phi(), sectorPhi()) * b->r() -
+                       reco::deltaPhi(a->phi(), sectorPhi()) * a->r()) > 0.5 * b->stripPitch())
             return false;
         } else {
-          if (fabs(b->r() - a->r()) > 0.5 * b->stripLength() ||
-              fabs(reco::deltaPhi(b->phi(), sectorPhi()) * b->r() - reco::deltaPhi(a->phi(), sectorPhi()) * a->r()) >
-                  0.5 * b->stripPitch())
+          if (std::abs(b->r() - a->r()) > 0.5 * b->stripLength() ||
+              std::abs(reco::deltaPhi(b->phi(), sectorPhi()) * b->r() -
+                       reco::deltaPhi(a->phi(), sectorPhi()) * a->r()) > 0.5 * b->stripPitch())
             return false;
         }
         return true;
@@ -1306,14 +1302,14 @@ namespace tmtt {
           return false;
 
         if (a->layerId() < 7) {
-          if (fabs(b->z() - a->z()) > 0.5 * b->stripLength() ||
-              fabs(reco::deltaPhi(b->phi(), sectorPhi()) * b->r() - reco::deltaPhi(a->phi(), sectorPhi()) * a->r()) >
-                  drphi)
+          if (std::abs(b->z() - a->z()) > 0.5 * b->stripLength() ||
+              std::abs(reco::deltaPhi(b->phi(), sectorPhi()) * b->r() -
+                       reco::deltaPhi(a->phi(), sectorPhi()) * a->r()) > drphi)
             return false;
         } else {
           dr = DeltaRForClustering(a->endcapRing());
-          if (fabs(b->r() - a->r()) > dr || fabs(reco::deltaPhi(b->phi(), sectorPhi()) * b->r() -
-                                                 reco::deltaPhi(a->phi(), sectorPhi()) * a->r()) > drphi)
+          if (std::abs(b->r() - a->r()) > dr || std::abs(reco::deltaPhi(b->phi(), sectorPhi()) * b->r() -
+                                                         reco::deltaPhi(a->phi(), sectorPhi()) * a->r()) > drphi)
             return false;
         }
         return true;
@@ -1331,7 +1327,7 @@ namespace tmtt {
     }
   }
 
-  set<unsigned> L1KalmanComb::getKalmanDeadLayers(bool &remove2PSCut) const {
+  set<unsigned> KFbase::getKalmanDeadLayers(bool &remove2PSCut) const {
     // Kill scenarios described in https://github.com/EmyrClement/StubKiller/blob/master/README.md
 
     // By which Stress Test scenario (if any) are dead modules being emulated?
@@ -1390,8 +1386,8 @@ namespace tmtt {
 
   //=== Function to calculate approximation for tilted barrel modules (aka B) copied from Stub class.
 
-  float L1KalmanComb::getApproxB(float z, float r) const {
-    return getSettings()->bApprox_gradient() * fabs(z) / r + getSettings()->bApprox_intercept();
+  float KFbase::getApproxB(float z, float r) const {
+    return getSettings()->bApprox_gradient() * std::abs(z) / r + getSettings()->bApprox_intercept();
   }
 
 }  // namespace tmtt

@@ -37,8 +37,8 @@ namespace tmtt {
   //=== Get digitisation configuration parameters for the specific track fitter being used here.
 
   void DigitalTrack::getDigiCfg(const string& fitterName) {
-    if (fitterName == "SimpleLR") {
-      // SimpleLR track fitter
+    if (fitterName == "SimpleLR4") {
+      // SimpleLR4 track fitter
       skipTrackDigi_ = settings_->slr_skipTrackDigi();
       oneOver2rBits_ = settings_->slr_oneOver2rBits();
       oneOver2rRange_ = settings_->slr_oneOver2rRange();
@@ -166,7 +166,8 @@ namespace tmtt {
     accepted_ = accepted;
     tp_tanLambda_ = tp_tanLambda;
     tp_qoverpt_ = tp_qOverPt;
-    tp_pt_ = 1. / (1.0e-6 + fabs(tp_qOverPt));
+    constexpr float almostZero = 1.0e-6;  // Protect against divide by zero.
+    tp_pt_ = 1. / (almostZero + std::abs(tp_qOverPt));
     tp_d0_ = tp_d0;
     tp_eta_ = tp_eta;
     tp_phi0_ = tp_phi0;
@@ -242,11 +243,6 @@ namespace tmtt {
       if (!accepted_)
         iDigi_chisquaredRphi_bcon_ = pow(2., chisquaredBits_) - 1;
 
-      // if(settings_->digitizeSLR()){
-      //   mBinhelix_ = floor(iDigi_1over2r_/pow(2,5));
-      //   cBinhelix_ = floor(iDigi_phiT_/pow(2,7));
-      // }
-
       //--- Determine floating point track params from digitized numbers (so with degraded resolution).
 
       oneOver2r_ = (iDigi_oneOver2r_ + 0.5) / oneOver2rMult_;
@@ -290,41 +286,41 @@ namespace tmtt {
 
   void DigitalTrack::checkInRange() const {
     if (accepted_) {  // Don't bother apply to tracks rejected by the fitter.
-      if (fabs(oneOver2r_orig_) >= 0.5 * oneOver2rRange_)
+      if (std::abs(oneOver2r_orig_) >= 0.5 * oneOver2rRange_)
         throw cms::Exception("BadConfig")
             << "DigitalTrack: Track oneOver2r is out of assumed digitization range."
-            << " |oneOver2r| = " << fabs(oneOver2r_orig_) << " > " << 0.5 * oneOver2rRange_
-            << "; Fitter=" << fitterName_ << "; track accepted = " << accepted_ << endl;
+            << " |oneOver2r| = " << std::abs(oneOver2r_orig_) << " > " << 0.5 * oneOver2rRange_
+            << "; Fitter=" << fitterName_ << "; track accepted = " << accepted_;
       if (consistentSect_) {  // don't bother if track will fail sector consistency cut.
-        if (fabs(phi0rel_orig_) >= 0.5 * phi0Range_)
+        if (std::abs(phi0rel_orig_) >= 0.5 * phi0Range_)
           throw cms::Exception("BadConfig") << "DigitalTrack: Track phi0rel is out of assumed digitization range."
-                                            << " |phi0rel| = " << fabs(phi0rel_orig_) << " > " << 0.5 * phi0Range_
-                                            << "; Fitter=" << fitterName_ << "; track accepted = " << accepted_ << endl;
+                                            << " |phi0rel| = " << std::abs(phi0rel_orig_) << " > " << 0.5 * phi0Range_
+                                            << "; Fitter=" << fitterName_ << "; track accepted = " << accepted_;
       }
-      if (fabs(z0_orig_) >= 0.5 * z0Range_)
+      if (std::abs(z0_orig_) >= 0.5 * z0Range_)
         throw cms::Exception("BadConfig") << "DigitalTrack:  Track z0 is out of assumed digitization range."
-                                          << " |z0| = " << fabs(z0_orig_) << " > " << 0.5 * z0Range_
-                                          << "; Fitter=" << fitterName_ << "; track accepted = " << accepted_ << endl;
-      if (fabs(d0_orig_) >= 0.5 * d0Range_)
+                                          << " |z0| = " << std::abs(z0_orig_) << " > " << 0.5 * z0Range_
+                                          << "; Fitter=" << fitterName_ << "; track accepted = " << accepted_;
+      if (std::abs(d0_orig_) >= 0.5 * d0Range_)
         throw cms::Exception("BadConfig") << "DigitalTrack:  Track d0 is out of assumed digitization range."
-                                          << " |d0| = " << fabs(d0_orig_) << " > " << 0.5 * d0Range_
-                                          << "; Fitter=" << fitterName_ << "; track accepted = " << accepted_ << endl;
-      if (fabs(tanLambda_orig_) >= 0.5 * tanLambdaRange_)
+                                          << " |d0| = " << std::abs(d0_orig_) << " > " << 0.5 * d0Range_
+                                          << "; Fitter=" << fitterName_ << "; track accepted = " << accepted_;
+      if (std::abs(tanLambda_orig_) >= 0.5 * tanLambdaRange_)
         throw cms::Exception("BadConfig")
             << "DigitalTrack: Track tanLambda is out of assumed digitization range."
-            << " |tanLambda| = " << fabs(tanLambda_orig_) << " > " << 0.5 * tanLambdaRange_
-            << "; Fitter=" << fitterName_ << "; track accepted = " << accepted_ << endl;
+            << " |tanLambda| = " << std::abs(tanLambda_orig_) << " > " << 0.5 * tanLambdaRange_
+            << "; Fitter=" << fitterName_ << "; track accepted = " << accepted_;
       if (accepted_) {  // Tracks declared invalid by fitter can have very large original chi2.
         if (chisquaredRphi_orig_ >= chisquaredRange_ or chisquaredRphi_orig_ < 0.)
           throw cms::Exception("BadConfig")
               << "DigitalTrack: Track chisquaredRphi is out of assumed digitization range."
               << " chisquaredRphi = " << chisquaredRphi_orig_ << " > " << chisquaredRange_ << " or < 0"
-              << "; Fitter=" << fitterName_ << "; track accepted = " << accepted_ << endl;
+              << "; Fitter=" << fitterName_ << "; track accepted = " << accepted_;
         if (chisquaredRz_orig_ >= chisquaredRange_ or chisquaredRz_orig_ < 0.)
           throw cms::Exception("BadConfig")
               << "DigitalTrack: Track chisquaredRz is out of assumed digitization range."
               << " chisquaredRz = " << chisquaredRz_orig_ << " > " << chisquaredRange_ << " or < 0"
-              << "; Fitter=" << fitterName_ << "; track accepted = " << accepted_ << endl;
+              << "; Fitter=" << fitterName_ << "; track accepted = " << accepted_;
       }
     }
   }
@@ -346,8 +342,8 @@ namespace tmtt {
         nErr[fitterName_] = 0;         // Initialize error count.
       const unsigned int maxErr = 20;  // Print error message only this number of times.
       if (nErr[fitterName_] < maxErr) {
-        if (fabs(TA) > 0.01 || fabs(TB) > 0.001 || fabs(TC) > 0.05 || fabs(TD) > 0.002 || fabs(TE) > 0.05 ||
-            fabs(TF) > 0.5 || fabs(TG) > 0.5) {
+        if (std::abs(TA) > 0.01 || std::abs(TB) > 0.001 || std::abs(TC) > 0.05 || std::abs(TD) > 0.002 ||
+            std::abs(TE) > 0.05 || std::abs(TF) > 0.5 || std::abs(TG) > 0.5) {
           nErr[fitterName_]++;
           cout << "WARNING: DigitalTrack lost precision: " << fitterName_ << " accepted=" << accepted_ << " " << TA
                << " " << TB << " " << TC << " " << TD << " " << TE << " " << TF << " " << TG << endl;

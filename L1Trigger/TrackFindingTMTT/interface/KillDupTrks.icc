@@ -69,7 +69,7 @@ namespace tmtt {
         return filterAlg25(vecTracks);
         break;
       default:
-        throw cms::Exception("BadConfig") << "KillDupTrks: Option DupTrkAlg in cfg has invalid value." << std::endl;
+        throw cms::Exception("BadConfig") << "KillDupTrks: Option DupTrkAlg in cfg has invalid value.";
     }
 
     // We should never end up here
@@ -214,7 +214,7 @@ namespace tmtt {
             if (qualI == qualJ)  // Drop i if same stubs, larger abs(q/pT), keep both if equal
                                  // (later - j - will go out further down)
             {
-              if (fabs(vecTracks[i].qOverPt()) > fabs(vecTracks[j].qOverPt())) {
+              if (std::abs(vecTracks[i].qOverPt()) > std::abs(vecTracks[j].qOverPt())) {
                 printKill(dupTrkAlg_, i, j, vecTracks[i], vecTracks[j]);
                 //std::cout<<"a) "<<j<<"<"<<i<<"; qualI == qualJ = "<<qualI<<" q/pTs "
                 //<<vecTracks[i].qOverPt()<<","<<vecTracks[j].qOverPt()<<std::endl;
@@ -242,10 +242,10 @@ namespace tmtt {
                 indices[j] = false;
               } else  // So they must be equal.  Keep one with smallest |q/pT|, earliest if equal
               {
-                if (fabs(vecTracks[i].qOverPt()) <= fabs(vecTracks[j].qOverPt()))  // strictly less than
+                if (std::abs(vecTracks[i].qOverPt()) <= std::abs(vecTracks[j].qOverPt()))  // strictly less than
                 {
                   printKill(dupTrkAlg_, j, i, vecTracks[j], vecTracks[i]);
-                  //if (fabs(vecTracks[i].qOverPt()) == fabs(vecTracks[j].qOverPt())) std::cout<<"Tie-break: ";
+                  //if (std::abs(vecTracks[i].qOverPt()) == std::abs(vecTracks[j].qOverPt())) std::cout<<"Tie-break: ";
                   //std::cout<<"e) "<<j<<">"<<i<<"; qualI == qualJ = "<<qualI<<" q/pTs "
                   //<<vecTracks[j].qOverPt()<<">="<<vecTracks[i].qOverPt()<<std::endl;
                   indices[j] = false;

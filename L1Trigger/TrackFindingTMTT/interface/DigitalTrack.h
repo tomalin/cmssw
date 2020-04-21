@@ -13,8 +13,8 @@ namespace tmtt {
   //====================================================================================================
   /**
 * Used to digitize the fitted track helix params.
-* WARNING: Digitizes according to common format agreed for KF and SimpleLR fitters, 
-* and uses KF digitisation cfg for all fitters except SimpleLR.
+* WARNING: Digitizes according to common format agreed for KF and SimpleLR4 fitters, 
+* and uses KF digitisation cfg for all fitters except SimpleLR4.
 */
   //====================================================================================================
 
@@ -303,11 +303,11 @@ namespace tmtt {
     // Check DigitalTrack correctly initialized;
     void okin() const {
       if (!ranInit_)
-        throw cms::Exception("LogicError") << "DigitalTrack: You forgot to call init()!" << std::endl;
+        throw cms::Exception("LogicError") << "DigitalTrack: You forgot to call init()!";
     }
     void ok() const {
       if (!ranMake_)
-        throw cms::Exception("LogicError") << "DigitalTrack: You forgot to call makeDigitalTrack()!" << std::endl;
+        throw cms::Exception("LogicError") << "DigitalTrack: You forgot to call makeDigitalTrack()!";
     }
 
     // Get digitisation configuration parameters for the specific track fitter being used here.

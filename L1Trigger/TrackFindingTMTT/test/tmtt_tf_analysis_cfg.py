@@ -106,8 +106,8 @@ process.TMTrackProducer.EnableHistos  = cms.bool(True)
 #                                "KF5ParamsComb",
 #                                "KF4ParamsComb"
 #                                "KF4ParamsCombHLS",
-#                                "ChiSquared4ParamsApprox",
-#                                "SimpleLR"
+#                                "ChiSquaredFit4",
+#                                "SimpleLR4"
 #                                )
 
 # If the input samples contain stubs and the truth association, then you can just use the following path

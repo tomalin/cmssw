@@ -112,7 +112,7 @@ namespace tmtt {
       throw cms::Exception("BadConfig") << "HTrphi: You are not allowed to set EnableMerge2x2 or MiniHTstage = True if "
                                            "you have an odd number of bins "
                                            "in r-phi HT array "
-                                        << nBinsQoverPtAxis_ << " " << nBinsPhiTrkAxis_ << endl;
+                                        << nBinsQoverPtAxis_ << " " << nBinsPhiTrkAxis_;
 
     //--- Other options used when filling the HT.
 
@@ -149,7 +149,7 @@ namespace tmtt {
       rescaleMbins = (nTotalBins != nBinsQoverPtAxis_);
       // No rescaling allowed with MBinOrder option.
       if (rescaleMbins && busySectorUseMbinOrder_)
-        throw cms::Exception("BadConfig") << "HTrphi: BusySectorUserMbin error" << endl;
+        throw cms::Exception("BadConfig") << "HTrphi: BusySectorUserMbin error";
       float rescaleFactor = rescaleMbins ? float(nBinsQoverPtAxis_) / float(nTotalBins) : 1.;
       // Find lower and upper inclusive limits of each m bin range to be sent to a separate optical link.
       busySectorMbinLow_.resize(busySectorMbinRanges_.size());
@@ -284,7 +284,7 @@ namespace tmtt {
             float qOverPtBinVar = binSizeQoverPtAxis_;
             float phiTrk = reco::deltaPhi(stub->phi(), phiCentreSector_) +
                            invPtToDphi_ * qOverPtBin * (stub->r() - chosenRofPhi_) + maxAbsPhiTrkAxis_;
-            float phiTrkVar = invPtToDphi_ * qOverPtBinVar * std::fabs(stub->r() - chosenRofPhi_);
+            float phiTrkVar = invPtToDphi_ * qOverPtBinVar * std::abs(stub->r() - chosenRofPhi_);
             float phiTrkMin = phiTrk - phiTrkVar;
             float phiTrkMax = phiTrk + phiTrkVar;
             if (i % 2 == 0)
@@ -320,7 +320,7 @@ namespace tmtt {
             float qOverPtBinVar = binSizeQoverPtAxis_;
             float phiTrk = reco::deltaPhi(stub->phi(), phiCentreSector_) +
                            invPtToDphi_ * qOverPtBin * (stub->r() - chosenRofPhi_) + maxAbsPhiTrkAxis_;
-            float phiTrkVar = invPtToDphi_ * qOverPtBinVar * std::fabs(stub->r() - chosenRofPhi_);
+            float phiTrkVar = invPtToDphi_ * qOverPtBinVar * std::abs(stub->r() - chosenRofPhi_);
             float phiTrkMin = phiTrk - phiTrkVar;
             float phiTrkMax = phiTrk + phiTrkVar;
             unsigned int iMin = std::floor(phiTrkMin / binSizePhiTrkAxis_ * 2.);
@@ -355,7 +355,7 @@ namespace tmtt {
             mBinOrder = k;
         }
         if (mBinOrder == 99999)
-          throw cms::Exception("LogicError") << "HTrphi::getMbinRange() mBinOrder calculation wrong." << endl;
+          throw cms::Exception("LogicError") << "HTrphi::getMbinRange() mBinOrder calculation wrong.";
       } else {
         // User grouping bins in numerical order 0,1,2,3,4,5...
         mBinOrder = mBin;
@@ -364,7 +364,7 @@ namespace tmtt {
         if (mBinOrder >= busySectorMbinLow_[i] && mBinOrder <= busySectorMbinHigh_[i])
           return i;
       }
-      throw cms::Exception("LogicError") << "HTrphi::getMbinRange() messed up" << endl;
+      throw cms::Exception("LogicError") << "HTrphi::getMbinRange() messed up";
     } else {
       return 0;
     }
@@ -388,7 +388,7 @@ namespace tmtt {
     // The next line does the phiTrk calculation without the usual approximation, but it doesn't
     // improve performance.
     //float phiTrk    = stub->phi() + asin(invPtToDphi_ * qOverPtBin * stub->r()) - asin(invPtToDphi_ * qOverPtBin * chosenRofPhi_);
-    float phiTrkVar = invPtToDphi_ * qOverPtBinVar * fabs(stub->r() - chosenRofPhi_);
+    float phiTrkVar = invPtToDphi_ * qOverPtBinVar * std::abs(stub->r() - chosenRofPhi_);
     float phiTrkMin = phiTrk - phiTrkVar;
     float phiTrkMax = phiTrk + phiTrkVar;
 
@@ -400,7 +400,7 @@ namespace tmtt {
       if (stub->barrel()) {
         phiTrkVarStub = 0.;
       } else {
-        phiTrkVarStub = invPtToDphi_ * fabs(qOverPtBin) * stub->rErr();
+        phiTrkVarStub = invPtToDphi_ * std::abs(qOverPtBin) * stub->rErr();
       }
       phiTrkMin -= phiTrkVarStub;
       phiTrkMax += phiTrkVarStub;
@@ -661,8 +661,8 @@ namespace tmtt {
 
   float HTrphi::calcMaxLineGradArray() const {
     // Get max. |gradient| possible in this HT array.
-    float gradOuter = fabs(invPtToDphi_ * (settings_->trackerOuterRadius() - chosenRofPhi_));
-    float gradInner = fabs(invPtToDphi_ * (settings_->trackerInnerRadius() - chosenRofPhi_));
+    float gradOuter = std::abs(invPtToDphi_ * (settings_->trackerOuterRadius() - chosenRofPhi_));
+    float gradInner = std::abs(invPtToDphi_ * (settings_->trackerInnerRadius() - chosenRofPhi_));
     float maxGrad = max(gradOuter, gradInner);
     // Convert it to units of bin width.
     maxGrad *= binSizeQoverPtAxis_ / binSizePhiTrkAxis_;

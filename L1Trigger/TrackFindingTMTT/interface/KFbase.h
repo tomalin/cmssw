@@ -1,7 +1,7 @@
 ///=== This is the base class for the Kalman Combinatorial Filter track fit algorithm.
 
-#ifndef L1Trigger_TrackFindingTMTT_L1KalmanComb_h
-#define L1Trigger_TrackFindingTMTT_L1KalmanComb_h
+#ifndef L1Trigger_TrackFindingTMTT_KFbase_h
+#define L1Trigger_TrackFindingTMTT_KFbase_h
 
 #include <TMatrixD.h>
 #include "L1Trigger/TrackFindingTMTT/interface/TrackFitGeneric.h"
@@ -24,7 +24,7 @@ namespace tmtt {
   class KalmanState;
   class StubCluster;
 
-  class L1KalmanComb : public TrackFitGeneric {
+  class KFbase : public TrackFitGeneric {
   public:
     enum PAR_IDS { INV2R, PHI0, T, Z0, D0 };
     enum PAR_IDS_VAR { QOVERPT };
@@ -32,22 +32,22 @@ namespace tmtt {
     enum OVERLAP_TYPE { TYPE_NORMAL, TYPE_V2, TYPE_NOCLUSTERING, TYPE_TP };
 
   public:
-    L1KalmanComb(const Settings *settings, const uint nPar, const std::string &fitterName = "", const uint nMeas = 2);
+    KFbase(const Settings *settings, const uint nPar, const std::string &fitterName = "", const uint nMeas = 2);
 
-    virtual ~L1KalmanComb() {
+    virtual ~KFbase() {
       this->resetStates();
       this->deleteStubClusters();
     }
 
-    L1KalmanComb(const L1KalmanComb &kf) = delete;  // Disable copy & move of this class.
-    L1KalmanComb(L1KalmanComb &&kf) = delete;
-    L1KalmanComb &operator=(const L1KalmanComb &kf) = delete;
-    L1KalmanComb &operator=(L1KalmanComb &&kf) = delete;
+    KFbase(const KFbase &kf) = delete;  // Disable copy & move of this class.
+    KFbase(KFbase &&kf) = delete;
+    KFbase &operator=(const KFbase &kf) = delete;
+    KFbase &operator=(KFbase &&kf) = delete;
 
     L1fittedTrack fit(const L1track3D &l1track3D);
 
   protected:
-    static std::vector<double> getTrackParams(const L1KalmanComb *p, const KalmanState *state);
+    static std::vector<double> getTrackParams(const KFbase *p, const KalmanState *state);
     virtual std::vector<double> getTrackParams(const KalmanState *state) const = 0;
 
     // Get track params with beam-spot constraint & chi2 (r-phi) after applying it..
@@ -161,8 +161,6 @@ namespace tmtt {
     unsigned int iCurrentEtaReg_;
     unsigned int iLastPhiSec_;
     unsigned int iLastEtaReg_;
-
-    unsigned int minStubLayersRed_;
 
     unsigned int numUpdateCalls_;
 

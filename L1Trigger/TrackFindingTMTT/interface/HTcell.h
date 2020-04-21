@@ -59,7 +59,7 @@ namespace tmtt {
       this->store(stub);
       subSectors_[stub] = inSubSecs;
       if (inSubSecs.size() != numSubSecs_)
-        throw cms::Exception("LogicError") << "HTcell: Wrong number of subsectors!" << std::endl;
+        throw cms::Exception("LogicError") << "HTcell: Wrong number of subsectors!";
     }
 
     // Termination. Search for track in this HT cell etc.
@@ -102,7 +102,7 @@ namespace tmtt {
     // killed tracks are still found by this function. It is in HTbase::calcTrackCands2D() that they are killed.
     bool trackCandFound() const {
       return (numFilteredLayersInCellBestSubSec_ >=
-              Utility::numLayerCut("HT", settings_, iPhiSec_, iEtaReg_, fabs(qOverPtCell_)));
+              Utility::numLayerCut(Utility::AlgoStep::HT, settings_, iPhiSec_, iEtaReg_, std::abs(qOverPtCell_)));
     }
 
     //=== Disable filters (used for debugging).
@@ -165,7 +165,7 @@ namespace tmtt {
 
     unsigned int numFilteredLayersInCell_;  // How many tracker layers these filtered stubs are in
     // Ditto, but requiring all stubs to be in same subsector to be counted. This number is the highest layer count found in any of the subsectors in this sector.
-    unsigned int numFilteredLayersInCellBestSubSec_;  
+    unsigned int numFilteredLayersInCellBestSubSec_;
     std::map<const Stub*, std::vector<bool>> subSectors_;  // Subsectors in sector this stub is consistent with.
   };
 

@@ -82,7 +82,7 @@ namespace tmtt {
 
     // Check if the helix parameters of a tracking particle (truth) are consistent with this sector.
     bool insidePhiSec(const TP& tp) const {
-      return (fabs(tp.trkPhiAtR(chosenRofPhi_) - phiCentre_) < sectorHalfWidth_);
+      return (std::abs(tp.trkPhiAtR(chosenRofPhi_) - phiCentre_) < sectorHalfWidth_);
     }
     bool insideEtaReg(const TP& tp) const {
       return (tp.trkZAtR(chosenRofZ_) > zOuterMin_ && tp.trkZAtR(chosenRofZ_) < zOuterMax_);

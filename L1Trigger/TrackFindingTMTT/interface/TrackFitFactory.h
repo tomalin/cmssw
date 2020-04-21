@@ -15,12 +15,12 @@ namespace tmtt {
 
   class Settings;
 
-namespace trackFitFactory {
+  namespace trackFitFactory {
 
-  // Function to produce a fitter based on a std::string
-  std::unique_ptr<TrackFitGeneric> create(std::string fitterName, const Settings* settings);
+    // Function to produce a fitter based on a std::string
+    std::unique_ptr<TrackFitGeneric> create(std::string fitterName, const Settings* settings);
 
-}  // namespace trackFitFactory
+  }  // namespace trackFitFactory
 
 }  // namespace tmtt
 

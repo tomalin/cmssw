@@ -303,7 +303,7 @@ constexpr double matx_inner[25] = {
 
     if( dl ){
     std::vector<double> y = getTrackParams( state );
-    double dtheta0 = 1./sqrt(3) * 0.0136 * fabs(y[QOVERPT]) * sqrt(dl)*( 1+0.038*log(dl) ); 
+    double dtheta0 = 1./sqrt(3) * 0.0136 * std::abs(y[QOVERPT]) * sqrt(dl)*( 1+0.038*log(dl) ); 
     dtheta0 *= getSettings()->kalmanMultiScattFactor();
     p(PHI0, PHI0) = dtheta0 * dtheta0; // Despite the name, I think this is uncertainty in phi0. I guess uncertainty in theta0 neglected compared to detector resolution.
     }
@@ -336,8 +336,8 @@ constexpr double matx_inner[25] = {
 
     std::vector<double> y = getTrackParams(&state);
     double qOverPt = y[QOVERPT];
-    double pt = fabs(1 / qOverPt);
-    double z0 = fabs(y[Z0]);
+    double pt = std::abs(1 / qOverPt);
+    double z0 = std::abs(y[Z0]);
 
     // state parameter selections
 
@@ -346,7 +346,7 @@ constexpr double matx_inner[25] = {
     if (pt < getSettings()->houghMinPt() - ptTolerance[nStubLayers])
       goodState = false;
     if (nPar_ == 5) {
-      double d0 = fabs(state.xa()[D0]);
+      double d0 = std::abs(state.xa()[D0]);
       if (d0 > d0Cut[nStubLayers])
         goodState = false;
     }

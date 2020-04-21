@@ -41,8 +41,7 @@ namespace tmtt {
         nHTlinksPerNonant_ = (busySectorMbinRanges_.size() - 1) * numPhiSecPerNon_;
       } else {
         throw cms::Exception("BadConfig")
-            << "MiniHTState: hard-wired MHT load balancing can't be enabled as assumes HT output MUX scheme >= 2"
-            << endl;
+            << "MiniHTState: hard-wired MHT load balancing can't be enabled as assumes HT output MUX scheme >= 2";
       }
     }
   }
@@ -73,7 +72,7 @@ namespace tmtt {
             bool storeCoarseTrack = false;
             const unsigned int& link = roughTrk.optoLinkID();
 
-            if (fabs(roughTrk.qOverPt()) <
+            if (std::abs(roughTrk.qOverPt()) <
                 1. / miniHoughMinPt_) {  // Not worth using mini-HT at low Pt due to scattering.
 
               for (unsigned int mBin = 0; mBin < miniHoughNbinsPt_; mBin++) {
@@ -107,8 +106,8 @@ namespace tmtt {
                     float dPhi = reco::deltaPhi(phiBin - phiStub, 0.);
                     float dPhiMax = binSizePhiTrkAxis_ / miniHoughNbinsPhi_ / 2. +
                                     invPtToDphi_ * binSizeQoverPtAxis_ / (float)miniHoughNbinsPt_ *
-                                        fabs(stub->r() - chosenRofPhi_) / 2.;
-                    if (fabs(dPhi) <= fabs(reco::deltaPhi(dPhiMax, 0.)))
+                                        std::abs(stub->r() - chosenRofPhi_) / 2.;
+                    if (std::abs(dPhi) <= std::abs(reco::deltaPhi(dPhiMax, 0.)))
                       htCell.store(stub, sector.insideEtaSubSecs(stub));
                   }
                   htCell.end();
@@ -151,7 +150,7 @@ namespace tmtt {
             }
 
             if (storeCoarseTrack || ((not fineTrksFound) && miniHoughDontKill_ &&
-                                     fabs(roughTrk.qOverPt()) < 1. / miniHoughDontKillMinPt_)) {
+                                     std::abs(roughTrk.qOverPt()) < 1. / miniHoughDontKillMinPt_)) {
               // Keeping original track instead of mini-HTtracks.
               // Invent dummy miniHT cells so as to be able to reuse load balancing, trying all combinations to identify the least used link.
               pair<unsigned int, unsigned int> bestCell = {0, 0};

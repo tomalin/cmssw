@@ -37,9 +37,7 @@ TMTrackProducer_params = cms.PSet(
      GenMaxZ0         = cms.double(999.0), # Max transverse impact parameter.
      GenPdgIds        = cms.vuint32(), # Only particles with these PDG codes used for efficiency measurement.
 
-     # Additional cut on MC truth tracks used for algorithmic tracking efficiency measurements.
-     # You should usually set this equal to value of L1TrackDef.MinStubLayers below, unless L1TrackDef.MinPtToReduceLayers
-     # is < 10000, in which case, set it equal to (L1TrackDef.MinStubLayers - 1).
+     # Cut on MC truth tracks used for algorithmic tracking efficiency measurements.
      GenMinStubLayers = cms.uint32(4)
   ),
 
@@ -223,8 +221,8 @@ TMTrackProducer_params = cms.PSet(
      # Min. number of layers the track must have stubs in.
      MinStubLayers        = cms.uint32(5),
      # Change min. number of layers cut to (MinStubLayers - 1) for tracks with Pt exceeding this cut.
-     # If this is set to > 10000 , this option is disabled.
-     MinPtToReduceLayers  = cms.double(99999.),
+     # If this is set to a -ve number, this option is disabled.
+      MinPtToReduceLayers  = cms.double(-99999.),
      # Change min. number of layers cut to (MinStubLayers - 1) for tracks in these rapidity sectors.
      # (Histogram "AlgEffVsEtaSec" will help you identify which sectors to declare).
      #EtaSecsReduceLayers  = cms.vuint32(),
@@ -279,13 +277,13 @@ TMTrackProducer_params = cms.PSet(
      #
      # Track Fitting algortihms to use. You can run several in parallel.
      # TrackFitLinearAlgo & ChiSquared* are chi2 fits, KF* is a Kalman filter fit, 
-     # & SimpleLR is a linear regression fit that neglects the hit uncertainties. 
+     # & SimpleLR4 is a linear regression fit that neglects the hit uncertainties. 
      # The number 4 or 5 in the name indicates if 4 or 5 helix parameters are fitted.
-     # Options KF4ParamsComb, KF5ParamsComb or SimpleLR are the best ones.
+     # Options KF4ParamsComb, KF5ParamsComb or SimpleLR4 are the best ones.
      # KF*ParamsCombHLS is the HLS version of the code, which only works if linked with Vivado libraries.
      TrackFitters = cms.vstring(
-                                # "ChiSquared4ParamsApprox",
-                                # "SimpleLR",
+                                # "ChiSquaredFit4",
+                                # "SimpleLR4",
                                 # "KF4ParamsCombHLS",
                                 # "KF5ParamsCombHLS",
                                 "KF5ParamsComb",
@@ -294,8 +292,8 @@ TMTrackProducer_params = cms.PSet(
      # Indicate subset of fitters wanting r-z track filter to be run before them. (Irrelevant for those not specified in "TrackFitters"). 
      # Typically, Chi2 & LR fits work best with r-z filter & KF works best without it.
      UseRZfilter = cms.vstring(
-                                "ChiSquared4ParamsApprox",
-                                "SimpleLR"
+                                "ChiSquaredFit4",
+                                "SimpleLR4"
                               ),
      # Print detailed summary of track fit performance at end of job (as opposed to a brief one). 
      DetailedFitOutput = cms.bool(False),
@@ -423,7 +421,7 @@ TMTrackProducer_params = cms.PSet(
   TrackDigi=cms.PSet(
     # For firmware reasons, can't use common digitisation cfg for all fitters.
 
-    #======= SimpleLR digi parameters ========
+    #======= SimpleLR4 digi parameters ========
     SLR_skipTrackDigi = cms.bool( False ), # Optionally skip track digitisation if done internally inside fitting code.
     SLR_oneOver2rBits = cms.uint32(13),
     SLR_oneOver2rRange = cms.double(0.01354135),

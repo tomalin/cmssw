@@ -72,7 +72,7 @@ namespace tmtt {
     ~Stub() {}
 
     // Return reference to original TTStub.
-    const TTStubRef& ttStubRef() const {return ttStubRef_;} 
+    const TTStubRef& ttStubRef() const { return ttStubRef_; }
 
     bool operator==(const Stub& stubOther) { return (this->index() == stubOther.index()); }
 
@@ -166,9 +166,9 @@ namespace tmtt {
     // This is identical to beta() if rad=0.
     std::pair<float, float> trkPhiAtR(float rad) const;
     // Estimated resolution in trkPhiAtR(rad) based on nominal stub bend resolution.
-    float trkPhiAtRres(float rad) const { return this->dphiRes() * fabs(1 - rad / r_); }
+    float trkPhiAtRres(float rad) const { return this->dphiRes() * std::abs(1 - rad / r_); }
     // Difference in phi between stub and angle at which track crosses given radius, assuming track has given Pt.
-    float phiDiff(float rad, float Pt) const { return fabs(r_ - rad) * (settings_->invPtToDphi()) / Pt; }
+    float phiDiff(float rad, float Pt) const { return std::abs(r_ - rad) * (settings_->invPtToDphi()) / Pt; }
     // -- conversion factors
     // Ratio of bend angle to bend, where bend is the displacement in strips between the two hits making up stub.
     float dphiOverBend() const {
@@ -306,17 +306,16 @@ namespace tmtt {
     // No HT firmware can access directly the stub bend info.
     void check1() const {
       if (digitizeWarningsOn_ && digitizedForHTinput_)
-        throw cms::Exception("LogicError")
-            << "Stub: You can't access digitized bend variable within HT firmware!" << std::endl;
+        throw cms::Exception("LogicError") << "Stub: You can't access digitized bend variable within HT firmware!";
     }
     // If using daisy-chain firmware, then it makes no sense to access the digiitzed values of dphi within HT.
     void check2() const {
       if (digitizeWarningsOn_ && digitizedForHTinput_)
-        throw cms::Exception("LogicError") << "Stub: You can't access digitized dphi within the HT or KF!" << std::endl;
+        throw cms::Exception("LogicError") << "Stub: You can't access digitized dphi within the HT or KF!";
     }
 
   private:
-    TTStubRef ttStubRef_; // Reference to original TTStub
+    TTStubRef ttStubRef_;  // Reference to original TTStub
 
     const Settings* settings_;  // configuration parameters.
 

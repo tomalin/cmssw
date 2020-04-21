@@ -46,10 +46,8 @@ namespace tmtt {
           beamWindowZ_(0) {}
     ~TrkRZfilter() {}
 
-    struct SortStubsInLayer {
-      inline bool operator()(const Stub* stub1, const Stub* stub2) {
-        return (fabs(stub1->layerId()) < fabs(stub2->layerId()));
-      }
+    struct SortStubsByLayer {
+      inline bool operator()(const Stub* stub1, const Stub* stub2) { return (stub1->layerId() < stub2->layerId()); }
     };
 
     // Initialize configuration parameters, and note sector number, eta range covered by sector and phi coordinate of its centre.

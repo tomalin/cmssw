@@ -3,16 +3,16 @@
 #ifndef L1Trigger_TrackFindingTMTT_KFParamsComb_h
 #define L1Trigger_TrackFindingTMTT_KFParamsComb_h
 
-#include "L1Trigger/TrackFindingTMTT/interface/L1KalmanComb.h"
+#include "L1Trigger/TrackFindingTMTT/interface/KFbase.h"
 #include <TMatrixD.h>
 #include "L1Trigger/TrackFindingTMTT/interface/L1track3D.h"
 
 namespace tmtt {
 
-  class KFParamsComb : public L1KalmanComb {
+  class KFParamsComb : public KFbase {
   public:
     KFParamsComb(const Settings* settings, const uint nPar, const std::string& fitterName)
-        : L1KalmanComb(settings, nPar, fitterName) {}
+        : KFbase(settings, nPar, fitterName) {}
 
     virtual ~KFParamsComb() {}
 

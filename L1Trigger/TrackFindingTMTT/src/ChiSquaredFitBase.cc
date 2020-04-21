@@ -2,7 +2,7 @@
 
 ///=== Written by: Sioni Summers and Alexander D. Morton
 
-#include "L1Trigger/TrackFindingTMTT/interface/L1ChiSquared.h"
+#include "L1Trigger/TrackFindingTMTT/interface/ChiSquaredFitBase.h"
 #include "L1Trigger/TrackFindingTMTT/interface/Stub.h"
 #include "L1Trigger/TrackFindingTMTT/interface/L1fittedTrack.h"
 #include "L1Trigger/TrackFindingTMTT/interface/L1track3D.h"
@@ -14,7 +14,7 @@
 
 namespace tmtt {
 
-  L1ChiSquared::L1ChiSquared(const Settings* settings, const uint nPar) : TrackFitGeneric(settings), chiSq_(0.0) {
+  ChiSquaredFitBase::ChiSquaredFitBase(const Settings* settings, const uint nPar) : TrackFitGeneric(settings), chiSq_(0.0) {
     // Bad stub killing settings
     numFittingIterations_ = getSettings()->numTrackFitIterations();
     killTrackFitWorstHit_ = getSettings()->killTrackFitWorstHit();
@@ -27,7 +27,7 @@ namespace tmtt {
     nPar_ = nPar;
   }
 
-  void L1ChiSquared::calculateChiSq(const TVectorD& resids) {
+  void ChiSquaredFitBase::calculateChiSq(const TVectorD& resids) {
     chiSq_ = 0.0;
     uint j = 0;
     for (uint i = 0; i < stubs_.size(); i++) {
@@ -36,18 +36,23 @@ namespace tmtt {
     }
   }
 
-  void L1ChiSquared::calculateDeltaChiSq(const TVectorD& delX, const TVectorD& covX) {
+  void ChiSquaredFitBase::calculateDeltaChiSq(const TVectorD& delX, const TVectorD& covX) {
     for (int i = 0; i < covX.GetNrows(); i++) {
-      chiSq_ += (-delX[i]) * covX[i];
+      chiSq_ -= (delX[i]) * covX[i];
     }
   }
 
-  L1fittedTrack L1ChiSquared::fit(const L1track3D& l1track3D) {
+  L1fittedTrack ChiSquaredFitBase::fit(const L1track3D& l1track3D) {
+    qOverPt_seed_ = l1track3D.qOverPt();
     stubs_ = l1track3D.getStubs();
 
     // Get cut on number of layers including variation due to dead sectors, pt dependence etc.
-    minStubLayersRed_ = Utility::numLayerCut(
-        "FIT", getSettings(), l1track3D.iPhiSec(), l1track3D.iEtaReg(), fabs(l1track3D.qOverPt()), l1track3D.eta());
+    minStubLayersRed_ = Utility::numLayerCut(Utility::AlgoStep::FIT,
+                                             getSettings(),
+                                             l1track3D.iPhiSec(),
+                                             l1track3D.iEtaReg(),
+                                             std::abs(l1track3D.qOverPt()),
+                                             l1track3D.eta());
 
     TVectorD x = seed(l1track3D);
 
@@ -56,8 +61,8 @@ namespace tmtt {
       TMatrixD dTrans(TMatrixD::kTransposed, d);
       TMatrixD dtVinv = dTrans * Vinv();
       TMatrixD dtVinvTrans(TMatrixD::kTransposed, dtVinv);
-      //  TMatrixD M = dtVinv * d;
-      TMatrixD M = dtVinv * dtVinvTrans;  //TODO this match tracklet code, but not literature!
+      //TMatrixD M = dtVinv * d; // Must insert extra factor Vinv, due to unconventional Vinv() definition.
+      TMatrixD M = dtVinv * dtVinvTrans;
       TMatrixD Minv(TMatrixD::kInverted, M);
       TVectorD resids = residuals(x);
       TVectorD deltaX = Minv * dtVinv * resids;
@@ -96,8 +101,8 @@ namespace tmtt {
           bool valid = nLayers >= minStubLayersRed_;
 
           if (not valid) {
-	    L1fittedTrack rejectedTrk;
-	    return rejectedTrk;
+            L1fittedTrack rejectedTrk;
+            return rejectedTrk;
           }
         } else {
           break;
@@ -111,7 +116,7 @@ namespace tmtt {
 
     if (valid) {
       const unsigned int hitPattern = 0;  // FIX: Needs setting
-      const float chi2rz = 0; // FIX: Needs setting
+      const float chi2rz = 0;             // FIX: Needs setting
       return L1fittedTrack(getSettings(),
                            l1track3D,
                            stubs_,
@@ -122,7 +127,7 @@ namespace tmtt {
                            x[Z0],
                            x[T],
                            chiSq_,
-			   chi2rz,
+                           chi2rz,
                            nPar_);
     } else {
       L1fittedTrack rejectedTrk;

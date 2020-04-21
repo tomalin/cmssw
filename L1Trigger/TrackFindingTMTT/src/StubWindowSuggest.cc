@@ -18,7 +18,7 @@ namespace tmtt {
   void StubWindowSuggest::process(const Stub* stub) {
     // Half-size of FE chip bend window corresponding to Pt range in which tracks are to be found.
     const double invPtMax = 1 / ptMin_;
-    double bendHalfWind = invPtMax / fabs(stub->qOverPtOverBend());
+    double bendHalfWind = invPtMax / std::abs(stub->qOverPtOverBend());
     // Increase half-indow size to allow for resolution in bend.
     bendHalfWind += stub->bendResInFrontend();
     // Stub bend is measured here in half-integer values.
@@ -40,7 +40,7 @@ namespace tmtt {
       throw cms::Exception("LogicError")
           << "StubWindowSuggest: the tracker geometry you are using is not yet known to StubWindowSuggest. Please "
              "update constant barrelNTilt_T*_init inside it. Geometry="
-          << stub->trackerGeometryVersion() << endl;
+          << stub->trackerGeometryVersion();
     }
 
     // This code should be kept almost identical to that in

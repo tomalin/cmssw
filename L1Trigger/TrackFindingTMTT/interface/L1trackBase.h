@@ -15,7 +15,7 @@ namespace tmtt {
   class TP;
 
   class L1trackBase {
-  protected:
+  public:
     L1trackBase() {}
 
     virtual ~L1trackBase() {}

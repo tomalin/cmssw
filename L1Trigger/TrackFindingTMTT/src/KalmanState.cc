@@ -6,10 +6,18 @@ using namespace std;
 
 namespace tmtt {
 
-KalmanState::KalmanState() : kLayerNext_(0), layerId_(0), last_state_(nullptr), stubCluster_(nullptr),
-        chi2rphi_(0), chi2rz_(0), fitter_(nullptr),
+  KalmanState::KalmanState()
+      : kLayerNext_(0),
+        layerId_(0),
+        last_state_(nullptr),
+        stubCluster_(nullptr),
+        chi2rphi_(0),
+        chi2rz_(0),
+        fitter_(nullptr),
         fXtoTrackParams_(0),
-	barrel_(true), n_skipped_(0), hitPattern_(0) {}
+        barrel_(true),
+        n_skipped_(0),
+        hitPattern_(0) {}
 
   KalmanState::KalmanState(const L1track3D &candidate,
                            unsigned n_skipped,
@@ -23,14 +31,19 @@ KalmanState::KalmanState() : kLayerNext_(0), layerId_(0), last_state_(nullptr), 
                            const StubCluster *stubCluster,
                            double chi2rphi,
                            double chi2rz,
-                           const L1KalmanComb *fitter,
-                           GET_TRACK_PARAMS f) :        
-    kLayerNext_(kLayer_next), layerId_(layerId), last_state_(last_state),
-    xa_(x), stubCluster_(stubCluster), 
-    chi2rphi_(chi2rphi), chi2rz_(chi2rz), fitter_(fitter),
-    fXtoTrackParams_(f),
-    n_skipped_(n_skipped), l1track3D_(candidate)
-  {
+                           const KFbase *fitter,
+                           GET_TRACK_PARAMS f)
+      : kLayerNext_(kLayer_next),
+        layerId_(layerId),
+        last_state_(last_state),
+        xa_(x),
+        stubCluster_(stubCluster),
+        chi2rphi_(chi2rphi),
+        chi2rz_(chi2rz),
+        fitter_(fitter),
+        fXtoTrackParams_(f),
+        n_skipped_(n_skipped),
+        l1track3D_(candidate) {
     pxxa_.Clear();
     pxxa_.ResizeTo(pxx.GetNrows(), pxx.GetNcols());
     pxxa_ = pxx;
@@ -61,18 +74,30 @@ KalmanState::KalmanState() : kLayerNext_(0), layerId_(0), last_state_(nullptr), 
     n_stubs_ = kLayerNext_ - n_skipped_;
   }
 
-  KalmanState::KalmanState(const KalmanState &p) : 
-    kLayerNext_(p.nextLayer()), layerId_(p.layerId()),
-    endcapRing_(p.endcapRing()), r_(p.r()), z_(p.z()), last_state_(p.last_state()),
-    xa_(p.xa()), pxxa_(p.pxxa()), K_(p.K()), dcov_(p.dcov()),
-    stubCluster_(p.stubCluster()),
-    chi2rphi_(p.chi2rphi()), chi2rz_(p.chi2rz()), n_stubs_(p.nStubLayers()),
-    fitter_(p.fitter()), fXtoTrackParams_(p.fXtoTrackParams()),
-    barrel_(p.barrel()), n_skipped_(p.nSkippedLayers()),
-    l1track3D_(p.candidate()) {}
+  KalmanState::KalmanState(const KalmanState &p)
+      : kLayerNext_(p.nextLayer()),
+        layerId_(p.layerId()),
+        endcapRing_(p.endcapRing()),
+        r_(p.r()),
+        z_(p.z()),
+        last_state_(p.last_state()),
+        xa_(p.xa()),
+        pxxa_(p.pxxa()),
+        K_(p.K()),
+        dcov_(p.dcov()),
+        stubCluster_(p.stubCluster()),
+        chi2rphi_(p.chi2rphi()),
+        chi2rz_(p.chi2rz()),
+        n_stubs_(p.nStubLayers()),
+        fitter_(p.fitter()),
+        fXtoTrackParams_(p.fXtoTrackParams()),
+        barrel_(p.barrel()),
+        n_skipped_(p.nSkippedLayers()),
+        l1track3D_(p.candidate()) {}
 
   KalmanState &KalmanState::operator=(const KalmanState &other) {
-    if (&other == this) return *this;
+    if (&other == this)
+      return *this;
 
     kLayerNext_ = other.nextLayer();
     layerId_ = other.layerId();
@@ -101,7 +126,7 @@ KalmanState::KalmanState() : kLayerNext_(0), layerId_(0), last_state_(nullptr), 
     while (state) {
       const StubCluster *stubCluster = state->stubCluster();
       if (stubCluster) {
-        set<const TP *> tps = stubCluster->assocTPs();
+        const set<const TP *> &tps = stubCluster->assocTPs();
 
         if (tps.find(tp) == tps.end())
           return false;
@@ -136,9 +161,7 @@ KalmanState::KalmanState() : kLayerNext_(0), layerId_(0), last_state_(nullptr), 
       const StubCluster *stbcl = state->stubCluster();
       if (stbcl) {
         std::vector<const Stub *> stubs = stbcl->stubs();
-        for (unsigned i = 0; i < stubs.size(); i++) {
-          all_stubs.push_back(stubs.at(i));
-        }
+        all_stubs.insert(all_stubs.end(), stubs.begin(), stubs.end());
       }
       state = state->last_state();
     }

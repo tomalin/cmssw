@@ -49,20 +49,18 @@ namespace tmtt {
 
   vector<L1fittedTrack> KillDupFitTrks::filterAlg50(const vector<L1fittedTrack>& tracks) const {
     // Hard-wired options to play with.
-    const bool debug = false;
-    const bool doRecoveryStep = true;  // Do 2nd pass through rejected tracks to see if any should be rescued.
-    const bool reduceDups = true;      // Option attempting to reduce duplicate tracks during 2nd pass.
-    const bool memorizeAllHTcells =
+    constexpr bool debug = false;
+    constexpr bool doRecoveryStep = true;  // Do 2nd pass through rejected tracks to see if any should be rescued.
+    constexpr bool reduceDups = true;      // Option attempting to reduce duplicate tracks during 2nd pass.
+    constexpr bool memorizeAllHTcells =
         false;  // First pass stores in memory all cells that the HT found tracks in, not just those of tracks accepted by the first pass.
-    const bool doSectorCheck = false;  // Require fitted helix to lie within sector.
-    const bool usePtAndZ0Cuts = false;
-    // IRT - was false
-    const bool goOutsideArray = true;  // Also store in memory stubs outside the HT array during 2nd pass.
-    // IRT  - was false
-    const bool limitDiff = true;  // Limit allowed diff. between HT & Fit cell to <= 1.
+    constexpr bool doSectorCheck = false;  // Require fitted helix to lie within sector.
+    constexpr bool usePtAndZ0Cuts = false;
+    constexpr bool goOutsideArray = true;  // Also store in memory stubs outside the HT array during 2nd pass.
+    constexpr bool limitDiff = true;       // Limit allowed diff. between HT & Fit cell to <= 1.
 
     if (debug && tracks.size() > 0)
-      cout << "START " << tracks.size() << endl;
+      cout << "Start KillDupFitTrks" << tracks.size() << endl;
 
     vector<L1fittedTrack> tracksFiltered;
 
@@ -80,7 +78,7 @@ namespace tmtt {
       // Only consider tracks whose fitted helix parameters are in the same sector as the HT originally used to find the track.
       if ((!doSectorCheck) || trk.consistentSector()) {
         if ((!usePtAndZ0Cuts) ||
-            (fabs(trk.z0()) < settings_->beamWindowZ() && trk.pt() > settings_->houghMinPt() - 0.2)) {
+            (std::abs(trk.z0()) < settings_->beamWindowZ() && trk.pt() > settings_->houghMinPt() - 0.2)) {
           // For debugging.
           const TP* tp = trk.getMatchedTP();
 

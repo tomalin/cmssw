@@ -2,8 +2,8 @@
 
 ///=== Written by: Sioni Summers and Alexander D. Morton
 
-#ifndef L1Trigger_TrackFindingTMTT_L1ChiSquared_h
-#define L1Trigger_TrackFindingTMTT_L1ChiSquared_h
+#ifndef L1Trigger_TrackFindingTMTT_ChiSquaredFitBase_h
+#define L1Trigger_TrackFindingTMTT_ChiSquaredFitBase_h
 
 #include "L1Trigger/TrackFindingTMTT/interface/Stub.h"
 #include "L1Trigger/TrackFindingTMTT/interface/TrackFitGeneric.h"
@@ -17,12 +17,12 @@
 
 namespace tmtt {
 
-  class L1ChiSquared : public TrackFitGeneric {
+  class ChiSquaredFitBase : public TrackFitGeneric {
   public:
     enum PAR_IDS { INVR, PHI0, T, Z0, D0 };
 
   public:
-    L1ChiSquared(const Settings* settings, const uint nPar);
+    ChiSquaredFitBase(const Settings* settings, const uint nPar);
 
     L1fittedTrack fit(const L1track3D& l1track3D);
 
@@ -34,6 +34,7 @@ namespace tmtt {
     virtual TMatrixD Vinv() = 0;                        // Covariances
 
     /* Variables */
+    double qOverPt_seed_;
     std::vector<const Stub*> stubs_;
     TVectorD trackParams_;
     uint nPar_;

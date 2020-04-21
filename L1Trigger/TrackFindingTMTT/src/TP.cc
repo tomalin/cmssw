@@ -77,7 +77,7 @@ namespace tmtt {
     // Range big enough to include all TP needed to measure tracking efficiency
     // and big enough to include any TP that might be reconstructed for fake rate measurement.
     const float ptMin = min(settings_->genMinPt(), 0.7 * settings_->houghMinPt());
-    const float etaMax = max(settings_->genMaxAbsEta(), 0.2 + fabs(settings_->etaRegions()[0]));
+    const float etaMax = max(settings_->genMaxAbsEta(), 0.2 + std::abs(settings_->etaRegions()[0]));
 
     static thread_local TrackingParticleSelector trackingParticleSelector(ptMin,
                                                                           9999999999,
@@ -118,9 +118,9 @@ namespace tmtt {
       useForEff_ = trackingParticleSelector(*trackingParticlePtr_);
 
       // Add additional cut on particle transverse impact parameter.
-      if (fabs(d0_) > settings_->genMaxD0())
+      if (std::abs(d0_) > settings_->genMaxD0())
         useForEff_ = false;
-      if (fabs(z0_) > settings_->genMaxZ0())
+      if (std::abs(z0_) > settings_->genMaxZ0())
         useForEff_ = false;
     }
   }
@@ -169,7 +169,7 @@ namespace tmtt {
 
       if (myJet.pt() < 30.0)
         continue;
-      if (fabs(myJet.eta()) > 2.5)
+      if (std::abs(myJet.eta()) > 2.5)
         continue;
 
       double deltaR = reco::deltaR(this->eta(), this->phi0(), myJet.eta(), myJet.phi());

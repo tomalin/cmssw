@@ -15,7 +15,7 @@ namespace tmtt {
                                                 const TrackerGeometry* theTrackerGeom) {
     for (const GeomDetUnit* gd : theTrackerGeom->detUnits()) {
       float R0 = gd->position().perp();
-      float Z0 = fabs(gd->position().z());
+      float Z0 = std::abs(gd->position().z());
       DetId detId = gd->geographicalId();
 
       bool barrel = detId.subdetId() == StripSubdetector::TOB || detId.subdetId() == StripSubdetector::TIB;
@@ -28,20 +28,20 @@ namespace tmtt {
         // int type   = 2*theTrackerTopo->tobSide(detId)-3; // -1 for tilted-, 1 for tilted+, 3 for flat
         // double corr   = (barrelNTiltedModules_+1)/2.;
 
-        double minZOfThisModule = fabs(gd->surface().zSpan().first);
-        double maxZOfThisModule = fabs(gd->surface().zSpan().second);
+        double minZOfThisModule = std::abs(gd->surface().zSpan().first);
+        double maxZOfThisModule = std::abs(gd->surface().zSpan().second);
         double minROfThisModule = gd->surface().rSpan().first;
         double maxROfThisModule = gd->surface().rSpan().second;
 
         // Calculate module tilt and B at centre of module
-        double moduleTilt = atan(fabs(maxZOfThisModule - minZOfThisModule) / (maxROfThisModule - minROfThisModule));
+        double moduleTilt = atan(std::abs(maxZOfThisModule - minZOfThisModule) / (maxROfThisModule - minROfThisModule));
         double moduleTheta = atan(R0 / Z0);
-        double BCorrection = fabs(cos(fabs(moduleTheta) - moduleTilt) / sin(moduleTheta));
+        double BCorrection = std::abs(cos(std::abs(moduleTheta) - moduleTilt) / sin(moduleTheta));
 
         // Only store if this value of B has not been stored already
         bool storeThisBCorrection = true;
         for (unsigned int iCorr = 0; iCorr < moduleB_.size(); ++iCorr) {
-          if (fabs(BCorrection - moduleB_[iCorr]) < 0.0001) {
+          if (std::abs(BCorrection - moduleB_[iCorr]) < 0.0001) {
             storeThisBCorrection = false;
             break;
           }

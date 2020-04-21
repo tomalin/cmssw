@@ -157,9 +157,9 @@ namespace tmtt {
         // Calculate fractional amount of min and max bin that this stub uses.
         float extraLow = (lower - coordMin) / coordAxisBinSize;
         float extraUp = (coordMax - upper) / coordAxisBinSize;
-        if (min(extraLow, extraUp) < -0.001 || max(extraLow, extraUp) > 1.001)
-          cout << "THIS SHOULD NOT HAPPEN " << extraLow
-               << endl;  // allowing 0.001 tolerance for floating point precision here.
+        constexpr float small = 0.001;  // allow tolerance on floating point precision.
+        if (min(extraLow, extraUp) < -small || max(extraLow, extraUp) > (1.0 + small))
+          cout << "THIS SHOULD NOT HAPPEN " << extraLow << endl;
         if (extraLow < fracCut && (nbins >= 3 || extraLow < extraUp))
           iCoordBinMin += 1;
         if (extraUp < fracCut && (nbins >= 3 || extraUp < extraLow))
@@ -170,7 +170,7 @@ namespace tmtt {
       iCoordBinMin = floor((coordAvg - coordAxisMin) / coordAxisBinSize);
       iCoordBinMax = iCoordBinMin;
     } else {
-      throw cms::Exception("BadConfig") << "HT: invalid KillSomeHTCells option in cfg" << endl;
+      throw cms::Exception("BadConfig") << "HT: invalid KillSomeHTCells option in cfg";
     }
 
     if (debug)
@@ -234,12 +234,9 @@ namespace tmtt {
           // Get (q/Pt, phi0) or (tan_lambda, z0) corresponding to middle of this cell.
           const pair<float, float> helixParams2D = this->helix2Dconventional(iPos, j);
 
-          // Store all this reconstruction info about this track.
-          // The L1track2D class automatically finds the associated MC truth Tracking Particle particle (if any)
-          L1track2D l1Trk2D(settings_, stubs, cellLocation, helixParams2D, iPhiSec_, iEtaReg_, optoLinkID_, merged);
-
-          // Store all this info about the track.
-          trackCands2D.push_back(l1Trk2D);
+          // Create track and store it.
+          trackCands2D.emplace_back(
+              settings_, stubs, cellLocation, helixParams2D, iPhiSec_, iEtaReg_, optoLinkID_, merged);
 
         } else {
           if (settings_->debug() == 3)

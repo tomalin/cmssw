@@ -66,7 +66,6 @@ namespace tmtt {
     virtual TFileDirectory bookEtaPhiSectors();
     virtual TFileDirectory bookRphiHT();
     virtual TFileDirectory bookRZfilters();
-    virtual TFileDirectory bookStudyBusyEvents();
     virtual TFileDirectory bookTrackCands(const std::string& tName);
     virtual std::map<std::string, TFileDirectory> bookTrackFitting();
 
@@ -75,10 +74,6 @@ namespace tmtt {
     virtual void fillEtaPhiSectors(const InputData& inputData, const matrix<Sector>& mSectors);
     virtual void fillRphiHT(const matrix<HTrphi>& mHtRphis);
     virtual void fillRZfilters(const matrix<Get3Dtracks>& mGet3Dtrks);
-    virtual void fillStudyBusyEvents(const InputData& inputData,
-                                     const matrix<Sector>& mSectors,
-                                     const matrix<HTrphi>& mHtRphis,
-                                     const matrix<Get3Dtracks>& mGet3Dtrks);
     virtual void fillTrackCands(const InputData& inputData, const std::vector<L1track3D>& tracks, std::string tName);
     virtual void fillTrackFitting(const InputData& inputData,
                                   const std::map<std::string, std::vector<L1fittedTrack>>& fittedTracks);
@@ -205,9 +200,6 @@ namespace tmtt {
     TH1F* hisPhiStubVsPhi0TP_;
     TH1F* hisPhi0StubVsPhi0TP_;
     TH1F* hisPhi0StubVsPhi0TPres_;
-    TH1F* hisPhiStubVsPhi65TP_;
-    TH1F* hisPhi65StubVsPhi65TP_;
-    TH1F* hisPhi65StubVsPhi65TPres_;
     TH1F* hisPitchOverSep_;
     TH1F* hisRhoParameter_;
     TH2F* hisAlphaCheck_;
@@ -230,10 +222,6 @@ namespace tmtt {
     TProfile* profNumStubsPerEtaSec_;
     TH2F* hisLayerIDvsEtaSec_;
     TH2F* hisLayerIDreducedvsEtaSec_;
-
-    // Histograms checking filling of r-phi HT array.
-    TH2Poly* hisArrayHT_;
-    TF1* hisStubHT_;
     TH1F* hisIncStubsPerHT_;
     TH1F* hisExcStubsPerHT_;
     TH2F* hisNumStubsInCellVsEta_;
@@ -247,29 +235,6 @@ namespace tmtt {
     TH1F* hisNumSeedCombinations_;
     TH1F* hisNumGoodSeedCombinations_;
     TH1F* hisCorrelationZTrk_;
-
-    // Histograms for studying freak, large events with too many stubs.
-    TH1F* hisNumBusySecsInPerEvent_;
-    TH1F* hisNumBusySecsOutPerEvent_;
-    TProfile* profFracBusyInVsEtaReg_;
-    TProfile* profFracBusyOutVsEtaReg_;
-    TProfile* profFracStubsKilledVsEtaReg_;
-    TProfile* profFracTracksKilledVsEtaReg_;
-    TProfile* profFracTracksKilledVsInvPt_;
-    TProfile* profFracTPKilledVsEta_;
-    TProfile* profFracTPKilledVsInvPt_;
-    TH1F* hisNumTPkilledBusySec_;
-    std::map<std::string, TH1F*> hisNumInputStubs_;
-    std::map<std::string, TH1F*> hisQoverPtInputStubs_;
-    std::map<std::string, TH1F*> hisNumOutputStubs_;
-    std::map<std::string, TH1F*> hisNumTracks_;
-    std::map<std::string, TH1F*> hisNumStubsPerTrack_;
-    std::map<std::string, TH1F*> hisTrackQoverPt_;
-    std::map<std::string, TH1F*> hisTrackPurity_;
-    std::map<std::string, TH1F*> hisNumTPphysics_;
-    std::map<std::string, TH1F*> hisNumTPpileup_;
-    std::map<std::string, TH1F*> hisSumPtTPphysics_;
-    std::map<std::string, TH1F*> hisSumPtTPpileup_;
 
     // Histograms studying 3D track candidates found by Hough Transform or r-z Track Filter.
     std::map<std::string, TProfile*> profNumTrackCands_;
@@ -303,8 +268,6 @@ namespace tmtt {
     std::map<std::string, TProfile*> profFracTrueStubsVsLayer_;
     std::map<std::string, TProfile*> profDupTracksVsEta_;
     std::map<std::string, TProfile*> profDupTracksVsInvPt_;
-    //map<std::string, TH2F*> hisWrongSignStubRZ_pBend_;
-    //map<std::string, TH2F*> hisWrongSignStubRZ_nBend_;
 
     // Histos of track params after HT.
     std::map<std::string, TH1F*> hisQoverPt_;
@@ -326,7 +289,6 @@ namespace tmtt {
 
     // Diagnosis of failed tracking.
     std::map<std::string, TH1F*> hisRecoFailureReason_;
-    std::map<std::string, TH1F*> hisRecoFailureLayer_;
 
     std::map<std::string, TH1F*> hisNumStubsOnLayer_;
 

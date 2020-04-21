@@ -61,10 +61,6 @@ namespace tmtt {
       float z0 = 0.;
       float tan_lambda = 0.5 * (1 / tan(2 * atan(exp(-etaMinSector_))) + 1 / tan(2 * atan(exp(-etaMaxSector_))));
 
-      // float etaCentreSector = 0.5*(etaMinSector_ + etaMaxSector_);
-      // float theta = 2. * atan(exp(-etaCentreSector));
-      // tan_lambda = 1./tan(theta);
-
       pair<float, float> helixRz(z0, tan_lambda);
 
       // Create 3D track, by adding r-z helix params to 2D track
@@ -77,9 +73,6 @@ namespace tmtt {
                       iEtaReg_,
                       trkRphi.optoLinkID(),
                       trkRphi.mergedHTcell());
-      //    L1track3D trk3D(settings_, stubsOnTrkRphi,
-      //		    trkRphi.getCellLocationHT(), trkRphi.getHelix2D(), helixRz,
-      //		    iPhiSec_                   , iEtaReg_            , trkRphi.optoLinkID(), trkRphi.mergedHTcell());
 
       // Optionally use MC truth to eliminate all fake tracks & all incorrect stubs assigned to tracks
       // before doing fit (for debugging).

@@ -25,6 +25,8 @@ namespace tmtt {
     //
     // By default, considers both PS+2S modules, but optionally considers only the PS ones if onlyPS = true.
 
+    enum AlgoStep { HT, SEED, DUP, FIT };
+
     unsigned int countLayers(const Settings* settings,
                              const std::vector<const Stub*>& stubs,
                              bool disableReducedLayerID = false,
@@ -40,9 +42,9 @@ namespace tmtt {
                          unsigned int& nMatchedLayersBest,
                          std::vector<const Stub*>& matchedStubsBest);
 
-    // Determine the minimum number of layers a track candidate must have stubs in to be defined as a track.
-    // The first argument indicates from what type of algorithm this function is called: "HT", "SEED", "DUP" or "FIT".
-    unsigned int numLayerCut(std::string algo,
+    // Determine min number of layers a track candidate must have stubs in to be defined as a track.
+    // 1st argument indicates from which step in chain this function is called: HT, SEED, DUP or FIT.
+    unsigned int numLayerCut(Utility::AlgoStep algo,
                              const Settings* settings,
                              unsigned int iPhiSec,
                              unsigned int iEtaReg,

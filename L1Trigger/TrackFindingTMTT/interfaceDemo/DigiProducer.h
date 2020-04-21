@@ -11,13 +11,13 @@
 #include "SimDataFormats/TrackingAnalysis/interface/TrackingParticle.h"
 #include "SimTracker/TrackTriggerAssociation/interface/TTClusterAssociationMap.h"
 #include "SimTracker/TrackTriggerAssociation/interface/TTStubAssociationMap.h"
+#include "L1Trigger/TrackFindingTMTT/interface/Settings.h"
+#include "L1Trigger/TrackFindingTMTT/interface/Histos.h"
 #include "L1Trigger/TrackFindingTMTT/interface/Stub.h"
 #include "L1Trigger/TrackFindingTMTT/interface/L1track3D.h"
 #include "L1Trigger/TrackFindingTMTT/interface/TrackerGeometryInfo.h"
-#include "DataFormats/Common/interface/DetSetVector.h"
-#include "L1Trigger/TrackFindingTMTT/interface/Settings.h"
-#include "L1Trigger/TrackFindingTMTT/interface/Histos.h"
 #include "L1Trigger/TrackFindingTMTT/interface/TrackFitGeneric.h"
+#include "DataFormats/Common/interface/DetSetVector.h"
 #include "MagneticField/Engine/interface/MagneticField.h"
 #include "MagneticField/Records/interface/IdealMagneticFieldRecord.h"
 #include "Demonstrator/DataFormats/interface/DigiKF4Track.hpp"
@@ -28,12 +28,9 @@
 #include <vector>
 #include <map>
 #include <string>
+#include <memory>
 
 namespace demo {
-
-  /*class Settings;
-class Histos;
-class TrackFitGeneric;*/
 
   class DigiProducer : public edm::EDProducer {
   public:
@@ -41,7 +38,7 @@ class TrackFitGeneric;*/
     ~DigiProducer() {}
 
   private:
-    typedef std::vector<TTTrack<Ref_Phase2TrackerDigi_> > TTTrackCollection;
+    typedef std::vector<TTTrack<Ref_Phase2TrackerDigi_>> TTTrackCollection;
 
     virtual void beginRun(const edm::Run &, const edm::EventSetup &);
     virtual void produce(edm::Event &, const edm::EventSetup &);
@@ -63,13 +60,13 @@ class TrackFitGeneric;*/
     const TrackerTopology *trackerTopology_;
 
     // Configuration parameters
-    tmtt::Settings *settings_;
+    tmtt::Settings settings_;
     std::vector<std::string> trackFitters_;
     std::vector<std::string> useRZfilter_;
     bool runRZfilter_;
 
-    tmtt::Histos *hists_;
-    std::map<std::string, tmtt::TrackFitGeneric *> fitterWorkerMap_;
+    tmtt::Histos hists_;
+    std::map<std::string, std::unique_ptr<TrackFitGeneric>> fitterWorkerMap_;
 
     tmtt::TrackerGeometryInfo trackerGeometryInfo_;
   };

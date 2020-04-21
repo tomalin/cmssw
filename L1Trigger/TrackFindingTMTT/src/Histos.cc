@@ -66,8 +66,6 @@ namespace tmtt {
     // Book histograms about r-z track filters.
     if (ranRZfilter_)
       this->bookRZfilters();
-    // Book histograms for studying freak, extra large events at HT.
-    this->bookStudyBusyEvents();
     // Book histograms studying 3D track candidates found after HT.
     this->bookTrackCands("HT");
     // Book histograms studying 3D track candidates found after r-z track filter.
@@ -97,8 +95,6 @@ namespace tmtt {
     // Fill histograms about r-z track filters.
     if (ranRZfilter_)
       this->fillRZfilters(mGet3Dtrks);
-    // Fill histograms for studying freak, extra large events at HT.
-    this->fillStudyBusyEvents(inputData, mSectors, mHtRphis, mGet3Dtrks);
     // Fill histograms studying 3D track candidates found after HT.
     vector<L1track3D> tracksHT;
     bool withRZfilter = false;
@@ -297,10 +293,6 @@ namespace tmtt {
     hisPhi0StubVsPhi0TP_ = inputDir.make<TH1F>("Phi0StubVsPhi0TP", "; #phi0 of Stub minus TP", 100, -0.2, 0.2);
     hisPhi0StubVsPhi0TPres_ =
         inputDir.make<TH1F>("Phi0StubVsPhi0TPres", "; #phi0 of Stub minus TP / resolution", 100, -5.0, 5.0);
-    hisPhiStubVsPhi65TP_ = inputDir.make<TH1F>("PhiStubVsPhi65TP", "; Stub #phi minus TP phitrk65", 100, -0.2, 0.2);
-    hisPhi65StubVsPhi65TP_ = inputDir.make<TH1F>("Phi65StubVsPhi65TP", "; phitrk65 of Stub minus TP", 100, -0.2, 0.2);
-    hisPhi65StubVsPhi65TPres_ =
-        inputDir.make<TH1F>("Phi65StubVsPhi65TPres", "; phitrk65 of Stub minus TP / resolution", 100, -5.0, 5.0);
 
     // Note ratio of sensor pitch to separation (needed to understand how many bits this can be packed into).
     hisPitchOverSep_ = inputDir.make<TH1F>("PitchOverSep", "; ratio of sensor pitch / separation", 100, 0.0, 0.1);
@@ -441,7 +433,7 @@ namespace tmtt {
         const vector<const Stub*> stubs = tp.assocStubs();
         for (const Stub* s : stubs) {
           hisStubIneffiVsInvPt_->Fill(1. / tp.pt(), (!s->frontendPass()));
-          hisStubIneffiVsEta_->Fill(fabs(tp.eta()), (!s->frontendPass()));
+          hisStubIneffiVsEta_->Fill(std::abs(tp.eta()), (!s->frontendPass()));
         }
       }
     }
@@ -504,14 +496,6 @@ namespace tmtt {
           hisPhi0StubVsPhi0TP_->Fill(reco::deltaPhi(stub->trkPhiAtR(0.).first, tp.phi0()));
           // This normalizes the previous distribution to the predicted resolution to check if the latter is OK.
           hisPhi0StubVsPhi0TPres_->Fill(reco::deltaPhi(stub->trkPhiAtR(0.).first, tp.phi0()) / stub->trkPhiAtRres(0.));
-          // This checks how wide overlap must be if using phi65 sectors, with no stub bend info used for assignment.
-          hisPhiStubVsPhi65TP_->Fill(reco::deltaPhi(stub->phi(), tp.trkPhiAtR(65.)));
-          // This checks how wide overlap must be if using phi65 sectors, with stub bend info used for assignment, optionally reducing discrepancy by uncertainty expected from 2S module strip length.
-          pair<float, float> phiAndErr = stub->trkPhiAtR(65.);
-          double dPhi = reco::deltaPhi(phiAndErr.first, tp.trkPhiAtR(65.));
-          hisPhi65StubVsPhi65TP_->Fill(dPhi);
-          // This normalizes the previous distribution to the predicted resolution to check if the latter is OK.
-          hisPhi65StubVsPhi65TPres_->Fill(dPhi / stub->trkPhiAtRres(65.));
 
           // Plot B variable
           hisStubB_->Fill(stub->dphiOverBendCorrection());
@@ -521,22 +505,22 @@ namespace tmtt {
         hisNumPSStubsPerTP_->Fill(numPSstubs);
         hisNum2SStubsPerTP_->Fill(num2Sstubs);
 
-        if (fabs(tp.eta()) < 0.5) {
+        if (std::abs(tp.eta()) < 0.5) {
           double nLayersOnTP = Utility::countLayers(settings_, assStubs, true, false);
           double nPSLayersOnTP = Utility::countLayers(settings_, assStubs, true, true);
           hisNumLayersPerTP_->Fill(nLayersOnTP);
           hisNumPSLayersPerTP_->Fill(nPSLayersOnTP);
           hisNum2SLayersPerTP_->Fill(nLayersOnTP - nPSLayersOnTP);
 
-          if (fabs(tp.pdgId()) == 13) {
+          if (std::abs(tp.pdgId()) == 13) {
             hisNumLayersPerTP_muons_->Fill(nLayersOnTP);
             hisNumPSLayersPerTP_muons_->Fill(nPSLayersOnTP);
             hisNum2SLayersPerTP_muons_->Fill(nLayersOnTP - nPSLayersOnTP);
-          } else if (fabs(tp.pdgId()) == 11) {
+          } else if (std::abs(tp.pdgId()) == 11) {
             hisNumLayersPerTP_electrons_->Fill(nLayersOnTP);
             hisNumPSLayersPerTP_electrons_->Fill(nPSLayersOnTP);
             hisNum2SLayersPerTP_electrons_->Fill(nLayersOnTP - nPSLayersOnTP);
-          } else if (fabs(tp.pdgId()) == 211) {
+          } else if (std::abs(tp.pdgId()) == 211) {
             hisNumLayersPerTP_pions_->Fill(nLayersOnTP);
             hisNumPSLayersPerTP_pions_->Fill(nPSLayersOnTP);
             hisNum2SLayersPerTP_pions_->Fill(nLayersOnTP - nPSLayersOnTP);
@@ -565,7 +549,7 @@ namespace tmtt {
       // Also note this same quantity times 1.0 in the barrel or z/r in the endcap. This product is known as "rho".
       float rho = stub->pitchOverSep();
       if (!stub->barrel())
-        rho *= fabs(stub->z()) / stub->r();
+        rho *= std::abs(stub->z()) / stub->r();
       hisRhoParameter_->Fill(rho);
 
       // Check how strip number correlates with phi coordinate relative to module centre.
@@ -628,7 +612,7 @@ namespace tmtt {
       } else {
         layer = layer % 10;
         // Range in |z| of each endcap wheel.
-        float z = fabs(stub->z());
+        float z = std::abs(stub->z());
         if (mapEndcapWheelMinZ_.find(layer) == mapEndcapWheelMinZ_.end()) {
           mapEndcapWheelMinZ_[layer] = z;
           mapEndcapWheelMaxZ_[layer] = z;
@@ -645,7 +629,7 @@ namespace tmtt {
 
     for (const Stub* stub : vStubs) {
       float r = stub->r();
-      float z = fabs(stub->z());
+      float z = std::abs(stub->z());
       unsigned int modType = stub->digitalStub().moduleType();
       // Do something ugly, as modules in 1-2nd & 3-4th endcap wheels are different to those in wheel 5 ...
       // And boundary between flat & tilted modules in barrel layers 1-3 varies in z.
@@ -758,8 +742,8 @@ namespace tmtt {
         hisTPetaForEff_->Fill(tp.eta());
         hisTPphiForEff_->Fill(tp.phi0());
         // Plot also production point of all good TP.
-        hisTPd0ForEff_->Fill(fabs(tp.d0()));
-        hisTPz0ForEff_->Fill(fabs(tp.z0()));
+        hisTPd0ForEff_->Fill(std::abs(tp.d0()));
+        hisTPz0ForEff_->Fill(std::abs(tp.z0()));
 
         if (tp.useForAlgEff()) {  // Check TP is good for algorithmic efficiency measurement.
           hisTPinvptForAlgEff_->Fill(1. / tp.pt());
@@ -767,8 +751,8 @@ namespace tmtt {
           hisTPetaForAlgEff_->Fill(tp.eta());
           hisTPphiForAlgEff_->Fill(tp.phi0());
           // Plot also production point of all good TP.
-          hisTPd0ForAlgEff_->Fill(fabs(tp.d0()));
-          hisTPz0ForAlgEff_->Fill(fabs(tp.z0()));
+          hisTPd0ForAlgEff_->Fill(std::abs(tp.d0()));
+          hisTPz0ForAlgEff_->Fill(std::abs(tp.z0()));
           // Plot sector nunber.
           hisTPphisecForAlgEff_->Fill(iPhiSec_TP);
           hisTPetasecForAlgEff_->Fill(iEtaReg_TP);
@@ -918,7 +902,7 @@ namespace tmtt {
         if (nEtaSecs > 2)
           throw cms::Exception("LogicError")
               << "Histos ERROR: Stub assigned to more than 2 eta regions. Please redefine eta regions to avoid this!"
-              << " stub r=" << stub->r() << " eta=" << stub->eta() << endl;
+              << " stub r=" << stub->r() << " eta=" << stub->eta();
       }
     }
 
@@ -944,136 +928,6 @@ namespace tmtt {
 
   TFileDirectory Histos::bookRphiHT() {
     TFileDirectory inputDir = fs_->mkdir("HTrphi");
-
-    // The next block of code is to book a histogram to study unusual HT cell shapes.
-
-    unsigned int shape = settings_->shape();
-    float maxAbsQoverPtAxis = 1. / houghMinPt_;             // Max. |q/Pt| covered by  HT array.
-    float maxAbsPhiTrkAxis = M_PI / (float)numPhiSectors_;  // Half-width of phiTrk axis in HT array.
-    float binSizeQoverPtAxis = 2. * maxAbsQoverPtAxis / (float)houghNbinsPt_;
-    if (shape == 2 || shape == 1 || shape == 3)
-      binSizeQoverPtAxis = 2. * maxAbsQoverPtAxis / (houghNbinsPt_ - 1.);
-    float binSizePhiTrkAxis = 2. * maxAbsPhiTrkAxis / (float)houghNbinsPhi_;
-    if (shape == 2)
-      binSizePhiTrkAxis = 2. * maxAbsPhiTrkAxis / (houghNbinsPhi_ - 1. / 6.);
-    else if (shape == 1)
-      binSizePhiTrkAxis = 2. * maxAbsPhiTrkAxis / (houghNbinsPhi_ - 1. / 2.);
-    hisArrayHT_ = inputDir.make<TH2Poly>("ArrayHT",
-                                         "HT Array; m Bins; c Bins",
-                                         -maxAbsQoverPtAxis,
-                                         maxAbsQoverPtAxis,
-                                         -maxAbsPhiTrkAxis,
-                                         maxAbsPhiTrkAxis);
-    //hisStubHT_ = inputDir.make< TF1 >( "StubHT", "[0]+[1]*x", -maxAbsQoverPtAxis, maxAbsQoverPtAxis );
-    //hisStubHT_->SetMinimum( -maxAbsPhiTrkAxis );
-    //hisStubHT_->SetMaximum( maxAbsPhiTrkAxis );
-    float xloop, yloop, xtemp;
-    Double_t x[7], y[7];
-    switch (shape) {
-      case 0:
-        xloop = -maxAbsQoverPtAxis;
-        yloop = -maxAbsPhiTrkAxis;
-        for (unsigned int row = 0; row < houghNbinsPhi_; row++) {
-          xtemp = xloop;
-          for (unsigned int column = 0; column < houghNbinsPt_; column++) {
-            // Go around the square
-            x[0] = xtemp;
-            y[0] = yloop;
-            x[1] = x[0];
-            y[1] = y[0] + binSizePhiTrkAxis;
-            x[2] = x[1] + binSizeQoverPtAxis;
-            y[2] = y[1];
-            x[3] = x[2];
-            y[3] = y[0];
-            x[4] = x[0];
-            y[4] = y[0];
-            hisArrayHT_->AddBin(5, x, y);
-            // Go right
-            xtemp += binSizeQoverPtAxis;
-          }
-          yloop += binSizePhiTrkAxis;
-        }
-        break;
-      case 1:
-        xloop = -maxAbsQoverPtAxis - binSizeQoverPtAxis;
-        yloop = -maxAbsPhiTrkAxis;
-        for (unsigned int row = 0; row < houghNbinsPhi_ * 2; row++) {
-          xtemp = xloop;
-          for (unsigned int column = 0; column < houghNbinsPt_; column++) {
-            // Go around the square
-            x[0] = xtemp;
-            y[0] = yloop;
-            x[1] = x[0] + binSizeQoverPtAxis;
-            y[1] = y[0] + binSizePhiTrkAxis / 2.;
-            x[2] = x[1] + binSizeQoverPtAxis;
-            y[2] = y[0];
-            x[3] = x[1];
-            y[3] = y[0] - binSizePhiTrkAxis / 2.;
-            x[4] = x[0];
-            y[4] = y[0];
-            hisArrayHT_->AddBin(5, x, y);
-            // Go right
-            xtemp += binSizeQoverPtAxis * 2.;
-          }
-          xloop += (row % 2 == 0) ? binSizeQoverPtAxis : -binSizeQoverPtAxis;
-          yloop += binSizePhiTrkAxis / 2.;
-        }
-        break;
-      case 2:
-        xloop = -maxAbsQoverPtAxis - binSizeQoverPtAxis;
-        yloop = -maxAbsPhiTrkAxis;
-        for (unsigned int row = 0; row < houghNbinsPhi_ * 2; row++) {
-          xtemp = xloop;
-          for (unsigned int column = 0; column < houghNbinsPt_; column++) {
-            // Go around the hexagon
-            x[0] = xtemp;
-            y[0] = yloop;
-            x[1] = x[0];
-            y[1] = y[0] + binSizePhiTrkAxis / 3.;
-            x[2] = x[1] + binSizeQoverPtAxis;
-            y[2] = y[1] + binSizePhiTrkAxis / 6.;
-            x[3] = x[2] + binSizeQoverPtAxis;
-            y[3] = y[1];
-            x[4] = x[3];
-            y[4] = y[0];
-            x[5] = x[2];
-            y[5] = y[4] - binSizePhiTrkAxis / 6.;
-            x[6] = x[0];
-            y[6] = y[0];
-            hisArrayHT_->AddBin(7, x, y);
-            // Go right
-            xtemp += binSizeQoverPtAxis * 2.;
-          }
-          xloop += (row % 2 == 0) ? binSizeQoverPtAxis : -binSizeQoverPtAxis;
-          yloop += binSizePhiTrkAxis / 2.;
-        }
-        break;
-      case 3:
-        xloop = -maxAbsQoverPtAxis - binSizeQoverPtAxis;
-        yloop = -maxAbsPhiTrkAxis;
-        for (unsigned int row = 0; row < houghNbinsPhi_ * 2; row++) {
-          xtemp = xloop;
-          for (unsigned int column = 0; column < houghNbinsPt_; column++) {
-            // Go around the square
-            x[0] = xtemp;
-            y[0] = yloop;
-            x[1] = x[0];
-            y[1] = y[0] + binSizePhiTrkAxis / 2.;
-            x[2] = x[1] + binSizeQoverPtAxis * 2.;
-            y[2] = y[1];
-            x[3] = x[2];
-            y[3] = y[0];
-            x[4] = x[0];
-            y[4] = y[0];
-            hisArrayHT_->AddBin(5, x, y);
-            // Go right
-            xtemp += binSizeQoverPtAxis * 2.;
-          }
-          xloop += (row % 2 == 0) ? binSizeQoverPtAxis : -binSizeQoverPtAxis;
-          yloop += binSizePhiTrkAxis / 2.;
-        }
-        break;
-    }
 
     hisIncStubsPerHT_ = inputDir.make<TH1F>(
         "IncStubsPerHT", "; Number of filtered stubs per r#phi HT array (inc. duplicates)", 100, 0., -1.);
@@ -1103,26 +957,6 @@ namespace tmtt {
 
   void Histos::fillRphiHT(const matrix<HTrphi>& mHtRphis) {
     //--- Loop over (eta,phi) sectors, counting the number of stubs in the HT array of each.
-
-    if (plotFirst_) {
-      const HTrphi& htRphi = mHtRphis(settings_->iPhiPlot(), settings_->iEtaPlot());
-      float phiCentreSector = -M_PI + (1. + 2. * settings_->iPhiPlot()) * M_PI / (float)numPhiSectors_;
-      const matrix<HTcell>& htRphiMatrix = htRphi.getAllCells();
-      const Stub* stub(nullptr);
-      for (unsigned int i = 0; i < htRphiMatrix.size1(); i++)
-        for (unsigned int j = 0; j < htRphiMatrix.size2(); j++) {
-          std::pair<float, float> cell = htRphi.helix2Dhough(i, j);
-          unsigned int numStubs = htRphiMatrix(i, j).numStubs();
-          hisArrayHT_->Fill(cell.first, reco::deltaPhi(cell.second, phiCentreSector), numStubs);
-          if (numStubs > 0)
-            stub = htRphiMatrix(i, j).stubs().front();
-        }
-      if (stub != nullptr) {
-        //hisStubHT_->SetParameters( reco::deltaPhi( stub->phi(), phiCentreSector ), settings_->invPtToDphi() * ( stub->r() - settings_->chosenRofPhi() ) );
-        //hisStubHT_->Draw();
-      }
-    }
-    plotFirst_ = false;
 
     for (unsigned int iEtaReg = 0; iEtaReg < numEtaRegions_; iEtaReg++) {
       for (unsigned int iPhiSec = 0; iPhiSec < numPhiSectors_; iPhiSec++) {
@@ -1437,11 +1271,7 @@ namespace tmtt {
       // For those tracking particles causing the algorithmic efficiency to be below 100%, plot a flag indicating why.
       hisRecoFailureReason_[tName] = inputDir.make<TH1F>(
           addn("RecoFailureReason"), "; Reason TP (used for alg. effi.) not reconstructed;", 1, -0.5, 0.5);
-      //hisRecoFailureLayer_[tName] = inputDir.make<TH1F>(addn("RecoFailureLayer"),"; Layer ID of lost stubs on unreconstructed TP;",30,-0.5,29.5);
     }
-
-    //hisWrongSignStubRZ_pBend_[tName] = inputDir.make<TH2F>(addn("WrongSignStubRZ_pBend"),"RZ of stubs with positive bend, but with wrong sign; z (cm); radius (cm); No. stubs in tracker",100,-280,280,100,0,130);
-    //hisWrongSignStubRZ_nBend_[tName] = inputDir.make<TH2F>(addn("WrongSignStubRZ_nBend"),"RZ of stubs with negative bend, but with wrong sign; z (cm); radius (cm); No. stubs in tracker",100,-280,280,100,0,130);
 
     hisNumStubsOnLayer_[tName] = inputDir.make<TH1F>(addn("NumStubsOnLayer"), "; Layer occupancy;", 16, 1, 17);
 
@@ -1627,26 +1457,6 @@ namespace tmtt {
             } else {
               hisDeltaBendFake_[tName]->Fill(diffBend / s->bendRes());
             }
-
-            // Debug printout to understand for matched tracks, how far stubs lie from true particle trajectory
-            // Only prints for tracks with huge number of stubs, to also understand why these tracks exist.
-            //if (trk.getNumStubs() > 20) {
-            /*
-	    if (trk.pt() > 20) { 
-	    cout<<"--- Checking how far stubs on matched tracks lie from true particle trajectory. ---"<<endl;
-	    cout<<"    Track "<<trk.getPurity()<<" "<<tp->pt()<<" "<<tp->d0()<<endl;
-	    float sigPhiR = deltaPhiR/s->sigmaPerp();
-	    float sigRorZ = deltaRorZ/s->sigmaPar();
-	    string ohoh =  (fabs(sigPhiR) > 5 || fabs(sigRorZ) > 5)  ?  "FAR"  :  "NEAR";
-	    if (trueStub) {
-	    cout<<"    Real stub "<<ohoh<<" ps="<<s->psModule()<<" bar="<<s->barrel()<<" lay="<<s->layerId()<<" : phi="<<deltaPhiR<<" ("<<sigPhiR<<") rz="<<deltaRorZ<<" ("<<sigRorZ<<")"<<endl;
-	    } else {
-	    cout<<"    FAKE stub "<<ohoh<<" ps="<<s->psModule()<<" bar="<<s->barrel()<<" lay="<<s->layerId()<<" : phi="<<deltaPhiR<<" ("<<sigPhiR<<") rz="<<deltaRorZ<<" ("<<sigRorZ<<")"<<endl; 
-	    }
-	    cout<<"        coords="<<s->r()<<" "<<s->phi()<<" "<<s->eta()<<" bend="<<s->bend()<<" iphi="<<s->iphi()<<endl;
-	    cout<<"        module="<<s->minR()<<" "<<s->minPhi()<<" "<<s->minZ()<<endl;
-	    }
-	  */
           }
         }
       }
@@ -1698,9 +1508,9 @@ namespace tmtt {
             }
             if (nTrkInSec > 0) {
               profDupTracksVsEta_[tName]->Fill(
-                  fabs(tp.eta()), nTrkInSec - 1);  // Study duplication of tracks within an individual HT array.
+                  std::abs(tp.eta()), nTrkInSec - 1);  // Study duplication of tracks within an individual HT array.
               profDupTracksVsInvPt_[tName]->Fill(
-                  fabs(tp.qOverPt()), nTrkInSec - 1);  // Study duplication of tracks within an individual HT array.
+                  std::abs(tp.qOverPt()), nTrkInSec - 1);  // Study duplication of tracks within an individual HT array.
             }
           }
         }
@@ -1803,8 +1613,8 @@ namespace tmtt {
           hisRecoTPetaForEff_[tName]->Fill(tp.eta());
           hisRecoTPphiForEff_[tName]->Fill(tp.phi0());
           // Plot also production point of all good reconstructed TP.
-          hisRecoTPd0ForEff_[tName]->Fill(fabs(tp.d0()));
-          hisRecoTPz0ForEff_[tName]->Fill(fabs(tp.z0()));
+          hisRecoTPd0ForEff_[tName]->Fill(std::abs(tp.d0()));
+          hisRecoTPz0ForEff_[tName]->Fill(std::abs(tp.z0()));
           // Also plot efficiency to perfectly reconstruct the track (no fake hits)
           if (tpRecoedPerfect) {
             hisPerfRecoTPinvptForEff_[tName]->Fill(1. / tp.pt());
@@ -1817,8 +1627,8 @@ namespace tmtt {
             hisRecoTPetaForAlgEff_[tName]->Fill(tp.eta());
             hisRecoTPphiForAlgEff_[tName]->Fill(tp.phi0());
             // Plot also production point of all good reconstructed TP.
-            hisRecoTPd0ForAlgEff_[tName]->Fill(fabs(tp.d0()));
-            hisRecoTPz0ForAlgEff_[tName]->Fill(fabs(tp.z0()));
+            hisRecoTPd0ForAlgEff_[tName]->Fill(std::abs(tp.d0()));
+            hisRecoTPz0ForAlgEff_[tName]->Fill(std::abs(tp.z0()));
             // Plot sector number to understand if looser cuts are needed in certain eta regions.
             hisRecoTPphisecForAlgEff_[tName]->Fill(iPhiSec_TP);
             hisRecoTPetasecForAlgEff_[tName]->Fill(iEtaReg_TP);
@@ -2035,44 +1845,6 @@ namespace tmtt {
 
                 if (!rphiHTpass) {
                   recoFlag = "r-#phi HT BENDfiltered";  // Tracking failed r-phi HT with its bend filter on.
-
-                  //--- Debug printout to understand stubs failing bend filter.
-
-                  // cout<<"TRACK FAILING BEND FILTER: pt="<<tp.pt()<<" eta="<<tp.eta()<<endl;
-                  //   bool okIfBendMinus1 = true;
-                  // for (unsigned int iSec = 0; iSec < sectorBest.size(); iSec++) {
-                  //   if (sectorBest.size() > 1) cout<<" SECTOR "<<iSec<<endl;
-                  //   for (const Stub* s: insideSecStubs[iSec]) {
-                  // 		  float bend = s->bend();
-                  // 		  float bendRes = s->bendRes();
-                  // 		  float theory = tp.qOverPt()/s->qOverPtOverBend();
-                  // 		  cout<<" BEND: measured="<<bend<<" theory="<<theory<<" res="<<bendRes<<endl;
-                  //       cout << s->r() << " " << s->z() << " " << s->layerId()<<" PS="<<s->psModule()<<" Barrel="<<s->barrel() << endl;
-
-                  // 		  if (fabs(bend - theory) > bendRes) {
-                  //   		  bool cluster0_OK = false;
-                  //   		  if (s->genuineCluster()[0]) cluster0_OK = (s->assocTPofCluster()[0]->index() == tp.index());
-                  //   		  bool cluster1_OK = false;
-                  //   		  if (s->genuineCluster()[1]) cluster1_OK = (s->assocTPofCluster()[1]->index() == tp.index());
-                  //   		  cout<< "    STUB FAILED: layer="<<s->layerId()<<" PS="<<s->psModule()<<" clusters match="<<cluster0_OK<<" "<<cluster1_OK<<endl;
-                  //         cout << s->bend() << " " << s->stripPitch() << " " << s->stripPitch() / s->pitchOverSep() << " " << s->dphiOverBend() << " " << s->dphi() << std::endl;
-                  //         cout << "Min R, Z : " << s->minR() << " " << s->minZ() << std::endl;
-
-                  //         if ( fabs( bend * -1.0 - theory ) > bendRes ) {
-                  //           okIfBendMinus1 = false;
-                  //         }
-                  //         else {
-                  //           if ( bend > 0 ) hisWrongSignStubRZ_pBend_->Fill( s->z(), s->r() );
-                  //           else if ( bend < 0 ) hisWrongSignStubRZ_nBend_->Fill( s->z(), s->r() );
-                  //         }
-                  // 		  }
-                  //   }
-                  // }
-
-                  //   if ( okIfBendMinus1 ) {
-                  //     recoFlag = "BEND WRONG SIGN"; // Tracking failed r-phi HT with its bend filter on, but would have passed if bend of stubs had opposite sign.
-                  //   }
-
                 } else {
                   if (!rzFilterPass) {
                     recoFlag = "r-z filter";  // Tracking failed r-z filter.
@@ -2090,257 +1862,6 @@ namespace tmtt {
       }
     }
     return diagnosis;
-  }
-
-  //=== Book histograms studying freak, large events with too many stubs.
-
-  TFileDirectory Histos::bookStudyBusyEvents() {
-    TFileDirectory inputDir = fs_->mkdir("BusyEvents");
-
-    // Look at (eta, phi) sectors with too many input stubs or too many output (= assigned to tracks) stubs.
-
-    unsigned int nEta = numEtaRegions_;
-
-    hisNumBusySecsInPerEvent_ =
-        inputDir.make<TH1F>("NumBusySecsInPerEvent", "; No. sectors with too many input stubs/event", 20, -0.5, 19.5);
-    hisNumBusySecsOutPerEvent_ =
-        inputDir.make<TH1F>("NumBusySecsOutPerEvent", "; No. sectors with too many output stubs/event", 20, -0.5, 19.5);
-    profFracBusyInVsEtaReg_ = inputDir.make<TProfile>(
-        "FracBusyInVsEtaReg", "; #eta region; Frac. of sectors with too many input stubs", nEta, -0.5, nEta - 0.5);
-    profFracBusyOutVsEtaReg_ = inputDir.make<TProfile>(
-        "FracBusyOutVsEtaReg", "; #eta region; Frac. of sectors with too many output stubs", nEta, -0.5, nEta - 0.5);
-    profFracStubsKilledVsEtaReg_ = inputDir.make<TProfile>(
-        "FracStubsKilledInVsEtaReg", "; #eta region; Frac. of input stubs killed", nEta, -0.5, nEta - 0.5);
-    profFracTracksKilledVsEtaReg_ = inputDir.make<TProfile>(
-        "FracTracksKilledInVsEtaReg", "; #eta region; Frac. of track killed", nEta, -0.5, nEta - 0.5);
-    profFracTracksKilledVsInvPt_ =
-        inputDir.make<TProfile>("FracTracksKilledInVsInvPt", ";1/Pt; Frac. of track killed", 16, 0., 1. / houghMinPt_);
-    profFracTPKilledVsEta_ = inputDir.make<TProfile>(
-        "FracTPKilledInVsEta", ";#eta; Efficiency loss due to busy sectors", 16, 0., settings_->maxStubEta());
-    profFracTPKilledVsInvPt_ = inputDir.make<TProfile>(
-        "FracTPKilledInVsInvPt", ";1/Pt; Efficiency loss due to busy sectors", 16, 0., 1. / houghMinPt_);
-    hisNumTPkilledBusySec_ =
-        inputDir.make<TH1F>("NumTPkilledBusySec", "; No. of TP killed in each busy sector", 30, -0.5, 29.5);
-
-    // Compare properties of sectors with/without too many output stubs.
-
-    const vector<string> tnames = {"BusyOutSec", "QuietOutSec"};
-    const vector<string> enames = {" in busy output sector", " in quiet output sector"};
-    for (unsigned int i = 0; i <= 1; i++) {
-      const string tn = tnames[i];
-      const string en = enames[i];
-
-      hisNumInputStubs_[tn] =
-          inputDir.make<TH1F>(("NumInputStubs" + (tn)).c_str(), ("; No. input stubs" + (en)).c_str(), 250, -0.5, 249.5);
-      hisQoverPtInputStubs_[tn] = inputDir.make<TH1F>(
-          ("QoverPtInputStubs" + (tn)).c_str(), ("; q/Pt of input stubs" + (en)).c_str(), 30, 0., 1. / houghMinPt_);
-      hisNumOutputStubs_[tn] = inputDir.make<TH1F>(
-          ("NumOutputStubs" + (tn)).c_str(), ("; No. output stubs" + (en)).c_str(), 1000, -0.5, 999.5);
-      hisNumTracks_[tn] =
-          inputDir.make<TH1F>(("NumTracks" + (tn)).c_str(), ("; No. tracks" + (en)).c_str(), 200, -0.5, 199.5);
-      hisNumStubsPerTrack_[tn] = inputDir.make<TH1F>(
-          ("NumStubsPerTrack" + (tn)).c_str(), ("; No. stubs/track" + (en)).c_str(), 50, -0.5, 49.5);
-      hisTrackQoverPt_[tn] = inputDir.make<TH1F>(
-          ("TrackQoverPt" + (tn)).c_str(), ("; Track q/pt" + (en)).c_str(), 30, 0., 1. / houghMinPt_);
-      hisTrackPurity_[tn] =
-          inputDir.make<TH1F>(("TrackPurity" + (tn)).c_str(), ("; Track purity" + (en)).c_str(), 102, -0.01, 1.01);
-      hisNumTPphysics_[tn] =
-          inputDir.make<TH1F>(("NumTPphysics" + (tn)).c_str(), ("; No. physics TP" + (en)).c_str(), 30, -0.5, 29.5);
-      hisNumTPpileup_[tn] =
-          inputDir.make<TH1F>(("NumTPpileup" + (tn)).c_str(), ("; No. pileup TP" + (en)).c_str(), 30, -0.5, 29.5);
-      hisSumPtTPphysics_[tn] = inputDir.make<TH1F>(
-          ("SumPtTPphysics" + (tn)).c_str(), ("; Sum Pt physics TP" + (en)).c_str(), 100, 0.0, 100.);
-      hisSumPtTPpileup_[tn] =
-          inputDir.make<TH1F>(("SumPtTPpileup" + (tn)).c_str(), ("; Sum Pt pileup TP" + (en)).c_str(), 100, 0.0, 100.);
-    }
-
-    return inputDir;
-  }
-
-  //=== Fill histograms studying freak, large events with too many stubs at HT.
-
-  void Histos::fillStudyBusyEvents(const InputData& inputData,
-                                   const matrix<Sector>& mSectors,
-                                   const matrix<HTrphi>& mHtRphis,
-                                   const matrix<Get3Dtracks>& mGet3Dtrks) {
-    const bool withRZfilter = false;  // Care about events at HT.
-
-    const unsigned int numStubsCut =
-        settings_->busySectorNumStubs();  // No. of stubs per HT array the hardware can output.
-
-    const vector<const Stub*>& vStubs = inputData.getStubs();
-    const vector<TP>& vTPs = inputData.getTPs();
-
-    // Create map containing L1 tracks found in whole of tracker together with flag indicating if the
-    // track was killed because it was in a busy sector.
-    map<const L1track3D*, bool> trksInEntireTracker;
-
-    unsigned int nBusySecIn = 0;
-    unsigned int nBusySecOut = 0;
-
-    for (unsigned int iEtaReg = 0; iEtaReg < numEtaRegions_; iEtaReg++) {
-      for (unsigned int iPhiSec = 0; iPhiSec < numPhiSectors_; iPhiSec++) {
-        const Sector& sector = mSectors(iPhiSec, iEtaReg);
-        const HTrphi& htRphi = mHtRphis(iPhiSec, iEtaReg);
-        const Get3Dtracks& get3Dtrk = mGet3Dtrks(iPhiSec, iEtaReg);
-        const vector<L1track3D>& tracks = get3Dtrk.trackCands3D(withRZfilter);
-
-        //--- Look for too many stubs input to sector.
-
-        unsigned int nStubsIn = htRphi.nReceivedStubs();
-        // Plot fraction of input stubs that would be killed by 36BX period.
-        for (unsigned int j = 0; j < nStubsIn; j++) {
-          bool kill = (j >= numStubsCut);
-          profFracStubsKilledVsEtaReg_->Fill(iEtaReg, kill);
-        }
-        bool tooBusyIn = (nStubsIn > numStubsCut);
-        if (tooBusyIn)
-          nBusySecIn++;
-        profFracBusyInVsEtaReg_->Fill(iEtaReg, tooBusyIn);  // Sector had too many input stubs.
-
-        //--- Look for too many stubs assigned to output tracks.
-
-        // Order tracks in increasing order of abs(q/Pt).
-        // Use multimap rather than map to do this, as some tracks may have identical q/Pt, and it will store all of them, unlike map.
-        multimap<float, const L1track3D*> orderedTrks;
-        for (const L1track3D& trk : tracks) {
-          orderedTrks.insert(pair<float, const L1track3D*>(fabs(trk.qOverPt()), &trk));
-        }
-
-        // Create map containing L1 tracks found in whole of tracker together with flag indicating if the
-        // track was killed because it was in a busy sector.
-        map<const L1track3D*, bool> trksInSector;
-
-        // Check how many tracks would be killed by 36BX period, assuming we kill preferentially low Pt ones.
-        bool tooBusyOut = false;
-        unsigned int nStubsOut = 0;
-
-        for (const auto& oTrk : orderedTrks) {
-          float ptInv = oTrk.first;
-          const L1track3D* trk = oTrk.second;
-          bool kill = false;
-          nStubsOut += trk->getNumStubs();
-          if (nStubsOut > numStubsCut)
-            kill = true;
-
-          if (kill)
-            tooBusyOut = true;  // Note that some tracks were killed in this sector.
-
-          profFracTracksKilledVsEtaReg_->Fill(iEtaReg, kill);
-          profFracTracksKilledVsInvPt_->Fill(ptInv, kill);
-
-          // Form a map of all tracks in the entire tracker & also just in this sector, with a flag indicating if they were killed as in a busy sector.
-          trksInEntireTracker[trk] = kill;
-          trksInSector[trk] = kill;
-        }
-
-        if (tooBusyOut)
-          nBusySecOut++;
-        profFracBusyOutVsEtaReg_->Fill(iEtaReg, tooBusyOut);  // Sector had too many output stubs.
-
-        //--- Compare properties of sectors with/without too many output stubs.
-
-        const vector<string> tnames = {"BusyOutSec", "QuietOutSec"};
-
-        // Loop over sectors with too many/not too many output stubs.
-        for (const string& tn : tnames) {
-          if ((tn == "BusyOutSec" && tooBusyOut) || (tn == "QuietOutSec" && (!tooBusyOut))) {
-            hisNumInputStubs_[tn]->Fill(nStubsIn);
-
-            // Check if q/Pt estimated from stub bend differs in busy & quiet sectors.
-            for (const Stub* stub : vStubs) {
-              if (sector.inside(stub))
-                hisQoverPtInputStubs_[tn]->Fill(abs(stub->qOverPt()));
-            }
-
-            // Look at reconstructed tracks in this sector.
-            hisNumOutputStubs_[tn]->Fill(nStubsOut);
-            hisNumTracks_[tn]->Fill(tracks.size());
-            for (const L1track3D& trk : tracks) {
-              hisNumStubsPerTrack_[tn]->Fill(trk.getNumStubs());
-              hisTrackQoverPt_[tn]->Fill(trk.qOverPt());
-              hisTrackPurity_[tn]->Fill(trk.getPurity());
-            }
-
-            // Look at total Pt of truth particles in this sector to understand if it contains a jet.
-            unsigned int num_TP_physics = 0;
-            unsigned int num_TP_pileup = 0;
-            float sumPt_TP_physics = 0.;
-            float sumPt_TP_pileup = 0.;
-            for (const TP& tp : vTPs) {
-              bool tpInSector =
-                  (fabs(tp.trkPhiAtR(settings_->chosenRofPhi()) - sector.phiCentre()) < sector.sectorHalfWidth() &&
-                   tp.trkZAtR(chosenRofZ_) > sector.zAtChosenR_Min() &&
-                   tp.trkZAtR(chosenRofZ_) < sector.zAtChosenR_Max());
-              if (tpInSector) {
-                if (tp.physicsCollision()) {  // distinguish truth particles from physics collision vs from pileup.
-                  num_TP_physics++;
-                  sumPt_TP_physics += tp.pt();
-                } else {
-                  num_TP_pileup++;
-                  sumPt_TP_pileup += tp.pt();
-                }
-              }
-            }
-            hisNumTPphysics_[tn]->Fill(num_TP_physics);
-            hisNumTPpileup_[tn]->Fill(num_TP_pileup);
-            hisSumPtTPphysics_[tn]->Fill(sumPt_TP_physics);
-            hisSumPtTPpileup_[tn]->Fill(sumPt_TP_pileup);
-          }
-        }
-
-        //--- Count tracking particles lost by killing tracks in individual busy sectors.
-        if (tooBusyOut) {
-          unsigned int nTPkilled = 0;
-          for (const TP& tp : vTPs) {
-            if (tp.useForAlgEff()) {  // Check TP is good for algorithmic efficiency measurement.
-
-              bool tpRecoed = false;
-              bool tpRecoedSurvived = false;
-              for (const auto& trkm : trksInSector) {
-                const L1track3D* trk = trkm.first;
-                bool kill = trkm.second;
-                if (trk->getMatchedTP() == &tp) {
-                  tpRecoed = true;  // Truth particle was reconstructed
-                  if (!kill)
-                    tpRecoedSurvived = true;  // Ditto & reconstructed track wasn't killed by busy sector.
-                }
-              }
-
-              bool tpKilled = tpRecoed && (!tpRecoedSurvived);
-              if (tpKilled)
-                nTPkilled++;
-            }
-          }
-          hisNumTPkilledBusySec_->Fill(nTPkilled);
-        }
-      }
-    }
-
-    hisNumBusySecsInPerEvent_->Fill(nBusySecIn);    // No. of sectors per event with too many input stubs.
-    hisNumBusySecsOutPerEvent_->Fill(nBusySecOut);  // No. of sectors per event with too many output stubs.
-
-    //--- Check loss in tracking efficiency caused by killing tracks in busy sectors.
-
-    for (const TP& tp : vTPs) {
-      if (tp.useForAlgEff()) {  // Check TP is good for algorithmic efficiency measurement.
-
-        bool tpRecoed = false;
-        bool tpRecoedSurvived = false;
-        for (const auto& trkm : trksInEntireTracker) {
-          const L1track3D* trk = trkm.first;
-          bool kill = trkm.second;
-          if (trk->getMatchedTP() == &tp) {
-            tpRecoed = true;  // Truth particle was reconstructed
-            if (!kill)
-              tpRecoedSurvived = true;  // Ditto & reconstructed track wasn't killed by busy sector.
-          }
-        }
-        bool tpKilled = tpRecoed && (!tpRecoedSurvived);
-        profFracTPKilledVsEta_->Fill(fabs(tp.eta()), tpKilled);
-        profFracTPKilledVsInvPt_->Fill(fabs(tp.qOverPt()), tpKilled);
-      }
-    }
   }
 
   //=== Book histograms for studying track fitting.
@@ -2893,12 +2414,12 @@ namespace tmtt {
             hisFitBeamChi2Matched_[fitName]->Fill(fitTrk.chi2_bcon());
             hisFitBeamChi2DofMatched_[fitName]->Fill(fitTrk.chi2dof_bcon());
           }
-          profFitChi2VsEtaMatched_[fitName]->Fill(fabs(fitTrk.eta()), fitTrk.chi2());
-          profFitChi2DofVsEtaMatched_[fitName]->Fill(fabs(fitTrk.eta()), fitTrk.chi2dof());
-          profFitChi2VsInvPtMatched_[fitName]->Fill(fabs(fitTrk.qOverPt()), fitTrk.chi2());
-          profFitChi2DofVsInvPtMatched_[fitName]->Fill(fabs(fitTrk.qOverPt()), fitTrk.chi2dof());
-          profFitChi2VsTrueD0Matched_[fitName]->Fill(fabs(tp->d0()), fitTrk.chi2());
-          profFitChi2DofVsTrueD0Matched_[fitName]->Fill(fabs(tp->d0()), fitTrk.chi2dof());
+          profFitChi2VsEtaMatched_[fitName]->Fill(std::abs(fitTrk.eta()), fitTrk.chi2());
+          profFitChi2DofVsEtaMatched_[fitName]->Fill(std::abs(fitTrk.eta()), fitTrk.chi2dof());
+          profFitChi2VsInvPtMatched_[fitName]->Fill(std::abs(fitTrk.qOverPt()), fitTrk.chi2());
+          profFitChi2DofVsInvPtMatched_[fitName]->Fill(std::abs(fitTrk.qOverPt()), fitTrk.chi2dof());
+          profFitChi2VsTrueD0Matched_[fitName]->Fill(std::abs(tp->d0()), fitTrk.chi2());
+          profFitChi2DofVsTrueD0Matched_[fitName]->Fill(std::abs(tp->d0()), fitTrk.chi2dof());
 
           // Check chi2/dof for perfectly reconstructed tracks.
           if (fitTrk.getPurity() == 1.) {
@@ -2927,13 +2448,13 @@ namespace tmtt {
           // Study incorrect hits on matched tracks.
           hisNumStubsVsPurityMatched_[fitName]->Fill(fitTrk.getNumStubs(), fitTrk.getPurity());
 
-          const vector<const Stub*> stubs = fitTrk.getStubs();
+          const vector<const Stub*>& stubs = fitTrk.getStubs();
           for (const Stub* s : stubs) {
             // Was this stub produced by correct truth particle?
-            const set<const TP*> stubTPs = s->assocTPs();
+            const set<const TP*>& stubTPs = s->assocTPs();
             bool trueStub = (stubTPs.find(tp) != stubTPs.end());
             profFitFracTrueStubsVsLayerMatched_[fitName]->Fill(s->layerId(), trueStub);
-            profFitFracTrueStubsVsEtaMatched_[fitName]->Fill(fabs(s->eta()), trueStub);
+            profFitFracTrueStubsVsEtaMatched_[fitName]->Fill(std::abs(s->eta()), trueStub);
           }
 
         } else {
@@ -2953,10 +2474,10 @@ namespace tmtt {
             hisFitBeamChi2Unmatched_[fitName]->Fill(fitTrk.chi2_bcon());
             hisFitBeamChi2DofUnmatched_[fitName]->Fill(fitTrk.chi2dof_bcon());
           }
-          profFitChi2VsEtaUnmatched_[fitName]->Fill(fabs(fitTrk.eta()), fitTrk.chi2());
-          profFitChi2DofVsEtaUnmatched_[fitName]->Fill(fabs(fitTrk.eta()), fitTrk.chi2dof());
-          profFitChi2VsInvPtUnmatched_[fitName]->Fill(fabs(fitTrk.qOverPt()), fitTrk.chi2());
-          profFitChi2DofVsInvPtUnmatched_[fitName]->Fill(fabs(fitTrk.qOverPt()), fitTrk.chi2dof());
+          profFitChi2VsEtaUnmatched_[fitName]->Fill(std::abs(fitTrk.eta()), fitTrk.chi2());
+          profFitChi2DofVsEtaUnmatched_[fitName]->Fill(std::abs(fitTrk.eta()), fitTrk.chi2dof());
+          profFitChi2VsInvPtUnmatched_[fitName]->Fill(std::abs(fitTrk.qOverPt()), fitTrk.chi2());
+          profFitChi2DofVsInvPtUnmatched_[fitName]->Fill(std::abs(fitTrk.qOverPt()), fitTrk.chi2dof());
 
           if (fitName.find("KF") != string::npos) {
             // No. of skipped layers on track during Kalman track fit.
@@ -2982,8 +2503,6 @@ namespace tmtt {
 
         // Look at stub residuals w.r.t. fitted (or true) track.
         if (tp != nullptr) {
-          //if (tp != nullptr && tp->pt() > 50 && fabs(tp->pdgId()) == 13 && tp->charge() > 0) {
-          //if (tp != nullptr && tp->pt() > 2 && tp->pt() < 2.5 && fabs(tp->pdgId()) == 13 && tp->charge() > 0) {
           // --- Options for recalc histograms
           // Choose to get residuals from truth particle or fitted track?
           // (Only applies to chi2 method 2 below).
@@ -3152,9 +2671,9 @@ namespace tmtt {
                 }
               }
               // More detailed plots for true stubs to study effect of multiple scattering.
-              profNsigmaPhivsInvPt_[fitName]->Fill(1. / tp->pt(), fabs(deltaPhi / sigmaPhi));
-              profNsigmaPhivsR_[fitName]->Fill(s->r(), fabs(deltaPhi / sigmaPhi));
-              profNsigmaPhivsTanl_[fitName]->Fill(fabs(tp->tanLambda()), fabs(deltaPhi / sigmaPhi));
+              profNsigmaPhivsInvPt_[fitName]->Fill(1. / tp->pt(), std::abs(deltaPhi / sigmaPhi));
+              profNsigmaPhivsR_[fitName]->Fill(s->r(), std::abs(deltaPhi / sigmaPhi));
+              profNsigmaPhivsTanl_[fitName]->Fill(std::abs(tp->tanLambda()), std::abs(deltaPhi / sigmaPhi));
             } else {
               if (s->psModule()) {
                 if (s->barrel()) {
@@ -3176,11 +2695,11 @@ namespace tmtt {
             }
           }
           // Plot recalculated chi2 for correct stubs on matched tracks.
-          profRecalcRphiChi2VsEtaTrue1_[fitName]->Fill(fabs(fitTrk.eta()), recalcChiSquared_1_rphi);
-          profRecalcRzChi2VsEtaTrue1_[fitName]->Fill(fabs(fitTrk.eta()), recalcChiSquared_1_rz);
+          profRecalcRphiChi2VsEtaTrue1_[fitName]->Fill(std::abs(fitTrk.eta()), recalcChiSquared_1_rphi);
+          profRecalcRzChi2VsEtaTrue1_[fitName]->Fill(std::abs(fitTrk.eta()), recalcChiSquared_1_rz);
           float recalcChiSquared_1 = recalcChiSquared_1_rphi + recalcChiSquared_1_rz;
-          profRecalcChi2VsEtaTrue1_[fitName]->Fill(fabs(fitTrk.eta()), recalcChiSquared_1);
-          profRecalcChi2VsEtaTrue2_[fitName]->Fill(fabs(fitTrk.eta()), recalcChiSquared_2);
+          profRecalcChi2VsEtaTrue1_[fitName]->Fill(std::abs(fitTrk.eta()), recalcChiSquared_1);
+          profRecalcChi2VsEtaTrue2_[fitName]->Fill(std::abs(fitTrk.eta()), recalcChiSquared_2);
         }
       }
 
@@ -3244,8 +2763,8 @@ namespace tmtt {
 
       for (const TP& tp : vTPs) {
         if (tpRecoedMap[&tp]) {  // Was this truth particle successfully fitted?
-          profDupFitTrksVsEta_[fitName]->Fill(fabs(tp.eta()), tpRecoedDup[&tp] - 1);
-          profDupFitTrksVsInvPt_[fitName]->Fill(fabs(tp.qOverPt()), tpRecoedDup[&tp] - 1);
+          profDupFitTrksVsEta_[fitName]->Fill(std::abs(tp.eta()), tpRecoedDup[&tp] - 1);
+          profDupFitTrksVsInvPt_[fitName]->Fill(std::abs(tp.qOverPt()), tpRecoedDup[&tp] - 1);
         }
       }
 
@@ -3277,8 +2796,8 @@ namespace tmtt {
             hisFitTPetaForEff_[fitName]->Fill(tp.eta());
             hisFitTPphiForEff_[fitName]->Fill(tp.phi0());
             // Plot also production point of all good reconstructed TP.
-            hisFitTPd0ForEff_[fitName]->Fill(fabs(tp.d0()));
-            hisFitTPz0ForEff_[fitName]->Fill(fabs(tp.z0()));
+            hisFitTPd0ForEff_[fitName]->Fill(std::abs(tp.d0()));
+            hisFitTPz0ForEff_[fitName]->Fill(std::abs(tp.z0()));
             // Also plot efficiency to perfectly reconstruct the track (no fake hits)
             if (tpPerfRecoedMap[&tp]) {  // This truth particle was successfully fitted with no incorrect hits.
               hisPerfFitTPinvptForEff_[fitName]->Fill(1. / tp.pt());
@@ -3291,8 +2810,8 @@ namespace tmtt {
               hisFitTPetaForAlgEff_[fitName]->Fill(tp.eta());
               hisFitTPphiForAlgEff_[fitName]->Fill(tp.phi0());
               // Plot also production point of all good reconstructed TP.
-              hisFitTPd0ForAlgEff_[fitName]->Fill(fabs(tp.d0()));
-              hisFitTPz0ForAlgEff_[fitName]->Fill(fabs(tp.z0()));
+              hisFitTPd0ForAlgEff_[fitName]->Fill(std::abs(tp.d0()));
+              hisFitTPz0ForAlgEff_[fitName]->Fill(std::abs(tp.z0()));
               // Plot sector number to understand if looser cuts are needed in certain regions.
               hisFitTPphisecForAlgEff_[fitName]->Fill(iPhiSec_TP);
               hisFitTPetasecForAlgEff_[fitName]->Fill(iEtaReg_TP);
@@ -3961,8 +3480,8 @@ namespace tmtt {
     cout << "         BApprox_intercept (fitted) = " << intercept << endl;
     // Check fitted params consistent with those assumed in cfg file.
     if (settings_->useApproxB()) {
-      double gradientDiff = fabs(gradient - settings_->bApprox_gradient());
-      double interceptDiff = fabs(intercept - settings_->bApprox_intercept());
+      double gradientDiff = std::abs(gradient - settings_->bApprox_gradient());
+      double interceptDiff = std::abs(intercept - settings_->bApprox_intercept());
       if (gradientDiff > 0.001 || interceptDiff > 0.001) {  // Uncertainty independent of number of events
         cout << endl << "WARNING: fitted parameters inconsistent with those specified in cfg file:" << endl;
         cout << "         BApprox_gradient  (cfg) = " << settings_->bApprox_gradient() << endl;

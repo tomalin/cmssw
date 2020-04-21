@@ -154,17 +154,14 @@ namespace tmtt {
     // (N.B. Module types 0 & 1 have identical pitch & sep, but one is tilted & one is flat barrel module).
 
     moduleType_ = 999;
-    // EJC new (additional) module type for tilted geometry
-    const vector<float> pitchVsType = {0.0099, 0.0099, 0.0099, 0.0099, 0.0089, 0.0099, 0.0089, 0.0089};
-    const vector<float> sepVsType = {0.26, 0.26, 0.16, 0.4, 0.18, 0.4, 0.18, 0.4};
-    const vector<bool> barrelVsType = {true, true, true, true, true, false, false, false};
-    const vector<bool> psVsType = {true, true, true, true, false, true, false, false};
-    const vector<bool> tiltedVsType = {false, true, false, true, false, false, false, false};
-    if (pitchVsType.size() != sepVsType.size())
-      throw cms::Exception("LogicError") << "DigitalStub: module type array size wrong" << endl;
-    const float tol = 0.001;  // Tolerance
+    static const vector<float> pitchVsType = {0.0099, 0.0099, 0.0099, 0.0099, 0.0089, 0.0099, 0.0089, 0.0089};
+    static const vector<float> sepVsType = {0.26, 0.26, 0.16, 0.4, 0.18, 0.4, 0.18, 0.4};
+    static const vector<bool> barrelVsType = {true, true, true, true, true, false, false, false};
+    static const vector<bool> psVsType = {true, true, true, true, false, true, false, false};
+    static const vector<bool> tiltedVsType = {false, true, false, true, false, false, false, false};
+    constexpr float tol = 0.001;  // Tolerance
     for (unsigned int i = 0; i < pitchVsType.size(); i++) {
-      if (fabs(pitch - pitchVsType[i]) < tol && fabs(sep - sepVsType[i]) < tol && barrel == barrelVsType[i] &&
+      if (std::abs(pitch - pitchVsType[i]) < tol && std::abs(sep - sepVsType[i]) < tol && barrel == barrelVsType[i] &&
           tiltedBarrel == tiltedVsType[i] && psModule == psVsType[i]) {
         moduleType_ = i;
       }
@@ -172,26 +169,23 @@ namespace tmtt {
     if (moduleType_ == 999)
       throw cms::Exception("LogicError") << "DigitalStub: unknown module type: "
                                          << "pitch=" << pitch << " separation=" << sep << " barrel=" << barrel
-                                         << " tilted=" << tiltedBarrel << " PS=" << psModule << endl;
+                                         << " tilted=" << tiltedBarrel << " PS=" << psModule;
   }
 
   //=== Digitize stub for input to Geographic Processor, with stub phi coord. measured relative to phi nonant that contains specified phi sector.
 
   void DigitalStub::makeGPinput(unsigned int iPhiSec) {
     if (!ranInit_)
-      throw cms::Exception("LogicError") << "DigitalStub: You forgot to call init() before makeGPinput()!" << endl;
+      throw cms::Exception("LogicError") << "DigitalStub: You forgot to call init() before makeGPinput()!";
 
     unsigned int iPhiNon =
         floor(iPhiSec * numPhiNonants_ / numPhiSectors_);  // Find nonant corresponding to this sector.
 
     // If this stub was already digitized, we don't have to redo all the work again. Save CPU.
     if (ranMakeGPinput_) {
-      if (iPhiNon == iDigi_Nonant_) {
-        return;  // Work already done.
-      } else {
+      if (iPhiNon != iDigi_Nonant_)
         this->quickMakeGPinput(iPhiSec);
-        return;
-      }
+      return;
     }
 
     ranMakeGPinput_ = true;  // Note we ran make().
@@ -229,7 +223,7 @@ namespace tmtt {
 
   void DigitalStub::makeHTinput(unsigned int iPhiSec) {
     if (!ranInit_)
-      throw cms::Exception("LogicError") << "DigitalStub: You forgot to call init() before makeHTinput()!" << endl;
+      throw cms::Exception("LogicError") << "DigitalStub: You forgot to call init() before makeHTinput()!";
 
     // Digitize for GP input if not already done, since some variables are shared by GP & HT.
     this->makeGPinput(iPhiSec);
@@ -318,7 +312,7 @@ namespace tmtt {
 
   void DigitalStub::makeSForTFinput(string SForTF) {
     if (!ranInit_)
-      throw cms::Exception("LogicError") << "DigitalStub: You forgot to call init() before makeSForTFinput()!" << endl;
+      throw cms::Exception("LogicError") << "DigitalStub: You forgot to call init() before makeSForTFinput()!";
 
     // Save CPU by not digitizing stub again if already done.
     if (ranMakeSForTFinput_ != SForTF) {
@@ -363,7 +357,7 @@ namespace tmtt {
 
   void DigitalStub::makeDRinput(unsigned int stubId) {
     if (!ranInit_)
-      throw cms::Exception("LogicError") << "DigitalStub: You forgot to call init() before makeDRinput()!" << endl;
+      throw cms::Exception("LogicError") << "DigitalStub: You forgot to call init() before makeDRinput()!";
 
     ranMakeDRinput_ = true;  // Note we ran makeDRinput().
     stubId_ = stubId;
@@ -421,21 +415,21 @@ namespace tmtt {
 
   void DigitalStub::checkInRange() const {
     // All ranges are centred at zero, except for rho, which is +ve-definate.
-    if (fabs(phiS_orig_) >= 0.5 * phiSRange_)
+    if (std::abs(phiS_orig_) >= 0.5 * phiSRange_)
       throw cms::Exception("BadConfig") << "DigitalStub: Stub phiS is out of assumed digitization range."
-                                        << " |phiS| = " << fabs(phiS_orig_) << " > " << 0.5 * phiSRange_ << endl;
-    if (fabs(rt_orig_) >= 0.5 * rtRange_)
+                                        << " |phiS| = " << std::abs(phiS_orig_) << " > " << 0.5 * phiSRange_;
+    if (std::abs(rt_orig_) >= 0.5 * rtRange_)
       throw cms::Exception("BadConfig") << "DigitalStub: Stub rT is out of assumed digitization range."
-                                        << " |rt| = " << fabs(rt_orig_) << " > " << 0.5 * rtRange_ << endl;
-    if (fabs(z_orig_) >= 0.5 * zRange_)
+                                        << " |rt| = " << std::abs(rt_orig_) << " > " << 0.5 * rtRange_;
+    if (std::abs(z_orig_) >= 0.5 * zRange_)
       throw cms::Exception("BadConfig") << "DigitalStub: Stub z is out of assumed digitization range."
-                                        << " |z| = " << fabs(z_orig_) << " > " << 0.5 * zRange_ << endl;
-    if (fabs(phiO_orig_) >= 0.5 * phiORange_)
+                                        << " |z| = " << std::abs(z_orig_) << " > " << 0.5 * zRange_;
+    if (std::abs(phiO_orig_) >= 0.5 * phiORange_)
       throw cms::Exception("BadConfig") << "DigitalStub: Stub phiO is out of assumed digitization range."
-                                        << " |phiO| = " << fabs(phiO_orig_) << " > " << 0.5 * phiORange_ << endl;
-    if (fabs(bend_orig_) >= 0.5 * bendRange_)
+                                        << " |phiO| = " << std::abs(phiO_orig_) << " > " << 0.5 * phiORange_;
+    if (std::abs(bend_orig_) >= 0.5 * bendRange_)
       throw cms::Exception("BadConfig") << "DigitalStub: Stub bend is out of assumed digitization range."
-                                        << " |bend| = " << fabs(bend_orig_) << " > " << 0.5 * bendRange_ << endl;
+                                        << " |bend| = " << std::abs(bend_orig_) << " > " << 0.5 * bendRange_;
   }
 
   //=== Check that digitisation followed by undigitisation doesn't change significantly the stub coordinates.
@@ -450,7 +444,10 @@ namespace tmtt {
     static std::atomic<unsigned int> nErr = 0;
     const unsigned int maxErr = 20;  // Print error message only this number of times.
     if (nErr < maxErr) {
-      if (fabs(TA) > 0.001 || fabs(TB) > 0.3 || fabs(TC) > 0.25 || fabs(TD) > 0.005 || fabs(TE) > 0.01) {
+      // Compare to small numbers, representing acceptable precision loss.
+      const float smallTA = 0.001, smallTB = 0.3, smallTC = 0.25, smallTD = 0.005, smallTE = 0.01;
+      if (std::abs(TA) > smallTA || std::abs(TB) > smallTB || std::abs(TC) > smallTC || std::abs(TD) > smallTD ||
+          std::abs(TE) > smallTE) {
         nErr++;
         cout << "WARNING: DigitalStub lost precision: " << TA << " " << TB << " " << TC << " " << TD << " " << TE
              << endl;

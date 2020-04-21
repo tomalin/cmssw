@@ -43,7 +43,7 @@ namespace tmtt {
           if (layerID >= 0 && layerID < maxLayerID) {
             foundLayers[layerID] = true;
           } else {
-            throw cms::Exception("LogicError") << "Utility::invalid layer ID" << endl;
+            throw cms::Exception("LogicError") << "Utility::invalid layer ID";
           }
         }
       }
@@ -57,7 +57,7 @@ namespace tmtt {
           if (layerID >= 0 && layerID < maxLayerID) {
             foundLayers[layerID] = true;
           } else {
-            throw cms::Exception("LogicError") << "Utility::invalid layer ID" << endl;
+            throw cms::Exception("LogicError") << "Utility::invalid layer ID";
           }
         }
       }
@@ -152,12 +152,16 @@ namespace tmtt {
     return tpBest;
   }
 
-  //=== Determine the minimum number of layers a track candidate must have stubs in to be defined as a track.
-  //=== The first argument indicates from what type of algorithm this function is called: "HT", "SEED", "DUP" or "FIT".
+  //=== Determine min number of layers a track candidate must have stubs in to be defined as a track.
+  //=== 1st argument indicates from which step in chain this function is called: HT, SEED, DUP or FIT.
 
-  unsigned int Utility::numLayerCut(
-      string algo, const Settings* settings, unsigned int iPhiSec, unsigned int iEtaReg, float invPt, float eta) {
-    if (algo == "HT" || algo == "SEED" || algo == "DUP" || algo == "FIT") {
+  unsigned int Utility::numLayerCut(Utility::AlgoStep algo,
+                                    const Settings* settings,
+                                    unsigned int iPhiSec,
+                                    unsigned int iEtaReg,
+                                    float invPt,
+                                    float eta) {
+    if (algo == HT || algo == SEED || algo == DUP || algo == FIT) {
       unsigned int nLayCut = settings->minStubLayers();
 
       //--- Check if should reduce cut on number of layers by 1 for any reason.
@@ -165,8 +169,8 @@ namespace tmtt {
       bool reduce = false;
 
       // e.g. To increase efficiency for high Pt tracks.
-      bool applyMinPt = (settings->minPtToReduceLayers() < 10000.);
-      if (applyMinPt && fabs(invPt) < 1 / settings->minPtToReduceLayers())
+      bool applyMinPt = (settings->minPtToReduceLayers() > 0);
+      if (applyMinPt && std::abs(invPt) < 1 / settings->minPtToReduceLayers())
         reduce = true;
 
       // e.g. Or to increase efficiency in the barrel-endcap transition or very forward regions.
@@ -184,18 +188,17 @@ namespace tmtt {
       if (reduce)
         nLayCut--;
 
-      // Avoid minimum number of layers going below 4.
-      if (nLayCut < 4)
-        nLayCut = 4;
+      constexpr unsigned int minLayCut = 4;  // Minimum viable layer cut.
+      nLayCut = std::max(nLayCut, minLayCut);
 
       // Seed Filter & Track Fitters require only 4 layers.
-      if (algo == "SEED" || algo == "FIT")
-        nLayCut = 4;
+      constexpr unsigned int nFitLayCut = 4;
+      if (algo == SEED || algo == FIT)
+        nLayCut = nFitLayCut;
 
       return nLayCut;
     } else {
-      throw cms::Exception("LogicError") << "Utility::numLayerCut() called with invalid algo argument! " << algo
-                                         << endl;
+      throw cms::Exception("LogicError") << "Utility::numLayerCut() called with invalid algo argument! " << algo;
     }
   }
 

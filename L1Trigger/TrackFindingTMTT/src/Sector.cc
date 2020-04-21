@@ -36,13 +36,13 @@ namespace tmtt {
   trackerOuterRadius_ = settings->trackerOuterRadius();
   trackerInnerRadius_ = settings->trackerInnerRadius();
   trackerHalfLength_  = settings->trackerHalfLength();
-  if (fabs(zOuterMin_) > trackerHalfLength_) {
-    float scale = trackerHalfLength_/fabs(zOuterMin_);
+  if (std::abs(zOuterMin_) > trackerHalfLength_) {
+    float scale = trackerHalfLength_/std::abs(zOuterMin_);
     zOuterMin_ *= scale;
     rOuterMin_ *= scale;
   }
-  if (fabs(zOuterMax_) > trackerHalfLength_) {
-    float scale = trackerHalfLength_/fabs(zOuterMax_);
+  if (std::abs(zOuterMax_) > trackerHalfLength_) {
+    float scale = trackerHalfLength_/std::abs(zOuterMax_);
     zOuterMax_ *= scale;
     rOuterMax_ *= scale;
   }
@@ -131,12 +131,12 @@ namespace tmtt {
       //--- Don't modify algorithm to allow for uncertainty in stub (r,z) coordinates caused by 2S module strip length?
 
       // Calculate z coordinate of lower edge of this eta region, evaluated at radius of stub.
-      zMin = (zRangeMin * stub->r() - beamWindowZ_ * fabs(stub->r() - chosenRofZ_)) / chosenRofZ_;
+      zMin = (zRangeMin * stub->r() - beamWindowZ_ * std::abs(stub->r() - chosenRofZ_)) / chosenRofZ_;
       // Calculate z coordinate of upper edge of this eta region, evaluated at radius of stub.
-      zMax = (zRangeMax * stub->r() + beamWindowZ_ * fabs(stub->r() - chosenRofZ_)) / chosenRofZ_;
+      zMax = (zRangeMax * stub->r() + beamWindowZ_ * std::abs(stub->r() - chosenRofZ_)) / chosenRofZ_;
 
-      // zMin = ( zRangeMin * stub->r() - beamWindowZ_ * fabs(stub->r() - rOuterMin_) ) / rOuterMin_;
-      // zMax = ( zRangeMax * stub->r() + beamWindowZ_ * fabs(stub->r() - rOuterMax_) ) / rOuterMax_;
+      // zMin = ( zRangeMin * stub->r() - beamWindowZ_ * std::abs(stub->r() - rOuterMin_) ) / rOuterMin_;
+      // zMax = ( zRangeMax * stub->r() + beamWindowZ_ * std::abs(stub->r() - rOuterMax_) ) / rOuterMax_;
 
       inside = (stub->z() > zMin && stub->z() < zMax);
 
@@ -182,7 +182,7 @@ namespace tmtt {
           reco::deltaPhi(stub->phi(), phiCentre_);  // Phi difference between stub & sector in range -PI to +PI.
       float tolerancePhi = stub->phiDiff(
           chosenRofPhi_, minPt_);  // How much stub phi might differ from track phi because of track curvature.
-      float outsidePhi = fabs(delPhi) - sectorHalfWidth_ -
+      float outsidePhi = std::abs(delPhi) - sectorHalfWidth_ -
                          tolerancePhi;  // If > 0, then stub is not compatible with being inside this sector.
       if (outsidePhi > 0)
         okPhi = false;
@@ -201,7 +201,7 @@ namespace tmtt {
         // Reduce tolerance if this is smaller than the nominal assumed resolution.
         tolerancePhiTrk = min(tolerancePhiTrk, phiTrkRes);
       }
-      float outsidePhiTrk = fabs(delPhiTrk) - sectorHalfWidth_ -
+      float outsidePhiTrk = std::abs(delPhiTrk) - sectorHalfWidth_ -
                             tolerancePhiTrk;  // If > 0, then stub is not compatible with being inside this sector.
 
       // Modify algorithm to allow for uncertainty due to 2S module strip length, if requested.
@@ -263,13 +263,13 @@ namespace tmtt {
     Long64_t sign = 1;
     if (value < 0)
       sign = -1;
-    Long64_t iValue = Long64_t(fabs(value));
+    Long64_t iValue = Long64_t(std::abs(value));
     Long64_t mask = (Long64_t(1) << nBits) - Long64_t(1);
     Long64_t result = sign * (iValue & mask);
-    if (fabs(result - value) > 1)
+    if (std::abs(result - value) > 1)
       throw cms::Exception("LogicError")
           << "Sector::forceBitWidth is messing up by using too few bits to digitize number"
-          << " nBits=" << nBits << " Input float=" << value << " Output digi = " << result << endl;
+          << " nBits=" << nBits << " Input float=" << value << " Output digi = " << result;
     return result;
     // Check that result is compatible with value. Throw error if not.
   }

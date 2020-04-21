@@ -54,7 +54,7 @@ namespace tmtt {
     if (psModule && barrel) {
       double zMax[4];
       settings->get_zMaxNonTilted(zMax);
-      tiltedBarrel_ = (fabs(z) > zMax[layerid]);
+      tiltedBarrel_ = (std::abs(z) > zMax[layerid]);
     } else {
       tiltedBarrel_ = false;
     }
@@ -121,14 +121,14 @@ namespace tmtt {
           }
       }
   }
-  if (geoDetId.null()) throw cms::Exception("LogicError")<<"Stub: Det ID corresponding to Stub not found"<<endl;
+  if (geoDetId.null()) throw cms::Exception("LogicError")<<"Stub: Det ID corresponding to Stub not found";
   */
 
     // This is a faster way we found of doing the conversion. It seems to work ...
     DetId stackDetid = ttStubRef_->getDetId();
     DetId geoDetId(stackDetid.rawId() + 1);
     if (not(trackerTopology->isLower(geoDetId) && trackerTopology->stack(geoDetId) == stackDetid))
-      throw cms::Exception("LogicError") << "Stub: determination of detId went wrong" << endl;
+      throw cms::Exception("LogicError") << "Stub: determination of detId went wrong";
 
     const GeomDetUnit* det0 = trackerGeometry->idToDetUnit(geoDetId);
     // To get other module, can do this
@@ -145,11 +145,10 @@ namespace tmtt {
     z_ = pos.z();
 
     if (r_ < settings_->trackerInnerRadius() || r_ > settings_->trackerOuterRadius() ||
-        fabs(z_) > settings_->trackerHalfLength()) {
+        std::abs(z_) > settings_->trackerHalfLength()) {
       throw cms::Exception("BadConfig") << "Stub: Stub found outside assumed tracker volume. Please update tracker "
                                            "dimensions specified in Settings.h!"
-                                        << " r=" << r_ << " z=" << z_ << " " << ttStubRef_->getDetId().subdetId()
-                                        << endl;
+                                        << " r=" << r_ << " z=" << z_ << " " << ttStubRef_->getDetId().subdetId();
     }
 
     // Set info about the module this stub is in
@@ -199,9 +198,9 @@ namespace tmtt {
     pitchOverSep_ = stripPitch_ / sensorSpacing;
     // IRT - use stub (r,z) instead of module (r,z). Logically correct but has negligable effect on results.
     // This old equation was valid for flat geom, where all modules are parallel or perpendicular to beam.
-    //dphiOverBend_ = barrel_  ?  pitchOverSep_  :  pitchOverSep_*fabs(z_)/r_;
+    //dphiOverBend_ = barrel_  ?  pitchOverSep_  :  pitchOverSep_*std::abs(z_)/r_;
     // EJC - This new equation is valid in general case, so works for both flat and tilted geom.
-    dphiOverBendCorrection_ = fabs(cos(this->theta() - moduleTilt_) / sin(this->theta()));
+    dphiOverBendCorrection_ = std::abs(cos(this->theta() - moduleTilt_) / sin(this->theta()));
     dphiOverBendCorrection_approx_ = getApproxB();
     if (settings->useApproxB()) {
       dphiOverBend_ = pitchOverSep_ * dphiOverBendCorrection_approx_;
@@ -305,7 +304,7 @@ namespace tmtt {
     if (min_bin > max_bin) {
       min_bin = max_array_bin;
       max_bin = min_array_bin;
-      //if (frontendPass_) throw cms::Exception("LogicError")<<Stub: m bin calculation found low Pt stub not killed by FE electronics cuts "<<qOverPtMin<<" "<<qOverPtMax<<endl;
+      //if (frontendPass_) throw cms::Exception("LogicError")<<Stub: m bin calculation found low Pt stub not killed by FE electronics cuts "<<qOverPtMin<<" "<<qOverPtMax;
     }
     min_qOverPt_bin_ = (unsigned int)min_bin;
     max_qOverPt_bin_ = (unsigned int)max_bin;
@@ -330,7 +329,7 @@ namespace tmtt {
 
         // If the Stub class contains any data members that are not input to the GP, but are derived from variables that
         // are, then be sure to update these here too, unless Stub.h uses the check*() functions to declare them invalid.
-        dphiOverBendCorrection_ = fabs(cos(this->theta() - moduleTilt_) / sin(this->theta()));
+        dphiOverBendCorrection_ = std::abs(cos(this->theta() - moduleTilt_) / sin(this->theta()));
         dphiOverBend_ = pitchOverSep_ * dphiOverBendCorrection_;
 
         // Note that stub has been digitized for GP input
@@ -428,7 +427,7 @@ namespace tmtt {
 
         // If the Stub class contains any data members that are not input to the GP or HT, but are derived from
         // variables that are, then be sure to update these here too.
-        dphiOverBendCorrection_ = fabs(cos(this->theta() - moduleTilt_) / sin(this->theta()));
+        dphiOverBendCorrection_ = std::abs(cos(this->theta() - moduleTilt_) / sin(this->theta()));
         dphiOverBend_ = pitchOverSep_ * dphiOverBendCorrection_;
       }
     }
@@ -444,7 +443,7 @@ namespace tmtt {
     if (settings_->killLowPtStubs()) {
       // Window size corresponding to Pt cut used for tracking.
       float invPtMax = 1. / (settings_->houghMinPt());
-      windowFE = invPtMax / fabs(this->qOverPtOverBend());
+      windowFE = invPtMax / std::abs(this->qOverPtOverBend());
       // Increase half-indow size to allow for resolution in bend.
       windowFE += this->bendResInFrontend();
     } else {
@@ -474,17 +473,17 @@ namespace tmtt {
     frontendPass_ = true;              // Did stub pass cuts applied in front-end chip
     stubFailedDegradeWindow_ = false;  // Did it only fail cuts corresponding to windows encoded in DegradeBend.h?
     // Don't use stubs at large eta, since it is impossible to form L1 tracks from them, so they only contribute to combinatorics.
-    if (fabs(this->eta()) > settings_->maxStubEta())
+    if (std::abs(this->eta()) > settings_->maxStubEta())
       frontendPass_ = false;
     // Don't use stubs whose Pt is significantly below the Pt cut used in the L1 tracking, allowing for uncertainty in q/Pt due to stub bend resolution.
     if (settings_->killLowPtStubs()) {
       const float qOverPtCut = 1. / settings_->houghMinPt();
       // Apply this cut in the front-end electronics.
-      if (fabs(this->bendInFrontend()) - this->bendResInFrontend() > qOverPtCut / this->qOverPtOverBend())
+      if (std::abs(this->bendInFrontend()) - this->bendResInFrontend() > qOverPtCut / this->qOverPtOverBend())
         frontendPass_ = false;
       // Reapply the same cut using the degraded bend information available in the off-detector electronics.
       // The reason is  that the bend degredation can move the Pt below the Pt cut, making the stub useless to the off-detector electronics.
-      if (fabs(this->bend()) - this->bendRes() > qOverPtCut / this->qOverPtOverBend())
+      if (std::abs(this->bend()) - this->bendRes() > qOverPtCut / this->qOverPtOverBend())
         frontendPass_ = false;
     }
     // Don't use stubs whose bend is outside the window encoded into DegradeBend.h
@@ -515,9 +514,9 @@ namespace tmtt {
   //=== Function to calculate approximation for dphiOverBendCorrection aka B
   double Stub::getApproxB() {
     if (tiltedBarrel_) {
-      return settings_->bApprox_gradient() * fabs(z_) / r_ + settings_->bApprox_intercept();
+      return settings_->bApprox_gradient() * std::abs(z_) / r_ + settings_->bApprox_intercept();
     } else {
-      return barrel_ ? 1 : fabs(z_) / r_;
+      return barrel_ ? 1 : std::abs(z_) / r_;
     }
   }
 
@@ -527,7 +526,6 @@ namespace tmtt {
   void Stub::fillTruth(const map<edm::Ptr<TrackingParticle>, const TP*>& translateTP,
                        const edm::Handle<TTStubAssMap>& mcTruthTTStubHandle,
                        const edm::Handle<TTClusterAssMap>& mcTruthTTClusterHandle) {
-
     //--- Fill assocTP_ info. If both clusters in this stub were produced by the same single tracking particle, find out which one it was.
 
     bool genuine = mcTruthTTStubHandle->isGenuine(ttStubRef_);  // Same TP contributed to both clusters?
@@ -585,26 +583,6 @@ namespace tmtt {
         }
       }
     }
-
-    // Sanity check - is truth info of stub consistent with that of its clusters?
-    // Commented this out, as it throws errors for unknown reason with iErr=1. Apparently, "genuine" stubs can be composed of two clusters that are
-    // not "genuine", providing that one of the TP that contributed to each cluster was the same.
-    /*
-  unsigned int iErr = 0;
-  if (this->genuine()) { // Stub matches truth particle
-    if ( ! ( this->genuineCluster()[0] && (this->assocTPofCluster()[0] == this->assocTPofCluster()[1]) ) ) iErr = 1;
-  } else {
-    if ( ! ( ! this->genuineCluster()[0] || (this->assocTPofCluster()[0] != this->assocTPofCluster()[1]) )  ) iErr = 2;
-  }
-  if (iErr > 0) {
-    cout<<" DEBUGA "<<(this->assocTP() == nullptr)<<endl;
-    cout<<" DEBUGB "<<(this->assocTPofCluster()[0] == nullptr)<<" "<<(this->assocTPofCluster()[1] == nullptr)<<endl;
-    cout<<" DEBUGC "<<this->genuineCluster()[0]<<" "<<this->genuineCluster()[1]<<endl;
-    if (this->assocTPofCluster()[0] != nullptr) cout<<" DEBUGD "<<this->assocTPofCluster()[0]->index()<<endl;
-    if (this->assocTPofCluster()[1] != nullptr) cout<<" DEBUGE "<<this->assocTPofCluster()[1]->index()<<endl;
-    //    throw cms::Exception("LogicError")<<"Stub: Truth info of stub & its clusters inconsistent! "<<iErr<<endl;
-  }
-  */
   }
 
   //=== Estimated phi angle at which track intercepts a given radius rad, based on stub bend info. Also estimate uncertainty on this angle due to endcap 2S module strip length.
@@ -616,7 +594,7 @@ namespace tmtt {
     float trkPhi1 = (phi_ + dphi() * (1. - rad / rStubMin));
     float trkPhi2 = (phi_ + dphi() * (1. - rad / rStubMax));
     float trkPhi = 0.5 * (trkPhi1 + trkPhi2);
-    float errTrkPhi = 0.5 * fabs(trkPhi1 - trkPhi2);
+    float errTrkPhi = 0.5 * std::abs(trkPhi1 - trkPhi2);
     return pair<float, float>(trkPhi, errTrkPhi);
   }
 
@@ -629,7 +607,7 @@ namespace tmtt {
       crazy = false;  // Stub is fake, but this is not crazy. It happens ...
     } else {
       // Stub was produced by TP. Check it lies not too far from TP trajectory.
-      crazy = fabs(reco::deltaPhi(phi_, assocTP_->trkPhiAtStub(this))) > settings_->crazyStubCut();
+      crazy = std::abs(reco::deltaPhi(phi_, assocTP_->trkPhiAtStub(this))) > settings_->crazyStubCut();
     }
     return crazy;
   }
@@ -655,7 +633,7 @@ namespace tmtt {
       lay -= 8;
 
     if (lay < 1 || lay > 7)
-      throw cms::Exception("LogicError") << "Stub: Reduced layer ID out of expected range" << endl;
+      throw cms::Exception("LogicError") << "Stub: Reduced layer ID out of expected range";
 
     return lay;
   }
@@ -693,7 +671,7 @@ namespace tmtt {
 
     // Note if tilted barrel module & get title angle (in range 0 to PI).
     tiltedBarrel_ = barrel_ && (trackerTopology->tobSide(detId) != 3);
-    float deltaR = fabs(R1 - R0);
+    float deltaR = std::abs(R1 - R0);
     float deltaZ = (R1 - R0 > 0) ? (Z1 - Z0) : -(Z1 - Z0);
     moduleTilt_ = atan2(deltaR, deltaZ);
     if (moduleTilt_ > M_PI / 2.)

@@ -118,8 +118,6 @@ namespace tmtt {
       if (mergedCell_) {
         if (minBin % 2 == 1)
           minBin--;
-        // Next line not wanted with current m-bin range definition in Stub::calcQoverPtRange().
-        //if ( maxBin % 2 == 1 ) maxBin++;
       }
       if (minBin <= ibin_qOverPt_ && ibin_qOverPt_ <= maxBin)
         filteredStubs.push_back(s);

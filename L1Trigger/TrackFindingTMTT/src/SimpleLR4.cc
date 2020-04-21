@@ -2,7 +2,7 @@
 
 ///=== Written by: Davide Cieri
 
-#include "L1Trigger/TrackFindingTMTT/interface/SimpleLR.h"
+#include "L1Trigger/TrackFindingTMTT/interface/SimpleLR4.h"
 #include "L1Trigger/TrackFindingTMTT/interface/Stub.h"
 #include "L1Trigger/TrackFindingTMTT/interface/L1fittedTrack.h"
 #include "L1Trigger/TrackFindingTMTT/interface/L1track3D.h"
@@ -17,7 +17,7 @@ using namespace std;
 
 namespace tmtt {
 
-  SimpleLR::SimpleLR(const Settings* settings) : TrackFitGeneric(settings) {
+  SimpleLR4::SimpleLR4(const Settings* settings) : TrackFitGeneric(settings) {
     // Initialize digitization parameters
     phiMult_ = pow(2., getSettings()->phiSBits()) / getSettings()->phiSRange();
     rTMult_ = pow(2., getSettings()->rtBits()) / getSettings()->rtRange();
@@ -52,16 +52,24 @@ namespace tmtt {
 
     chi2cut_ = getSettings()->slr_chi2cut();
     chosenRofPhi_ = getSettings()->chosenRofPhi();
-    if (digitize_) chosenRofPhi_ = floor(chosenRofPhi_ * rTMult_) / rTMult_;
+    if (digitize_)
+      chosenRofPhi_ = floor(chosenRofPhi_ * rTMult_) / rTMult_;
   };
 
   static bool pair_compare(std::pair<const Stub*, float> a, std::pair<const Stub*, float> b) {
     return (a.second < b.second);
   }
 
-  L1fittedTrack SimpleLR::fit(const L1track3D& l1track3D) {
+  L1fittedTrack SimpleLR4::fit(const L1track3D& l1track3D) {
     if (getSettings()->debug() == 6)
       cout << "=============== FITTING TRACK ====================" << endl;
+
+    minStubLayersRed_ = Utility::numLayerCut(Utility::AlgoStep::FIT,
+                                             getSettings(),
+                                             l1track3D.iPhiSec(),
+                                             l1track3D.iEtaReg(),
+                                             std::abs(l1track3D.qOverPt()),
+                                             l1track3D.eta());
 
     invPtToDPhi_ = -getSettings()->invPtToDphi();
 
@@ -183,11 +191,11 @@ namespace tmtt {
         (const_cast<Stub*>(stub))->digitizeForSFinput();
         const DigitalStub digiStub = (const_cast<Stub*>(stub))->digitalStub();
 
-        ResPhi =
-            digiStub.iDigi_PhiS() * pow(2., shiftingBitsDenRPhi_ - shiftingBitsPt_) -
-            floor(phiT * phiTMult_) *
-                pow(2., shiftingBitsDenRPhi_ - shiftingBitsPt_ - getSettings()->slr_phi0Bits() + getSettings()->phiSBits()) -
-            floor(qOverPt * qOverPtMult_) * digiStub.iDigi_Rt();
+        ResPhi = digiStub.iDigi_PhiS() * pow(2., shiftingBitsDenRPhi_ - shiftingBitsPt_) -
+                 floor(phiT * phiTMult_) * pow(2.,
+                                               shiftingBitsDenRPhi_ - shiftingBitsPt_ - getSettings()->slr_phi0Bits() +
+                                                   getSettings()->phiSBits()) -
+                 floor(qOverPt * qOverPtMult_) * digiStub.iDigi_Rt();
 
         if (getSettings()->debug() == 6) {
           // cout << "floor(phiT*phiTMult_) " << floor(phiT*phiTMult_) << endl;
@@ -201,7 +209,7 @@ namespace tmtt {
         ResPhi = reco::deltaPhi((const_cast<Stub*>(stub))->phi(), phi0 + qOverPt * (const_cast<Stub*>(stub))->r());
       }
 
-      double Res = fabs(ResPhi);
+      double Res = std::abs(ResPhi);
       // if(digitize_) Res = floor(Res*phiMult_)/phiMult_;
 
       std::pair<const Stub*, double> ResStubPair(stub, Res);
@@ -216,7 +224,7 @@ namespace tmtt {
 
     double LargResidual = 9999.;
     // Find largest residuals
-    while (vRes.size() > 4 and LargResidual > getSettings()->ResidualCut()) {
+    while (vRes.size() > minStubLayersRed_ and LargResidual > getSettings()->ResidualCut()) {
       std::vector<std::pair<const Stub*, double> >::iterator maxResIt =
           max_element(vRes.begin(), vRes.end(), pair_compare);
       LargResidual = (*maxResIt).second;
@@ -403,7 +411,7 @@ namespace tmtt {
       }
 
       double RPhiSigma = 0.0002;
-      float RZSigma = (const_cast<Stub*>(stub))->zErr() + fabs(tanLambda) * (const_cast<Stub*>(stub))->rErr();
+      float RZSigma = (const_cast<Stub*>(stub))->zErr() + std::abs(tanLambda) * (const_cast<Stub*>(stub))->rErr();
 
       if (not(const_cast<Stub*>(stub))->barrel())
         RPhiSigma = 0.0004;
@@ -418,8 +426,8 @@ namespace tmtt {
       // cout << "zT "<< zT << " tanLambda "<< t<< RZSigma << endl;
       ResZ /= RZSigma;
 
-      chi2_phi += fabs(ResPhi * ResPhi);
-      chi2_z += fabs(ResZ * ResZ);
+      chi2_phi += std::abs(ResPhi * ResPhi);
+      chi2_z += std::abs(ResZ * ResZ);
       if (getSettings()->debug() == 6) {
         cout << "Stub ResPhi " << ResPhi * RPhiSigma << " ResSigma " << RPhiSigma << " Res " << ResPhi << " chi2 "
              << chi2_phi << endl;
@@ -437,7 +445,8 @@ namespace tmtt {
       chi2 = floor(chi2 * chi2Mult_) / chi2Mult_;
 
     // cout << "chi2 "<< chi2 << " phi "<< chi2_phi << " z "<< chi2_z << endl;
-    float dof = 2 * fitStubs.size() - 4;
+    constexpr unsigned int nHelixPar = 4;
+    float dof = 2 * fitStubs.size() - nHelixPar;
     float chi2dof = chi2 / dof;
     if (chi2 < chi2cut_)
       accepted = true;
@@ -446,62 +455,62 @@ namespace tmtt {
       cout << "qOverPt " << qOverPt << " phiT " << phiT << endl;
 
     // This condition can only happen if cfg param TrackFitCheat = True.
-    if (fitStubs.size() < 4)
+    if (fitStubs.size() < minStubLayersRed_)
       accepted = false;
 
     // Kinematic cuts -- NOT YET IN FIRMWARE!!!
     constexpr float tolerance = 0.1;
-    if (fabs(qOverPt) > 1. / (getSettings()->houghMinPt() - tolerance))
+    if (std::abs(qOverPt) > 1. / (getSettings()->houghMinPt() - tolerance))
       accepted = false;
-    if (fabs(z0) > 20.)
+    if (std::abs(z0) > 20.)
       accepted = false;
 
     if (accepted) {
-      
       // Create the L1fittedTrack object
       const unsigned int hitPattern = 0;  // FIX: Needs setting
-      L1fittedTrack fitTrk(getSettings(), l1track3D, fitStubs, hitPattern, qOverPt, 0., phi0, z0, tanLambda, chi2_phi, chi2_z, 4);
+      L1fittedTrack fitTrk(
+          getSettings(), l1track3D, fitStubs, hitPattern, qOverPt, 0., phi0, z0, tanLambda, chi2_phi, chi2_z, nHelixPar);
 
       if (getSettings()->enableDigitize())
-	fitTrk.digitizeTrack("SimpleLR");
+        fitTrk.digitizeTrack("SimpleLR4");
 
       if (getSettings()->debug() == 6 and digitize_) {
-	cout << "Digitized parameters " << endl;
-	cout << "HT mbin " << int(l1track3D.getCellLocationHT().first) - 16 << " cbin "
-	     << int(l1track3D.getCellLocationHT().second) - 32 << " iPhi " << l1track3D.iPhiSec() << " iEta "
-	     << l1track3D.iEtaReg() << endl;
-	cout << setw(10) << "First Helix parameters: qOverPt = " << fitTrk.qOverPt() << " oneOver2r "
-	     << fitTrk.digitaltrack().oneOver2r() << " (" << floor(fitTrk.digitaltrack().oneOver2r() * qOverPtMult_)
-	     << "), phi0 = " << fitTrk.digitaltrack().phi0() << " (" << fitTrk.digitaltrack().iDigi_phi0rel()
-	     << "), zT = " << zT << " (" << floor(zT * z0Mult_) << "), tanLambda = " << tanLambda << " ("
-	     << floor(tanLambda * tanLambdaMult_) << ")" << endl;
+        cout << "Digitized parameters " << endl;
+        cout << "HT mbin " << int(l1track3D.getCellLocationHT().first) - 16 << " cbin "
+             << int(l1track3D.getCellLocationHT().second) - 32 << " iPhi " << l1track3D.iPhiSec() << " iEta "
+             << l1track3D.iEtaReg() << endl;
+        cout << setw(10) << "First Helix parameters: qOverPt = " << fitTrk.qOverPt() << " oneOver2r "
+             << fitTrk.digitaltrack().oneOver2r() << " (" << floor(fitTrk.digitaltrack().oneOver2r() * qOverPtMult_)
+             << "), phi0 = " << fitTrk.digitaltrack().phi0() << " (" << fitTrk.digitaltrack().iDigi_phi0rel()
+             << "), zT = " << zT << " (" << floor(zT * z0Mult_) << "), tanLambda = " << tanLambda << " ("
+             << floor(tanLambda * tanLambdaMult_) << ")" << endl;
       }
 
       if (getSettings()->debug() == 6) {
-	cout << "FitTrack helix parameters " << int(fitTrk.getCellLocationFit().first) - 16 << ", "
-	     << int(fitTrk.getCellLocationFit().second) - 32 << " HT parameters "
-	     << int(fitTrk.getCellLocationHT().first) - 16 << ", " << int(fitTrk.getCellLocationHT().second) - 32 << endl;
+        cout << "FitTrack helix parameters " << int(fitTrk.getCellLocationFit().first) - 16 << ", "
+             << int(fitTrk.getCellLocationFit().second) - 32 << " HT parameters "
+             << int(fitTrk.getCellLocationHT().first) - 16 << ", " << int(fitTrk.getCellLocationHT().second) - 32
+             << endl;
 
-	if (fitTrk.getMatchedTP() != nullptr) {
-	  cout << "VERY GOOD! " << chi2dof << endl;
-	  cout << "TP qOverPt " << fitTrk.getMatchedTP()->qOverPt() << " phi0 " << fitTrk.getMatchedTP()->phi0() << endl;
-	  if (!accepted)
-	    cout << "BAD CHI2 " << chi2 << " chi2/ndof " << chi2dof << endl;
-	} else {
-	  cout << "FAKE TRACK!!! " << chi2 << " chi2/ndof " << chi2dof << endl;
-	  if (l1track3D.getMatchedTP() != nullptr)
-	    cout << "was good" << endl;
-	}
-	cout << "layers in track " << fitTrk.getNumLayers() << endl;
+        if (fitTrk.getMatchedTP() != nullptr) {
+          cout << "VERY GOOD! " << chi2dof << endl;
+          cout << "TP qOverPt " << fitTrk.getMatchedTP()->qOverPt() << " phi0 " << fitTrk.getMatchedTP()->phi0()
+               << endl;
+          if (!accepted)
+            cout << "BAD CHI2 " << chi2 << " chi2/ndof " << chi2dof << endl;
+        } else {
+          cout << "FAKE TRACK!!! " << chi2 << " chi2/ndof " << chi2dof << endl;
+          if (l1track3D.getMatchedTP() != nullptr)
+            cout << "was good" << endl;
+        }
+        cout << "layers in track " << fitTrk.getNumLayers() << endl;
       }
 
       return fitTrk;
 
     } else {
-
       L1fittedTrack rejectedTrk;
       return rejectedTrk;
-
     }
   }
 

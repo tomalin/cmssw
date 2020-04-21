@@ -98,7 +98,7 @@ namespace tmtt {
       this->setConsistentHTcell();
     }
 
-    L1fittedTrack() : L1trackBase(), accepted_(false) {};  // Creates rejected track object.
+    L1fittedTrack() : L1trackBase(), accepted_(false){};  // Creates rejected track object.
 
     ~L1fittedTrack() {}
 
@@ -216,7 +216,7 @@ namespace tmtt {
 
     float qOverPt() const { return qOverPt_; }
     float charge() const { return (qOverPt_ > 0 ? 1 : -1); }
-    float invPt() const { return fabs(qOverPt_); }
+    float invPt() const { return std::abs(qOverPt_); }
     float pt() const { return 1. / (1.0e-6 + this->invPt()); }  // includes protection against 1/pt = 0.
     float d0() const { return d0_; }
     float phi0() const { return phi0_; }
@@ -231,7 +231,7 @@ namespace tmtt {
     bool done_bcon() const { return done_bcon_; }  // Was beam-spot constraint aplied?
     float qOverPt_bcon() const { return qOverPt_bcon_; }
     float charge_bcon() const { return (qOverPt_bcon_ > 0 ? 1 : -1); }
-    float invPt_bcon() const { return fabs(qOverPt_bcon_); }
+    float invPt_bcon() const { return std::abs(qOverPt_bcon_); }
     float pt_bcon() const { return 1. / (1.0e-6 + this->invPt_bcon()); }
     float phi0_bcon() const { return phi0_bcon_; }
 
@@ -295,7 +295,7 @@ namespace tmtt {
 
     // Determine if the fitted track trajectory should lie within the same HT cell in which the track was originally found?
     void setConsistentHTcell() {
-      //return (max(fabs(this->deltaM()), fabs(this->deltaC())) < 0.5);
+      //return (max(std::abs(this->deltaM()), std::abs(this->deltaC())) < 0.5);
       // Use helix params with beam-spot constaint if done in case of 5 param fit.
 
       std::pair<unsigned int, unsigned int> htCell = this->getCellLocationHT();
@@ -320,7 +320,7 @@ namespace tmtt {
     // Is the fitted track trajectory within the same (eta,phi) sector of the HT used to find it?
     bool consistentSector() const {
       bool insidePhi =
-          (fabs(reco::deltaPhi(this->phiAtChosenR(done_bcon_), secTmp_.phiCentre())) < secTmp_.sectorHalfWidth());
+          (std::abs(reco::deltaPhi(this->phiAtChosenR(done_bcon_), secTmp_.phiCentre())) < secTmp_.sectorHalfWidth());
       bool insideEta = (this->zAtChosenR() > secTmp_.zAtChosenR_Min() && this->zAtChosenR() < secTmp_.zAtChosenR_Max());
       return (insidePhi && insideEta);
     }

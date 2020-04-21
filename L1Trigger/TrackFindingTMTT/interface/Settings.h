@@ -382,7 +382,7 @@ namespace tmtt {
 
     //=== Track fit digitisation configuration for various track fitters
 
-    // These are used only for SimpleLR track fitter.
+    // These are used only for SimpleLR4 track fitter.
     bool slr_skipTrackDigi() const { return slr_skipTrackDigi_; }
     unsigned int slr_oneOver2rBits() const { return slr_oneOver2rBits_; }
     double slr_oneOver2rRange() const { return slr_oneOver2rRange_; }
@@ -411,7 +411,7 @@ namespace tmtt {
     unsigned int kf_chisquaredBits() const { return kf_chisquaredBits_; }
     double kf_chisquaredRange() const { return kf_chisquaredRange_; }
     const std::vector<double>& kf_chisquaredBinEdges() const { return kf_chisquaredBinEdges_; }
-    // Skip track digitisation when fitted is not SimpleLR or KF?
+    // Skip track digitisation when fitted is not SimpleLR4 or KF?
     bool other_skipTrackDigi() const { return other_skipTrackDigi_; }
 
     //=== Debug printout & plots
@@ -453,8 +453,7 @@ namespace tmtt {
     void setBfield(float bField) { bField_ = bField; }
     float getBfield() const {
       if (bField_ == 0.)
-        throw cms::Exception("LogicError")
-            << "Settings: You attempted to access the B field before it was initialized" << std::endl;
+        throw cms::Exception("LogicError") << "Settings: You attempted to access the B field before it was initialized";
       return bField_;
     }
 

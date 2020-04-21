@@ -26,7 +26,7 @@ namespace tmtt {
     ~TP() {}
 
     // Return pointer to original tracking particle.
-    const TrackingParticlePtr& trackingParticlePtr() const {return trackingParticlePtr_;}
+    const TrackingParticlePtr& trackingParticlePtr() const { return trackingParticlePtr_; }
 
     bool operator==(const TP& tpOther) const { return (this->index() == tpOther.index()); }
 
@@ -101,8 +101,7 @@ namespace tmtt {
     void calcNumLayers() { nLayersWithStubs_ = Utility::countLayers(settings_, assocStubs_, false); }
 
   private:
-
-    TrackingParticlePtr trackingParticlePtr_; // Pointer to original TrackingParticle.
+    TrackingParticlePtr trackingParticlePtr_;  // Pointer to original TrackingParticle.
 
     unsigned int index_in_vTPs_;  // location of this TP in InputData::vTPs
 

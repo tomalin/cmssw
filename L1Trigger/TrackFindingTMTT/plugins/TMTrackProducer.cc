@@ -29,10 +29,10 @@ using boost::numeric::ublas::matrix;
 
 namespace tmtt {
 
-TMTrackProducer::TMTrackProducer(const edm::ParameterSet& iConfig) : 
-  settings_(iConfig), // Set configuration parameters
-  hists_(&settings_)  // Initialize histograms
-{
+  TMTrackProducer::TMTrackProducer(const edm::ParameterSet& iConfig)
+      : settings_(iConfig),  // Set configuration parameters
+        hists_(&settings_)   // Initialize histograms
+  {
     using namespace edm;
 
     // Get tokens for ES data access.
@@ -221,14 +221,14 @@ TMTrackProducer::TMTrackProducer(const edm::ParameterSet& iConfig) :
         // Do this for tracks output by HT & optionally also for those output by r-z track filter.
         const vector<L1track3D>& vecTrk3D_ht = get3Dtrk.trackCands3D(false);
         for (const L1track3D& trk : vecTrk3D_ht) {
-          TTTrack<Ref_Phase2TrackerDigi_> htTTTrack = converter.makeTTTrack(trk, iPhiSec, iEtaReg);
+          TTTrack<Ref_Phase2TrackerDigi_> htTTTrack = converter.makeTTTrack(&trk, iPhiSec, iEtaReg);
           htTTTracksForOutput->push_back(htTTTrack);
         }
 
         if (runRZfilter_) {
           const vector<L1track3D>& vecTrk3D_rz = get3Dtrk.trackCands3D(true);
           for (const L1track3D& trk : vecTrk3D_rz) {
-            TTTrack<Ref_Phase2TrackerDigi_> rzTTTrack = converter.makeTTTrack(trk, iPhiSec, iEtaReg);
+            TTTrack<Ref_Phase2TrackerDigi_> rzTTTrack = converter.makeTTTrack(&trk, iPhiSec, iEtaReg);
             rzTTTracksForOutput->push_back(rzTTTrack);
           }
         }
@@ -263,7 +263,6 @@ TMTrackProducer::TMTrackProducer(const edm::ParameterSet& iConfig) :
           // Fit all tracks in this sector
           vector<L1fittedTrack> fittedTracksInSec;
           for (const L1track3D& trk : vecTrk3D) {
-
             // Ensure stubs assigned to this track is digitized with respect to the phi sector the track is in.
             if (settings_.enableDigitize()) {
               const vector<const Stub*>& stubsOnTrk = trk.getStubs();
@@ -293,7 +292,7 @@ TMTrackProducer::TMTrackProducer(const edm::ParameterSet& iConfig) :
           for (const L1fittedTrack& fitTrk : filtFittedTracksInSec) {
             fittedTracks[fitterName].push_back(fitTrk);
             // Convert these fitted tracks to EDM format for output (used for collaborative work outside TMTT group).
-            TTTrack<Ref_Phase2TrackerDigi_> fitTTTrack = converter.makeTTTrack(fitTrk, iPhiSec, iEtaReg);
+            TTTrack<Ref_Phase2TrackerDigi_> fitTTTrack = converter.makeTTTrack(&fitTrk, iPhiSec, iEtaReg);
             allFitTTTracksForOutput[locationInsideArray[fitterName]]->push_back(fitTTTrack);
           }
         }
@@ -322,7 +321,8 @@ TMTrackProducer::TMTrackProducer(const edm::ParameterSet& iConfig) :
 
     // Allow histogramming to plot undigitized variables.
     for (const Stub* stub : vStubs) {
-      if (settings_.enableDigitize()) (const_cast<Stub*>(stub))->setDigitizeWarningsOn(false);
+      if (settings_.enableDigitize())
+        (const_cast<Stub*>(stub))->setDigitizeWarningsOn(false);
     }
 
     // Fill histograms to monitor input data & tracking performance.
@@ -342,7 +342,8 @@ TMTrackProducer::TMTrackProducer(const edm::ParameterSet& iConfig) :
 
   void TMTrackProducer::endJob() {
     // Print stub window sizes that TMTT recommends CMS uses in FE chips.
-    if (settings_.printStubWindows()) StubWindowSuggest::printResults();
+    if (settings_.printStubWindows())
+      StubWindowSuggest::printResults();
 
     // Print job summary
     hists_.trackerGeometryAnalysis(trackerGeometryInfo_);

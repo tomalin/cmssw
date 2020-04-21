@@ -2,8 +2,8 @@
 
 ///=== Written by: Davide Cieri (davide.cieri@stfc.ac.uk)
 
-#ifndef L1Trigger_TrackFindingTMTT_SimpleLR_h
-#define L1Trigger_TrackFindingTMTT_SimpleLR_h
+#ifndef L1Trigger_TrackFindingTMTT_SimpleLR4_h
+#define L1Trigger_TrackFindingTMTT_SimpleLR4_h
 
 #include "L1Trigger/TrackFindingTMTT/interface/TrackFitGeneric.h"
 #include "L1Trigger/TrackFindingTMTT/interface/Settings.h"
@@ -17,11 +17,11 @@
 
 namespace tmtt {
 
-  class SimpleLR : public TrackFitGeneric {
+  class SimpleLR4 : public TrackFitGeneric {
   public:
-    SimpleLR(const Settings* settings);
+    SimpleLR4(const Settings* settings);
 
-    virtual ~SimpleLR(){};
+    virtual ~SimpleLR4(){};
 
     L1fittedTrack fit(const L1track3D& l1track3D);
 
@@ -47,6 +47,7 @@ namespace tmtt {
     float chi2cut_;
     float invPtToDPhi_;
     float chosenRofPhi_;
+    unsigned int minStubLayersRed_;
 
     bool digitize_;
     unsigned int dividerBitsHelix_;
