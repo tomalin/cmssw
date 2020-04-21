@@ -54,16 +54,16 @@ namespace tmtt {
     //--- Get information about the reconstructed track.
 
     // Get stubs on track candidate.
-    const std::vector<const Stub*>& getStubs() const { return stubs_; }
+    const std::vector<const Stub*>& stubs() const { return stubs_; }
     // Get number of stubs on track candidate.
-    unsigned int getNumStubs() const { return stubs_.size(); }
+    unsigned int numStubs() const { return stubs_.size(); }
     // Get number of tracker layers these stubs are in.
-    unsigned int getNumLayers() const { return nLayers_; }
+    unsigned int numLayers() const { return nLayers_; }
     // Get cell location of track candidate in Hough Transform array in units of bin number.
-    std::pair<unsigned int, unsigned int> getCellLocationHT() const { return cellLocationHT_; }
+    std::pair<unsigned int, unsigned int> cellLocationHT() const { return cellLocationHT_; }
     // The two conventionally agreed track helix parameters relevant in this 2D plane.
     // i.e. (q/Pt, phi0).
-    std::pair<float, float> getHelix2D() const { return helix2D_; }
+    std::pair<float, float> helix2D() const { return helix2D_; }
 
     //--- User-friendlier access to the helix parameters obtained from track location inside HT array.
 
@@ -80,7 +80,7 @@ namespace tmtt {
       estValid_ = true;
     }
 
-    bool getTrkEstZ0andTanLam(float& estZ0, float& estTanLambda) const {
+    bool trkEstZ0andTanLam(float& estZ0, float& estTanLambda) const {
       estZ0 = estZ0_;
       estTanLambda = estTanLambda_;
       return estValid_;
@@ -100,13 +100,13 @@ namespace tmtt {
     //--- Get information about its association (if any) to a truth Tracking Particle.
 
     // Get matching tracking particle (=nullptr if none).
-    const TP* getMatchedTP() const { return matchedTP_; }
+    const TP* matchedTP() const { return matchedTP_; }
     // Get the matched stubs.
-    const std::vector<const Stub*>& getMatchedStubs() const { return matchedStubs_; }
+    const std::vector<const Stub*>& matchedStubs() const { return matchedStubs_; }
     // Get number of matched stubs.
-    unsigned int getNumMatchedStubs() const { return matchedStubs_.size(); }
+    unsigned int numMatchedStubs() const { return matchedStubs_.size(); }
     // Get number of tracker layers with matched stubs.
-    unsigned int getNumMatchedLayers() const { return nMatchedLayers_; }
+    unsigned int numMatchedLayers() const { return nMatchedLayers_; }
 
   private:
     //--- Configuration parameters

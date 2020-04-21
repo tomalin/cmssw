@@ -122,7 +122,7 @@ namespace demo {
                               genJetToken_);
 
     const vector<tmtt::TP>& vTPs = inputData.getTPs();
-    const vector<const tmtt::Stub*>& vStubs = inputData.getStubs();
+    const vector<const tmtt::Stub*>& vStubs = inputData.stubs();
 
     // Creates matrix of Sector objects, which decide which stubs are in which (eta,phi) sector
     matrix<tmtt::Sector> mSectors(settings_.numPhiSectors(), settings_.numEtaRegions());
@@ -239,12 +239,12 @@ namespace demo {
         // Loop over candidates in this phi/eta sector
         for (const tmtt::L1track3D& trk : get3DtrkCoarse.trackCands3D(false)) {
           auto lMTrk = const_cast<tmtt::L1track3D&>(trk);
-          auto lChiPhi = lMTrk.getChiPhiDigi();
-          auto lChiZ = lMTrk.getChiZDigi();
-          const auto& lStubs = lMTrk.getStubs();
+          auto lChiPhi = lMTrk.chiPhiDigi();
+          auto lChiZ = lMTrk.chiZDigi();
+          const auto& lStubs = lMTrk.stubs();
 
-          int8_t cBin = (trk.getCellLocationHT().second - settings_.houghNbinsPhi() / 2) / 2;
-          int8_t mBin = (trk.getCellLocationHT().first - settings_.houghNbinsPt() / 2) / 2;
+          int8_t cBin = (trk.cellLocationHT().second - settings_.houghNbinsPhi() / 2) / 2;
+          int8_t mBin = (trk.cellLocationHT().first - settings_.houghNbinsPt() / 2) / 2;
           bool mSel = (mBin >= 0);
 
           // Loop over the stub collection
@@ -287,13 +287,13 @@ namespace demo {
 
         // Loop over the tracks
         for (const tmtt::L1track3D& trk : vecTrk3D) {
-          int8_t cBin = trk.getCellLocationHT().second - settings_.houghNbinsPhi() / 2;
-          int8_t mBin = trk.getCellLocationHT().first - settings_.houghNbinsPt() / 2;
+          int8_t cBin = trk.cellLocationHT().second - settings_.houghNbinsPhi() / 2;
+          int8_t mBin = trk.cellLocationHT().first - settings_.houghNbinsPt() / 2;
 
           unsigned int iLink = trk.optoLinkID();
           unsigned int iNonant = iPhiSec / numPhiSecPerNon;
 
-          for (const tmtt::Stub* stub : trk.getStubs()) {
+          for (const tmtt::Stub* stub : trk.stubs()) {
             DigiHTMiniStub digiHTMiniStub = digiConverter.makeDigiHTMiniStub(*stub,
                                                                              // SectorID
                                                                              iPhiSecInNonant,
@@ -333,7 +333,7 @@ namespace demo {
           for (const tmtt::L1track3D& trk : vecTrk3D) {
             // Ensure stubs assigned to this track is digitized with respect to the phi sector the track is in.
             if (settings_.enableDigitize()) {
-              const vector<const tmtt::Stub*>& stubsOnTrk = trk.getStubs();
+              const vector<const tmtt::Stub*>& stubsOnTrk = trk.stubs();
               for (const tmtt::Stub* s : stubsOnTrk) {
                 (const_cast<tmtt::Stub*>(s))->digitizeForHTinput(iPhiSec);
                 // Also digitize stub in way this specific track fitter uses it.

@@ -93,24 +93,24 @@ namespace tmtt {
       numUpdateCalls_ = numUpdateCalls;
     }
 
-    void getInfoKF(unsigned int& nSkippedLayers, unsigned int& numUpdateCalls) const {
+    void infoKF(unsigned int& nSkippedLayers, unsigned int& numUpdateCalls) const {
       nSkippedLayers = nSkippedLayers_;
       numUpdateCalls = numUpdateCalls_;
     }
 
-    const L1track3D* getL1track3D() const { return l1track3D_; }
+    const L1track3D* l1track3D() const { return l1track3D_; }
 
     // Get stubs on fitted track (can differ from those on HT track if track fit kicked out stubs with bad residuals)
-    const std::vector<const Stub*>& getStubs() const { return stubs_; }
+    const std::vector<const Stub*>& stubs() const { return stubs_; }
     // Get number of stubs on fitted track.
-    unsigned int getNumStubs() const { return stubs_.size(); }
+    unsigned int numStubs() const { return stubs_.size(); }
     // Get number of tracker layers these stubs are in.
-    unsigned int getNumLayers() const { return nLayers_; }
+    unsigned int numLayers() const { return nLayers_; }
     // Get number of stubs deleted from track candidate by fitter (because they had large residuals)
-    unsigned int getNumKilledStubs() const { return l1track3D_->getNumStubs() - this->getNumStubs(); }
+    unsigned int numKilledStubs() const { return l1track3D_->numStubs() - this->numStubs(); }
 
     // Get bit-encoded hit pattern (where layer number assigned by increasing distance from origin, according to layers track expected to cross).
-    unsigned int getHitPattern() const { return hitPattern_; }
+    unsigned int hitPattern() const { return hitPattern_; }
 
     //--- Get the fitted track helix parameters.
 
@@ -157,9 +157,9 @@ namespace tmtt {
     float nHelixParam() const { return nHelixParam_; }
 
     // Get the fit degrees of freedom, chi2 & chi2/DOF
-    unsigned int numDOF() const { return 2 * this->getNumStubs() - nHelixParam_; }
-    unsigned int numDOFrphi() const { return this->getNumStubs() - (nHelixParam_ - 2); }
-    unsigned int numDOFrz() const { return this->getNumStubs() - 2; }
+    unsigned int numDOF() const { return 2 * this->numStubs() - nHelixParam_; }
+    unsigned int numDOFrphi() const { return this->numStubs() - (nHelixParam_ - 2); }
+    unsigned int numDOFrz() const { return this->numStubs() - 2; }
     float chi2rphi() const { return chi2rphi_; }
     float chi2rz() const { return chi2rz_; }
     float chi2() const { return chi2rphi_ + chi2rz_; }

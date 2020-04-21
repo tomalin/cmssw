@@ -44,7 +44,7 @@ namespace tmtt {
 
   L1fittedTrack ChiSquaredFitBase::fit(const L1track3D& l1track3D) {
     qOverPt_seed_ = l1track3D.qOverPt();
-    stubs_ = l1track3D.getStubs();
+    stubs_ = l1track3D.stubs();
 
     // Get cut on number of layers including variation due to dead sectors, pt dependence etc.
     minStubLayersRed_ = Utility::numLayerCut(Utility::AlgoStep::FIT,

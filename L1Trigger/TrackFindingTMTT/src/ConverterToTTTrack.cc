@@ -19,7 +19,6 @@ namespace tmtt {
     // Handle variables that differ for L1fittedTrack & L1track3D
     if (fitTrk == nullptr) {
       // This is an L1track3D type (track before fit) 
-      cout<<"CASTING FAILURE"<<endl;
       nPar = 4; // Before fit, TMTT algorithm assumes 4 helix params
       // Set to zero variables that are unavailable for this track type.
       hitPattern = 0;
@@ -30,11 +29,10 @@ namespace tmtt {
       chi2rz = 0;
     } else {
       // This is an L1fittedTrack type (track after fit)
-      cout<<"CASTING SUCCESS"<<endl;
       if (not fitTrk->accepted())
         throw cms::Exception("LogicError") << "ConverterToTTTrack ERROR: requested to convert invalid L1fittedTrack";
       nPar = fitTrk->nHelixParam();  // Number of helix parameters in track fit
-      hitPattern = fitTrk->getHitPattern();
+      hitPattern = fitTrk->hitPattern();
       d0 = fitTrk->d0();
       z0 = fitTrk->z0();
       tanL = fitTrk->tanLambda();
@@ -67,7 +65,7 @@ namespace tmtt {
 
 std::vector<TTStubRef> ConverterToTTTrack::getStubRefs(const L1trackBase* trk) const {
   std::vector<TTStubRef> ttstubrefs;
-  const std::vector<const Stub*> stubs = trk->getStubs();
+  const std::vector<const Stub*> stubs = trk->stubs();
   for (const Stub* s : stubs) {
     const TTStubRef& ref = s->ttStubRef();
     ttstubrefs.push_back(ref);

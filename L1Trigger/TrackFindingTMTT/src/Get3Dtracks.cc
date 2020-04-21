@@ -42,10 +42,10 @@ namespace tmtt {
     vecTracks3D_unfiltered_.clear();
 
     for (const L1track2D& trkRphi : vecTracksRphi) {
-      const vector<const Stub*>& stubsOnTrkRphi = trkRphi.getStubs();  // stubs assigned to track
+      const vector<const Stub*>& stubsOnTrkRphi = trkRphi.stubs();  // stubs assigned to track
 
-      float qOverPt = trkRphi.getHelix2D().first;
-      float phi0 = trkRphi.getHelix2D().second;
+      float qOverPt = trkRphi.helix2D().first;
+      float phi0 = trkRphi.helix2D().second;
 
       if (settings_->enableDigitize()) {
         // Centre of HT bin lies on boundary of two fitted track digi bins, so nudge slightly +ve (like FW)
@@ -66,7 +66,7 @@ namespace tmtt {
       // Create 3D track, by adding r-z helix params to 2D track
       L1track3D trk3D(settings_,
                       stubsOnTrkRphi,
-                      trkRphi.getCellLocationHT(),
+                      trkRphi.cellLocationHT(),
                       helixRphi,
                       helixRz,
                       iPhiSec_,
@@ -117,8 +117,8 @@ namespace tmtt {
 
     // Loop over track candidates, looking for those associated to given TP.
     for (const L1track3D& trk : allTracks3D) {
-      if (trk.getMatchedTP() != nullptr) {
-        if (trk.getMatchedTP()->index() == tp.index())
+      if (trk.matchedTP() != nullptr) {
+        if (trk.matchedTP()->index() == tp.index())
           assocRecoTrk.push_back(&trk);
       }
     }

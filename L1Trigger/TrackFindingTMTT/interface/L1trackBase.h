@@ -23,11 +23,11 @@ namespace tmtt {
     //--- Get information about the reconstructed track.
 
     // Get stubs on track candidate.
-    virtual const std::vector<const Stub*>& getStubs() const = 0;
+    virtual const std::vector<const Stub*>& stubs() const = 0;
     // Get number of stubs on track candidate.
-    virtual unsigned int getNumStubs() const = 0;
+    virtual unsigned int numStubs() const = 0;
     // Get number of tracker layers these stubs are in.
-    virtual unsigned int getNumLayers() const = 0;
+    virtual unsigned int numLayers() const = 0;
 
     //--- User-friendly access to the helix parameters.
 
@@ -37,7 +37,7 @@ namespace tmtt {
     //virtual float   tanLambda()  const  = 0;
 
     //--- Cell locations of the track candidate in the r-phi Hough transform array in units of bin number.
-    virtual std::pair<unsigned int, unsigned int> getCellLocationHT() const = 0;
+    virtual std::pair<unsigned int, unsigned int> cellLocationHT() const = 0;
 
     //--- Get phi sector and eta region used by track finding code that this track is in.
     virtual unsigned int iPhiSec() const = 0;
@@ -49,13 +49,13 @@ namespace tmtt {
     //--- Get information about its association (if any) to a truth Tracking Particle.
 
     // Get matching tracking particle (=nullptr if none).
-    virtual const TP* getMatchedTP() const = 0;
+    virtual const TP* matchedTP() const = 0;
     // Get the matched stubs.
-    virtual const std::vector<const Stub*>& getMatchedStubs() const = 0;
+    virtual const std::vector<const Stub*>& matchedStubs() const = 0;
     // Get number of matched stubs.
-    virtual unsigned int getNumMatchedStubs() const = 0;
+    virtual unsigned int numMatchedStubs() const = 0;
     // Get number of tracker layers with matched stubs.
-    virtual unsigned int getNumMatchedLayers() const = 0;
+    virtual unsigned int numMatchedLayers() const = 0;
   };
 
 }  // namespace tmtt

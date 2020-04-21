@@ -69,15 +69,15 @@ namespace demo {
                         0,  // d0
                         aFitTrk.digitaltrack().iDigi_chisquaredRphi(),
                         aFitTrk.digitaltrack().iDigi_chisquaredRz(),
-                        aFitTrk.getHitPattern(),
-                        aFitTrk.getNumLayers(),
+                        aFitTrk.hitPattern(),
+                        aFitTrk.numLayers(),
                         0,
-                        aFitTrk.getCellLocationHT().first - mSettings->houghNbinsPt() / 2,
-                        aFitTrk.getCellLocationHT().second - mSettings->houghNbinsPhi() / 2,
+                        aFitTrk.cellLocationHT().first - mSettings->houghNbinsPt() / 2,
+                        aFitTrk.cellLocationHT().second - mSettings->houghNbinsPhi() / 2,
                         aFitTrk.iPhiSec() % numPhiSecPerNon,
                         aFitTrk.iEtaReg(),
-                        aFitTrk.getCellLocationFit().first - mSettings->houghNbinsPt() / 2,
-                        aFitTrk.getCellLocationFit().second - mSettings->houghNbinsPhi() / 2,
+                        aFitTrk.cellLocationFit().first - mSettings->houghNbinsPt() / 2,
+                        aFitTrk.cellLocationFit().second - mSettings->houghNbinsPhi() / 2,
                         aFitTrk.consistentHTcell(),
                         true);
   }

@@ -76,7 +76,7 @@ namespace tmtt {
 
     // Loop over track candidates
     for (const L1track2D& trk : trackCands2D_) {
-      nStubs += trk.getStubs().size();
+      nStubs += trk.stubs().size();
     }
 
     return nStubs;
@@ -90,8 +90,8 @@ namespace tmtt {
 
     // Loop over track candidates, looking for those associated to given TP.
     for (const L1track2D& trk : trackCands2D_) {
-      if (trk.getMatchedTP() != nullptr) {
-        if (trk.getMatchedTP()->index() == tp.index())
+      if (trk.matchedTP() != nullptr) {
+        if (trk.matchedTP()->index() == tp.index())
           assocRecoTrk.push_back(&trk);
       }
     }

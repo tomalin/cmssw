@@ -98,7 +98,7 @@ namespace tmtt {
     unsigned int numStubs = 0;
     // Calc helix parameters on Rphi Plane (STEP 1)
     // This loop calculates the sums needed to calculate the numerators and the denominator to compute the helix parameters in the R-Phi plane (q/pT, phiT)
-    for (const Stub* stub : l1track3D.getStubs()) {
+    for (const Stub* stub : l1track3D.stubs()) {
       // if((const_cast<Stub*>(stub))->psModule()){
       numStubs++;
 
@@ -181,7 +181,7 @@ namespace tmtt {
     // ================== RESIDUAL CALCULATION ON RPHI ========================
     std::vector<std::pair<const Stub*, double> > vRes;
     unsigned int psStubs = 0;
-    for (const Stub* stub : l1track3D.getStubs()) {
+    for (const Stub* stub : l1track3D.stubs()) {
       if ((const_cast<Stub*>(stub))->psModule())
         psStubs++;
       double ResPhi;
@@ -376,8 +376,8 @@ namespace tmtt {
     // qOverPt /= -invPtToDPhi_;
 
     if (getSettings()->debug() == 6 and digitize_) {
-      cout << "HT mbin " << int(l1track3D.getCellLocationHT().first) - 16 << " cbin "
-           << int(l1track3D.getCellLocationHT().second) - 32 << " iPhi " << l1track3D.iPhiSec() << " iEta "
+      cout << "HT mbin " << int(l1track3D.cellLocationHT().first) - 16 << " cbin "
+           << int(l1track3D.cellLocationHT().second) - 32 << " iPhi " << l1track3D.iPhiSec() << " iEta "
            << l1track3D.iEtaReg() << endl;
       cout << "Second Helix variables: numeratorPt = " << numeratorPt << ", numeratorPhi = " << numeratorPhi
            << ", numeratorZ0 = " << numeratorZ0 << " numeratorLambda = " << numeratorLambda
@@ -476,8 +476,8 @@ namespace tmtt {
 
       if (getSettings()->debug() == 6 and digitize_) {
         cout << "Digitized parameters " << endl;
-        cout << "HT mbin " << int(l1track3D.getCellLocationHT().first) - 16 << " cbin "
-             << int(l1track3D.getCellLocationHT().second) - 32 << " iPhi " << l1track3D.iPhiSec() << " iEta "
+        cout << "HT mbin " << int(l1track3D.cellLocationHT().first) - 16 << " cbin "
+             << int(l1track3D.cellLocationHT().second) - 32 << " iPhi " << l1track3D.iPhiSec() << " iEta "
              << l1track3D.iEtaReg() << endl;
         cout << setw(10) << "First Helix parameters: qOverPt = " << fitTrk.qOverPt() << " oneOver2r "
              << fitTrk.digitaltrack().oneOver2r() << " (" << floor(fitTrk.digitaltrack().oneOver2r() * qOverPtMult_)
@@ -487,23 +487,23 @@ namespace tmtt {
       }
 
       if (getSettings()->debug() == 6) {
-        cout << "FitTrack helix parameters " << int(fitTrk.getCellLocationFit().first) - 16 << ", "
-             << int(fitTrk.getCellLocationFit().second) - 32 << " HT parameters "
-             << int(fitTrk.getCellLocationHT().first) - 16 << ", " << int(fitTrk.getCellLocationHT().second) - 32
+        cout << "FitTrack helix parameters " << int(fitTrk.cellLocationFit().first) - 16 << ", "
+             << int(fitTrk.cellLocationFit().second) - 32 << " HT parameters "
+             << int(fitTrk.cellLocationHT().first) - 16 << ", " << int(fitTrk.cellLocationHT().second) - 32
              << endl;
 
-        if (fitTrk.getMatchedTP() != nullptr) {
+        if (fitTrk.matchedTP() != nullptr) {
           cout << "VERY GOOD! " << chi2dof << endl;
-          cout << "TP qOverPt " << fitTrk.getMatchedTP()->qOverPt() << " phi0 " << fitTrk.getMatchedTP()->phi0()
+          cout << "TP qOverPt " << fitTrk.matchedTP()->qOverPt() << " phi0 " << fitTrk.matchedTP()->phi0()
                << endl;
           if (!accepted)
             cout << "BAD CHI2 " << chi2 << " chi2/ndof " << chi2dof << endl;
         } else {
           cout << "FAKE TRACK!!! " << chi2 << " chi2/ndof " << chi2dof << endl;
-          if (l1track3D.getMatchedTP() != nullptr)
+          if (l1track3D.matchedTP() != nullptr)
             cout << "was good" << endl;
         }
-        cout << "layers in track " << fitTrk.getNumLayers() << endl;
+        cout << "layers in track " << fitTrk.numLayers() << endl;
       }
 
       return fitTrk;

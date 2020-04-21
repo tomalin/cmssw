@@ -84,7 +84,7 @@ namespace tmtt {
     vector<L1track3D> filteredTracks;
 
     for (const L1track2D& trkIN : tracks) {
-      const vector<const Stub*>& stubs = trkIN.getStubs();  // stubs assigned to track
+      const vector<const Stub*>& stubs = trkIN.stubs();  // stubs assigned to track
 
       // Declare this to be worth keeping (for now).
       bool trackAccepted = true;
@@ -103,8 +103,8 @@ namespace tmtt {
 
       // Get debug printout for specific regions.
       bool print = false;
-      // unsigned int mbin = trkIN.getCellLocationHT().first;
-      // unsigned int cbin = trkIN.getCellLocationHT().second;
+      // unsigned int mbin = trkIN.cellLocationHT().first;
+      // unsigned int cbin = trkIN.cellLocationHT().second;
       // if(mbin == 0 && cbin == 45 && trkIN.iEtaReg() == 14 && trkIN.iPhiSec() == 6) print = true;
       // cout << "track in region "<<trkIN.iEtaReg()<<", "<<trkIN.iPhiSec()<< " bin " << mbin << ", "<< cbin << endl;
 
@@ -132,8 +132,8 @@ namespace tmtt {
         // Create copy of original track, except now using its filtered stubs, to be added to filteredTrack collection.
         L1track3D trkOUT(settings_,
                          filteredStubs,
-                         trkIN.getCellLocationHT(),
-                         trkIN.getHelix2D(),
+                         trkIN.cellLocationHT(),
+                         trkIN.helix2D(),
                          helixRZ,
                          trkIN.iPhiSec(),
                          trkIN.iEtaReg(),

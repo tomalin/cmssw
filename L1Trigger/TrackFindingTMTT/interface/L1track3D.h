@@ -87,21 +87,21 @@ namespace tmtt {
     //--- Get information about the reconstructed track.
 
     // Get stubs on track candidate.
-    const std::vector<const Stub*>& getStubs() const { return stubs_; }
+    const std::vector<const Stub*>& stubs() const { return stubs_; }
     // Get number of stubs on track candidate.
-    unsigned int getNumStubs() const { return stubs_.size(); }
+    unsigned int numStubs() const { return stubs_.size(); }
     // Get number of tracker layers these stubs are in.
-    unsigned int getNumLayers() const { return nLayers_; }
+    unsigned int numLayers() const { return nLayers_; }
     // Get cell location of track candidate in r-phi Hough Transform array in units of bin number.
-    std::pair<unsigned int, unsigned int> getCellLocationHT() const { return cellLocationHT_; }
+    std::pair<unsigned int, unsigned int> cellLocationHT() const { return cellLocationHT_; }
     // The two conventionally agreed track helix parameters relevant in r-phi plane. i.e. (q/Pt, phi0)
-    std::pair<float, float> getHelixRphi() const { return helixRphi_; }
+    std::pair<float, float> helixRphi() const { return helixRphi_; }
     // The two conventionally agreed track helix parameters relevant in r-z plane. i.e. (z0, tan_lambda)
-    std::pair<float, float> getHelixRz() const { return helixRz_; }
+    std::pair<float, float> helixRz() const { return helixRz_; }
 
     //--- Return chi variables, (both digitized & undigitized), which are the stub coords. relative to track.
 
-    std::vector<float> getChiPhi() {
+    std::vector<float> chiPhi() {
       std::vector<float> result;
       for (const Stub* s : stubs_) {
         float chi_phi = reco::deltaPhi(s->phi(), this->phi0() - s->r() * this->qOverPt() * settings_->invPtToDphi());
@@ -110,17 +110,17 @@ namespace tmtt {
       return result;
     }
 
-    std::vector<int> getChiPhiDigi() {
+    std::vector<int> chiPhiDigi() {
       std::vector<int> result;
       const float phiMult = pow(2, settings_->phiSBits()) / settings_->phiSRange();
-      for (const float& chi_phi : this->getChiPhi()) {
+      for (const float& chi_phi : this->chiPhi()) {
         int iDigi_chi_phi = floor(chi_phi * phiMult);
         result.push_back(iDigi_chi_phi);
       }
       return result;
     }
 
-    std::vector<float> getChiZ() {
+    std::vector<float> chiZ() {
       std::vector<float> result;
       for (const Stub* s : stubs_) {
         float chi_z = s->z() - (this->z0() + s->r() * this->tanLambda());
@@ -129,10 +129,10 @@ namespace tmtt {
       return result;
     }
 
-    std::vector<int> getChiZDigi() {
+    std::vector<int> chiZDigi() {
       std::vector<int> result;
       const float zMult = pow(2, settings_->zBits()) / settings_->zRange();
-      for (const float& chi_z : this->getChiZ()) {
+      for (const float& chi_z : this->chiZ()) {
         int iDigi_chi_z = floor(chi_z * zMult);
         result.push_back(iDigi_chi_z);
       }
@@ -174,15 +174,15 @@ namespace tmtt {
     //--- Get information about its association (if any) to a truth Tracking Particle.
 
     // Get best matching tracking particle (=nullptr if none).
-    const TP* getMatchedTP() const { return matchedTP_; }
+    const TP* matchedTP() const { return matchedTP_; }
     // Get the matched stubs with this Tracking Particle
-    const std::vector<const Stub*>& getMatchedStubs() const { return matchedStubs_; }
+    const std::vector<const Stub*>& matchedStubs() const { return matchedStubs_; }
     // Get number of matched stubs with this Tracking Particle
-    unsigned int getNumMatchedStubs() const { return matchedStubs_.size(); }
+    unsigned int numMatchedStubs() const { return matchedStubs_.size(); }
     // Get number of tracker layers with matched stubs with this Tracking Particle
-    unsigned int getNumMatchedLayers() const { return nMatchedLayers_; }
+    unsigned int numMatchedLayers() const { return nMatchedLayers_; }
     // Get purity of stubs on track candidate (i.e. fraction matching best Tracking Particle)
-    float getPurity() const { return getNumMatchedStubs() / float(getNumStubs()); }
+    float purity() const { return numMatchedStubs() / float(numStubs()); }
 
     //--- For debugging purposes.
 
@@ -221,7 +221,7 @@ namespace tmtt {
         htRphiTmp.init(settings_, iPhiSec_, iEtaReg_, secTmp.etaMin(), secTmp.etaMax(), secTmp.phiCentre());
         std::pair<unsigned int, unsigned int> trueCell = htRphiTmp.trueCell(matchedTP_);
 
-        std::pair<unsigned int, unsigned int> htCell = this->getCellLocationHT();
+        std::pair<unsigned int, unsigned int> htCell = this->cellLocationHT();
         bool consistent = (htCell == trueCell);  // If true, track is probably not a duplicate.
         if (mergedHTcell_) {
           // If this is a merged cell, check other elements of merged cell.

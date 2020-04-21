@@ -13,10 +13,10 @@ namespace tmtt {
 
         bool consistent = this->consistentHTcell();
         bool consistentSect = this->consistentSector();
-        int mbinhelix = int(this->getCellLocationFit().first) - floor(settings_->houghNbinsPt() / 2);
-        int cbinhelix = int(this->getCellLocationFit().second) - floor(settings_->houghNbinsPhi() / 2);
-        int mBinHT = int(this->getCellLocationHT().first) - floor(settings_->houghNbinsPt() / 2);
-        int cBinHT = int(this->getCellLocationHT().second) - floor(settings_->houghNbinsPhi() / 2);
+        int mbinhelix = int(this->cellLocationFit().first) - floor(settings_->houghNbinsPt() / 2);
+        int cbinhelix = int(this->cellLocationFit().second) - floor(settings_->houghNbinsPhi() / 2);
+        int mBinHT = int(this->cellLocationHT().first) - floor(settings_->houghNbinsPt() / 2);
+        int cBinHT = int(this->cellLocationHT().second) - floor(settings_->houghNbinsPhi() / 2);
 
         if (matchedTP_ != nullptr) {
           digitalTrack_.init(fitterName,

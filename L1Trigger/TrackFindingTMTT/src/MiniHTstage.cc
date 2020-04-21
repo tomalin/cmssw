@@ -66,8 +66,8 @@ namespace tmtt {
           for (const L1track2D& roughTrk : roughTracks) {
             float roughTrkPhi =
                 reco::deltaPhi(roughTrk.phi0() - chosenRofPhi_ * invPtToDphi_ * roughTrk.qOverPt() - phiCentre, 0.);
-            const pair<unsigned int, unsigned int>& cell = roughTrk.getCellLocationHT();
-            const vector<const Stub*>& stubs = roughTrk.getStubs();
+            const pair<unsigned int, unsigned int>& cell = roughTrk.cellLocationHT();
+            const vector<const Stub*>& stubs = roughTrk.stubs();
             bool fineTrksFound = false;
             bool storeCoarseTrack = false;
             const unsigned int& link = roughTrk.optoLinkID();
@@ -158,7 +158,7 @@ namespace tmtt {
               for (unsigned int mBin = 0; mBin < miniHoughNbinsPt_; mBin++) {
                 for (unsigned int cBin = 0; cBin < miniHoughNbinsPhi_; cBin++) {
                   unsigned int testLinkID = linkIDLoadBalanced(
-                      link, mBin, cBin, roughTrk.getNumStubs(), numStubsPerLinkStage1, numStubsPerLinkStage2, true);
+                      link, mBin, cBin, roughTrk.numStubs(), numStubsPerLinkStage1, numStubsPerLinkStage2, true);
                   if (numStubsPerLink[testLinkID] < bestNumStubsPerLink) {
                     bestCell = {mBin, cBin};
                     bestNumStubsPerLink = numStubsPerLink[testLinkID];
@@ -170,7 +170,7 @@ namespace tmtt {
               unsigned int trueLinkID = linkIDLoadBalanced(link,
                                                            bestCell.first,
                                                            bestCell.second,
-                                                           roughTrk.getNumStubs(),
+                                                           roughTrk.numStubs(),
                                                            numStubsPerLinkStage1,
                                                            numStubsPerLinkStage2);
 
@@ -182,10 +182,10 @@ namespace tmtt {
 	    } else {
 	      encodedLink = pair<unsigned int, unsigned int>(link, 0);
 	    }
-            numStubsPerLink[ encodedLink ] += roughTrk.getNumStubs();
+            numStubsPerLink[ encodedLink ] += roughTrk.numStubs();
             if ( busySectorKill_ && numStubsPerLink[ encodedLink ] > busySectorNumStubs_ ) keep = false;
 	    */
-              numStubsPerLink[trueLinkID] += roughTrk.getNumStubs();
+              numStubsPerLink[trueLinkID] += roughTrk.numStubs();
               if (busySectorKill_ && numStubsPerLink[trueLinkID] > busySectorNumStubs_)
                 keep = false;
               if (keep) {

@@ -112,7 +112,7 @@ namespace tmtt {
                         genJetToken_);
 
     const vector<TP>& vTPs = inputData.getTPs();
-    const vector<const Stub*>& vStubs = inputData.getStubs();
+    const vector<const Stub*>& vStubs = inputData.stubs();
 
     // Creates matrix of Sector objects, which decide which stubs are in which (eta,phi) sector
     matrix<Sector> mSectors(settings_.numPhiSectors(), settings_.numEtaRegions());
@@ -265,7 +265,7 @@ namespace tmtt {
           for (const L1track3D& trk : vecTrk3D) {
             // Ensure stubs assigned to this track is digitized with respect to the phi sector the track is in.
             if (settings_.enableDigitize()) {
-              const vector<const Stub*>& stubsOnTrk = trk.getStubs();
+              const vector<const Stub*>& stubsOnTrk = trk.stubs();
               for (const Stub* s : stubsOnTrk) {
                 (const_cast<Stub*>(s))->digitizeForHTinput(iPhiSec);
                 // Also digitize stub in way this specific track fitter uses it.

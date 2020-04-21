@@ -31,7 +31,7 @@ namespace tmtt {
     // Get tracking particles
     const std::vector<TP>& getTPs() const { return vTPs_; }
     // Get stubs that would be output by the front-end readout electronics
-    const std::vector<const Stub*>& getStubs() const { return vStubs_; }
+    const std::vector<const Stub*>& stubs() const { return vStubs_; }
 
     //--- of minor importance ...
 

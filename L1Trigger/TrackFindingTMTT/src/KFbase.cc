@@ -318,13 +318,13 @@ namespace tmtt {
 
     //TP
     const TP *tpa(0);
-    if (l1track3D.getMatchedTP()) {
-      tpa = l1track3D.getMatchedTP();
+    if (l1track3D.matchedTP()) {
+      tpa = l1track3D.matchedTP();
     }
     tpa_ = tpa;
 
     //stub list from L1track3D, sorted in layer order - necessary for clustering only
-    std::vector<const Stub *> stubs = l1track3D.getStubs();
+    std::vector<const Stub *> stubs = l1track3D.stubs();
 
     sort(stubs.begin(), stubs.end(), orderStubsByLayer);  // Unnecessary?
 
@@ -385,9 +385,9 @@ namespace tmtt {
     if (getSettings()->kalmanDebugLevel() >= 1) {
       std::cout << "===============================================================================" << endl;
       std::cout << "Input track cand: [phiSec,etaReg]=[" << l1track3D.iPhiSec() << "," << l1track3D.iEtaReg() << "]";
-      std::cout << " HT(m,c)=(" << l1track3D.getCellLocationHT().first << "," << l1track3D.getCellLocationHT().second
+      std::cout << " HT(m,c)=(" << l1track3D.cellLocationHT().first << "," << l1track3D.cellLocationHT().second
                 << ") q/pt=" << l1track3D.qOverPt() << " tanL=" << l1track3D.tanLambda() << " z0=" << l1track3D.z0()
-                << " phi0=" << l1track3D.phi0() << " nStubs=" << l1track3D.getNumStubs() << " d0=" << l1track3D.d0()
+                << " phi0=" << l1track3D.phi0() << " nStubs=" << l1track3D.numStubs() << " d0=" << l1track3D.d0()
                 << std::endl;
       if (not getSettings()->hybrid())
         printTP(cout, tpa);
@@ -428,10 +428,10 @@ namespace tmtt {
       //      cand->getHLSselect(mBinHelixHLS, cBinHelixHLS, consistentHLS);
       //      if( getSettings()->kalmanDebugLevel() >= 3 ){
       //        // Check if (m,c) corresponding to helix params are correctly calculated by HLS code.
-      //        bool HLS_OK = ((mBinHelixHLS == fitTrk.getCellLocationFit().first) && (cBinHelixHLS == fitTrk.getCellLocationFit().second));
+      //        bool HLS_OK = ((mBinHelixHLS == fitTrk.cellLocationFit().first) && (cBinHelixHLS == fitTrk.cellLocationFit().second));
       //        if (not HLS_OK) std::cout<<"WARNING HLS mBinHelix disagrees with C++:"
-      //                                 <<" (HLS,C++) m=("<<mBinHelixHLS<<","<<fitTrk.getCellLocationFit().first <<")"
-      //                                 <<" c=("<<cBinHelixHLS<<","<<fitTrk.getCellLocationFit().second<<")"<<endl;
+      //                                 <<" (HLS,C++) m=("<<mBinHelixHLS<<","<<fitTrk.cellLocationFit().first <<")"
+      //                                 <<" c=("<<cBinHelixHLS<<","<<fitTrk.cellLocationFit().second<<")"<<endl;
       //      }
       //    }
 
@@ -474,7 +474,7 @@ namespace tmtt {
           cout << "TP for eff. : index " << tpa->index() << endl;
         }
         cout << "Candidate : " << endl;
-        if (tpa && tpa->useForAlgEff() && fitTrk.getPurity() != 1) {
+        if (tpa && tpa->useForAlgEff() && fitTrk.purity() != 1) {
           cout << "The candidate is not pure" << endl;
         }
         cand->dump(cout, tpa, true);
@@ -530,8 +530,8 @@ namespace tmtt {
                                                       const std::vector<const StubCluster *> &stubClusters,
                                                       const TP *tpa) {
 #ifdef RECALC_DEBUG
-    cout << "FITTER new track: HT cell=(" << l1track3D.getCellLocationHT().first << ","
-         << l1track3D.getCellLocationHT().second << ")" << endl;
+    cout << "FITTER new track: HT cell=(" << l1track3D.cellLocationHT().first << ","
+         << l1track3D.cellLocationHT().second << ")" << endl;
 #endif
 
     // output container (contains 0 or 1 states).
@@ -584,7 +584,7 @@ namespace tmtt {
     for (unsigned iteration = 0; iteration < maxIterations; iteration++) {
       int combinations_per_iteration = 0;
 
-      bool easy = (l1track3D.getNumStubs() < getSettings()->kalmanMaxStubsEasy());
+      bool easy = (l1track3D.numStubs() < getSettings()->kalmanMaxStubsEasy());
       unsigned int kalmanMaxSkipLayers =
           easy ? getSettings()->kalmanMaxSkipLayersEasy() : getSettings()->kalmanMaxSkipLayersHard();
 
@@ -791,8 +791,8 @@ namespace tmtt {
       if (getSettings()->kalmanDebugLevel() >= 1) {
         cout << "Track found! final state selection: nLay=" << stateFinal->nStubLayers() << " hitPattern=" << std::hex
              << stateFinal->hitPattern() << std::dec << " phiSec=" << l1track3D.iPhiSec()
-             << " etaReg=" << l1track3D.iEtaReg() << " HT(m,c)=(" << l1track3D.getCellLocationHT().first << ","
-             << l1track3D.getCellLocationHT().second << ")";
+             << " etaReg=" << l1track3D.iEtaReg() << " HT(m,c)=(" << l1track3D.cellLocationHT().first << ","
+             << l1track3D.cellLocationHT().second << ")";
         std::vector<double> y = getTrackParams(stateFinal);
         cout << " q/pt=" << y[QOVERPT] << " tanL=" << y[T] << " z0=" << y[Z0] << " phi0=" << y[PHI0];
         if (nPar_ == 5)

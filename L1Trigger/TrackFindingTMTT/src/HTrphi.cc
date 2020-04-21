@@ -345,7 +345,7 @@ namespace tmtt {
 
   unsigned int HTrphi::getMbinRange(const L1track2D& trk) const {
     if (busySectorUseMbinRanges_) {
-      unsigned int mBin = trk.getCellLocationHT().first;
+      unsigned int mBin = trk.cellLocationHT().first;
       unsigned int mBinOrder;
       if (busySectorUseMbinOrder_) {
         // User wants to group bins in a wierd order.
@@ -580,7 +580,7 @@ namespace tmtt {
         //      So instead ask L1track3D, which knows if it was created from a merged HT cell or not.
 
         /*
-      if (fitTrk->getL1track3D().mergedHTcell()) {
+      if (fitTrk->l1track3D().mergedHTcell()) {
         if (iQoverPt%2 == 1) iQoverPt -= 1;
         if (iPhiTrk%2  == 1) iPhiTrk  -= 1;
       }
@@ -688,7 +688,7 @@ namespace tmtt {
 
       for (const L1track2D& trk : tracks) {
         bool keep = true;
-        unsigned int nStubs = trk.getNumStubs();  // #stubs on this track.
+        unsigned int nStubs = trk.numStubs();  // #stubs on this track.
         if (busySectorUseMbinRanges_) {  // Are tracks from different m bin ranges output seperately to increase bandwidth?
           unsigned int mBinRange = this->getMbinRange(trk);  // Which m bin range is this track in?
           nStubsOutInRange[mBinRange] += nStubs;

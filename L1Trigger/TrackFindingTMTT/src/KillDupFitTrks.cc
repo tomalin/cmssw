@@ -80,7 +80,7 @@ namespace tmtt {
         if ((!usePtAndZ0Cuts) ||
             (std::abs(trk.z0()) < settings_->beamWindowZ() && trk.pt() > settings_->houghMinPt() - 0.2)) {
           // For debugging.
-          const TP* tp = trk.getMatchedTP();
+          const TP* tp = trk.matchedTP();
 
           // Check if this track's fitted (q/pt, phi0) helix parameters correspond to the same HT cell as the HT originally found the track in.
           bool consistentCell = trk.consistentHTcell();
@@ -89,9 +89,9 @@ namespace tmtt {
             tracksFiltered.push_back(trk);
             // Memorize HT cell location corresponding to this track (identical for HT track & fitted track).
             if (!memorizeAllHTcells) {
-              pair<unsigned int, unsigned int> htCell = trk.getCellLocationHT();
+              pair<unsigned int, unsigned int> htCell = trk.cellLocationHT();
               htCellUsed.insert(htCell);
-              if (trk.getL1track3D()->mergedHTcell()) {
+              if (trk.l1track3D()->mergedHTcell()) {
                 // If this is a merged cell, block the other elements too, in case a track found by the HT in an unmerged cell
                 // has a fitted cell there.
                 pair<unsigned int, unsigned int> htCell10(htCell.first + 1, htCell.second);
@@ -104,38 +104,38 @@ namespace tmtt {
             }
 
             if (debug && tp != nullptr) {
-              cout << "FIRST PASS: m=" << trk.getCellLocationHT().first << "/" << trk.getCellLocationFit().first
-                   << " c=" << trk.getCellLocationHT().second << "/" << trk.getCellLocationFit().second
-                   << " Delta(m,c)=(" << int(trk.getCellLocationHT().first) - int(trk.getCellLocationFit().first) << ","
-                   << int(trk.getCellLocationHT().second) - int(trk.getCellLocationFit().second)
-                   << ") pure=" << trk.getPurity() << " merged=" << trk.getL1track3D()->mergedHTcell()
-                   << " #layers=" << trk.getL1track3D()->getNumLayers() << " tp=" << tp->index() << " dupCell=("
+              cout << "FIRST PASS: m=" << trk.cellLocationHT().first << "/" << trk.cellLocationFit().first
+                   << " c=" << trk.cellLocationHT().second << "/" << trk.cellLocationFit().second
+                   << " Delta(m,c)=(" << int(trk.cellLocationHT().first) - int(trk.cellLocationFit().first) << ","
+                   << int(trk.cellLocationHT().second) - int(trk.cellLocationFit().second)
+                   << ") pure=" << trk.purity() << " merged=" << trk.l1track3D()->mergedHTcell()
+                   << " #layers=" << trk.l1track3D()->numLayers() << " tp=" << tp->index() << " dupCell=("
                    << tpFound[tp->index()].first << "," << tpFound[tp->index()].second
                    << ") dup=" << tpFoundAtPass[tp->index()] << endl;
               // If the following two variables are non-zero in printout, then track has already been found,
               // so we have mistakenly kept a duplicate.
               if (tpFound.find(tp->index()) != tpFound.end())
-                tpFound[tp->index()] = trk.getCellLocationFit();
+                tpFound[tp->index()] = trk.cellLocationFit();
               tpFoundAtPass[tp->index()] = 1;
             }
 
           } else {
             if (limitDiff) {
               const unsigned int maxDiff = 1;
-              if (abs(int(trk.getCellLocationHT().first) - int(trk.getCellLocationFit().first)) <= int(maxDiff) &&
-                  abs(int(trk.getCellLocationHT().second) - int(trk.getCellLocationFit().second)) <= int(maxDiff))
+              if (abs(int(trk.cellLocationHT().first) - int(trk.cellLocationFit().first)) <= int(maxDiff) &&
+                  abs(int(trk.cellLocationHT().second) - int(trk.cellLocationFit().second)) <= int(maxDiff))
                 tracksRejected.push_back(&trk);
             } else {
               tracksRejected.push_back(&trk);
             }
 
             if (debug && tp != nullptr) {
-              cout << "FIRST REJECT: m=" << trk.getCellLocationHT().first << "/" << trk.getCellLocationFit().first
-                   << " c=" << trk.getCellLocationHT().second << "/" << trk.getCellLocationFit().second
-                   << " Delta(m,c)=(" << int(trk.getCellLocationHT().first) - int(trk.getCellLocationFit().first) << ","
-                   << int(trk.getCellLocationHT().second) - int(trk.getCellLocationFit().second)
-                   << ") pure=" << trk.getPurity() << " merged=" << trk.getL1track3D()->mergedHTcell()
-                   << " #layers=" << trk.getL1track3D()->getNumLayers() << " tp=" << tp->index() << " dupCell=("
+              cout << "FIRST REJECT: m=" << trk.cellLocationHT().first << "/" << trk.cellLocationFit().first
+                   << " c=" << trk.cellLocationHT().second << "/" << trk.cellLocationFit().second
+                   << " Delta(m,c)=(" << int(trk.cellLocationHT().first) - int(trk.cellLocationFit().first) << ","
+                   << int(trk.cellLocationHT().second) - int(trk.cellLocationFit().second)
+                   << ") pure=" << trk.purity() << " merged=" << trk.l1track3D()->mergedHTcell()
+                   << " #layers=" << trk.l1track3D()->numLayers() << " tp=" << tp->index() << " dupCell=("
                    << tpFound[tp->index()].first << "," << tpFound[tp->index()].second
                    << ") dup=" << tpFoundAtPass[tp->index()] << endl;
             }
@@ -143,9 +143,9 @@ namespace tmtt {
           // Memorize HT cell location corresponding to this track, even if it was not accepted by first pass..
           if (memorizeAllHTcells) {
             pair<unsigned int, unsigned int> htCell =
-                trk.getCellLocationFit();  // Intentionally used fit instead of HT here.
+                trk.cellLocationFit();  // Intentionally used fit instead of HT here.
             htCellUsed.insert(htCell);
-            if (trk.getL1track3D()->mergedHTcell()) {
+            if (trk.l1track3D()->mergedHTcell()) {
               // If this is a merged cell, block the other elements too, in case a track found by the HT in an unmerged cell
               // has a fitted cell there.
               // N.B. NO GOOD REASON WHY "-1" IS NOT DONE HERE TOO. MIGHT REDUCE DUPLICATE RATE?
@@ -165,7 +165,7 @@ namespace tmtt {
       // Making a second pass through the rejected tracks, checking if any should be rescued.
       for (const L1fittedTrack* trk : tracksRejected) {
         // Get location in HT array corresponding to fitted track helix parameters.
-        pair<unsigned int, unsigned int> htCell = trk->getCellLocationFit();
+        pair<unsigned int, unsigned int> htCell = trk->cellLocationFit();
         // If this HT cell was not already memorized, rescue this track, since it is probably not a duplicate,
         // but just a track whose fitted helix parameters are a bit wierd for some reason.
         if (std::count(htCellUsed.begin(), htCellUsed.end(), htCell) == 0) {
@@ -176,15 +176,15 @@ namespace tmtt {
             htCellUsed.insert(htCell);
 
           // For debugging.
-          const TP* tp = trk->getMatchedTP();
+          const TP* tp = trk->matchedTP();
 
           if (debug && tp != nullptr) {
-            cout << "SECOND PASS: m=" << trk->getCellLocationHT().first << "/" << trk->getCellLocationFit().first
-                 << " c=" << trk->getCellLocationHT().second << "/" << trk->getCellLocationFit().second
-                 << " Delta(m,c)=(" << int(trk->getCellLocationHT().first) - int(trk->getCellLocationFit().first) << ","
-                 << int(trk->getCellLocationHT().second) - int(trk->getCellLocationFit().second)
-                 << ") pure=" << trk->getPurity() << " merged=" << trk->getL1track3D()->mergedHTcell()
-                 << " #layers=" << trk->getL1track3D()->getNumLayers() << " tp=" << tp->index() << " dupCell=("
+            cout << "SECOND PASS: m=" << trk->cellLocationHT().first << "/" << trk->cellLocationFit().first
+                 << " c=" << trk->cellLocationHT().second << "/" << trk->cellLocationFit().second
+                 << " Delta(m,c)=(" << int(trk->cellLocationHT().first) - int(trk->cellLocationFit().first) << ","
+                 << int(trk->cellLocationHT().second) - int(trk->cellLocationFit().second)
+                 << ") pure=" << trk->purity() << " merged=" << trk->l1track3D()->mergedHTcell()
+                 << " #layers=" << trk->l1track3D()->numLayers() << " tp=" << tp->index() << " dupCell=("
                  << tpFound[tp->index()].first << "," << tpFound[tp->index()].second
                  << ") dup=" << tpFoundAtPass[tp->index()] << endl;
             if (tpFound.find(tp->index()) != tpFound.end())
@@ -219,7 +219,7 @@ namespace tmtt {
 
     for (const L1fittedTrack& trk : tracks) {
       // Get location in HT array corresponding to fitted track helix parameters.
-      pair<unsigned int, unsigned int> htCell = trk.getCellLocationFit();
+      pair<unsigned int, unsigned int> htCell = trk.cellLocationFit();
       // If this HT cell was not already memorized, rescue this track, since it is probably not a duplicate,
       // but just a track whose fitted helix parameters are a bit wierd for some reason.
       if (std::count(htCellUsed.begin(), htCellUsed.end(), htCell) == 0) {
@@ -227,11 +227,11 @@ namespace tmtt {
         // Store cell location to avoid rescuing other tracks at the same location, which may be duplicates of this track.
         htCellUsed.insert(htCell);
         if (debug) {
-          const TP* tp = trk.getMatchedTP();
+          const TP* tp = trk.matchedTP();
           int tpIndex = (tp != nullptr) ? tp->index() : -999;
-          cout << "ALG51: m=" << trk.getCellLocationHT().first << "/" << trk.getCellLocationFit().first
-               << " c=" << trk.getCellLocationHT().second << "/" << trk.getCellLocationFit().second << " tp=" << tpIndex
-               << " pure=" << trk.getPurity() << endl;
+          cout << "ALG51: m=" << trk.cellLocationHT().first << "/" << trk.cellLocationFit().first
+               << " c=" << trk.cellLocationHT().second << "/" << trk.cellLocationFit().second << " tp=" << tpIndex
+               << " pure=" << trk.purity() << endl;
         }
       }
     }
@@ -247,7 +247,7 @@ namespace tmtt {
   void KillDupFitTrks::printDuplicateTracks(const vector<L1fittedTrack>& tracks) const {
     map<const TP*, vector<const L1fittedTrack*>> tpMap;
     for (const L1fittedTrack& trk : tracks) {
-      const TP* tp = trk.getMatchedTP();
+      const TP* tp = trk.matchedTP();
       if (tp != nullptr) {
         tpMap[tp].push_back(&trk);
       }
@@ -257,12 +257,12 @@ namespace tmtt {
       const vector<const L1fittedTrack*> vecTrk = p.second;
       if (vecTrk.size() > 1) {
         for (const L1fittedTrack* trk : vecTrk) {
-          cout << "  MESS UP : m=" << trk->getCellLocationHT().first << "/" << trk->getCellLocationFit().first
-               << " c=" << trk->getCellLocationHT().second << "/" << trk->getCellLocationFit().second
+          cout << "  MESS UP : m=" << trk->cellLocationHT().first << "/" << trk->cellLocationFit().first
+               << " c=" << trk->cellLocationHT().second << "/" << trk->cellLocationFit().second
                << " tp=" << tp->index() << " tp_pt=" << tp->pt() << " fit_pt=" << trk->pt()
-               << " pure=" << trk->getPurity() << endl;
+               << " pure=" << trk->purity() << endl;
           cout << "     stubs = ";
-          for (const Stub* s : trk->getStubs())
+          for (const Stub* s : trk->stubs())
             cout << s->index() << " ";
           cout << endl;
         }

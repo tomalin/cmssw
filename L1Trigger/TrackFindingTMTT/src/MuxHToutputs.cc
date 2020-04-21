@@ -74,7 +74,7 @@ namespace tmtt {
           vector<L1track2D> tracks = htRphi.trackCands2D();
 
           for (L1track2D& trk : tracks) {
-            unsigned int nStubs = trk.getNumStubs();            // #stubs on this track.
+            unsigned int nStubs = trk.numStubs();            // #stubs on this track.
             unsigned int mBinRange = htRphi.getMbinRange(trk);  // Which m bin range is this track in?
             // Get the output optical link corresponding to this sector & m-bin range.
             unsigned int link = this->linkID(iSecInNon, iEtaReg, mBinRange);

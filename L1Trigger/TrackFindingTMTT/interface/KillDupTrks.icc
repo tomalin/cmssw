@@ -89,7 +89,7 @@ namespace tmtt {
     std::vector<std::vector<std::pair<unsigned int, unsigned int> > > candList;
 
     for (const T& trk : vecTracks) {
-      const std::vector<const Stub*>& stubs = trk.getStubs();
+      const std::vector<const Stub*>& stubs = trk.stubs();
       std::vector<std::pair<unsigned int, unsigned int> > stubList;
 
       for (const auto& myStub : stubs) {
@@ -120,8 +120,8 @@ namespace tmtt {
         if (layerMatches(&(candList[i]), &(candList[j])) >=
             dupTrkMinCommonHitsLayers_)  // Enough in common to keep one and kill the other
         {
-          unsigned int qualI = vecTracks[indices[i]].getNumLayers();
-          unsigned int qualJ = vecTracks[indices[j]].getNumLayers();
+          unsigned int qualI = vecTracks[indices[i]].numLayers();
+          unsigned int qualJ = vecTracks[indices[j]].numLayers();
 
           // Keep best "quality"
           if (qualI < qualJ) {
@@ -171,7 +171,7 @@ namespace tmtt {
     //std::cout<<"** Alg25 comparing "<<vecTracks.size()<<" candidates"<<std::endl;
 
     for (const T& trk : vecTracks) {
-      const std::vector<const Stub*>& stubs = trk.getStubs();
+      const std::vector<const Stub*>& stubs = trk.stubs();
       std::vector<std::pair<unsigned int, unsigned int> > stubList;
 
       for (const auto& myStub : stubs) {
@@ -191,7 +191,7 @@ namespace tmtt {
 
     // Loop through std::vector
     while (i < candList.size()) {
-      unsigned int range = vecTracks[i].getNumStubs();
+      unsigned int range = vecTracks[i].numStubs();
 
       // Check rest of candidates
       for (unsigned int j = 0; j < candList.size();
@@ -200,15 +200,15 @@ namespace tmtt {
         if (j == i)
           continue;  // We would always get a match...
         if (j > i) {
-          range += vecTracks[j].getNumStubs();
+          range += vecTracks[j].numStubs();
           if (range >= 51)
             break;
         }
 
         if (layerMatches(&(candList[i]), &(candList[j])) >= dupTrkMinCommonHitsLayers_)  // Enough in common
         {
-          unsigned int qualI = vecTracks[i].getNumLayers();
-          unsigned int qualJ = vecTracks[j].getNumLayers();
+          unsigned int qualI = vecTracks[i].numLayers();
+          unsigned int qualJ = vecTracks[j].numLayers();
 
           if (j < i) {
             if (qualI == qualJ)  // Drop i if same stubs, larger abs(q/pT), keep both if equal
@@ -285,10 +285,10 @@ namespace tmtt {
   void KillDupTrks<T>::printKill(unsigned int alg, unsigned int dup, unsigned int cand, T dupTrack, T candTrack) const {
     // condition to print debug info from duplicate track removal code.
     if (settings_->debug() == 5) {
-      std::pair<unsigned int, unsigned int> duploc = dupTrack.getCellLocationHT();
-      std::pair<unsigned int, unsigned int> canloc = candTrack.getCellLocationHT();
+      std::pair<unsigned int, unsigned int> duploc = dupTrack.cellLocationHT();
+      std::pair<unsigned int, unsigned int> canloc = candTrack.cellLocationHT();
 
-      const TP *dupTP = dupTrack.getMatchedTP(), *candTP = candTrack.getMatchedTP();
+      const TP *dupTP = dupTrack.matchedTP(), *candTP = candTrack.matchedTP();
 
       int dupTPIndex = dupTP == nullptr ? -1 : dupTP->index();
       int candTPIndex = candTP == nullptr ? -1 : candTP->index();

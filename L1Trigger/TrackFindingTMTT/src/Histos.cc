@@ -353,7 +353,7 @@ namespace tmtt {
   //=== Fill histograms using input stubs and tracking particles.
 
   void Histos::fillInputData(const InputData& inputData) {
-    const vector<const Stub*>& vStubs = inputData.getStubs();
+    const vector<const Stub*>& vStubs = inputData.stubs();
     const vector<TP>& vTPs = inputData.getTPs();
 
     hisNumEvents_->Fill(0.);
@@ -814,7 +814,7 @@ namespace tmtt {
   //=== Fill histograms checking if (eta,phi) sector definition choices are good.
 
   void Histos::fillEtaPhiSectors(const InputData& inputData, const matrix<Sector>& mSectors) {
-    const vector<const Stub*>& vStubs = inputData.getStubs();
+    const vector<const Stub*>& vStubs = inputData.stubs();
     const vector<TP>& vTPs = inputData.getTPs();
 
     //=== Loop over good tracking particles, looking for the (eta,phi) sector in which each has the most stubs.
@@ -1003,9 +1003,9 @@ namespace tmtt {
         hisStubsOnRphiTracksPerHT_->Fill(htRphi.numStubsOnTrackCands2D());
         // Also note cell location of HT tracks.
         for (const L1track2D& trk : htRphi.trackCands2D()) {
-          hisHTstubsPerTrack_->Fill(trk.getNumStubs());
-          hisHTmBin_->Fill(trk.getCellLocationHT().first);
-          hisHTcBin_->Fill(trk.getCellLocationHT().second);
+          hisHTstubsPerTrack_->Fill(trk.numStubs());
+          hisHTmBin_->Fill(trk.cellLocationHT().first);
+          hisHTcBin_->Fill(trk.cellLocationHT().second);
         }
       }
     }
@@ -1291,7 +1291,7 @@ namespace tmtt {
 
     // Debug histogram for LR track fitter.
     for (const L1track3D& t : tracks) {
-      const std::vector<const Stub*> stubs = t.getStubs();
+      const std::vector<const Stub*> stubs = t.stubs();
       std::map<unsigned int, unsigned int> layerMap;
       for (auto s : stubs)
         layerMap[s->layerIdReduced()]++;
@@ -1336,7 +1336,7 @@ namespace tmtt {
 
     matrix<unsigned int> nStubsOnTrksInSec(numPhiSectors_, numEtaRegions_, 0);
     for (const L1track3D& t : tracks) {
-      const vector<const Stub*>& stubs = t.getStubs();
+      const vector<const Stub*>& stubs = t.stubs();
       unsigned int nStubs = stubs.size();
       unsigned int iNonant = floor((t.iPhiSec()) * numPhiNonants / (numPhiSectors_));  // phi nonant number
       // Count stubs on all tracks in this sector & nonant.
@@ -1384,7 +1384,7 @@ namespace tmtt {
           if (iPhiNon == iNonantTrk) {
             unsigned int link = trk.optoLinkID();
             if (link < nLinks) {
-              stubsToLinkCount[link] += trk.getNumStubs();
+              stubsToLinkCount[link] += trk.numStubs();
               trksToLinkCount[link] += 1;
             } else if (firstMess) {
               firstMess = false;
@@ -1412,23 +1412,23 @@ namespace tmtt {
     // Plot q/pt spectrum of track candidates, and number of stubs/tracks
     for (const L1track3D& trk : tracks) {
       hisNumTracksVsQoverPt_[tName]->Fill(trk.qOverPt());  // Plot reconstructed q/Pt of track cands.
-      hisStubsPerTrack_[tName]->Fill(trk.getNumStubs());   // Stubs per track.
-      const TP* tp = trk.getMatchedTP();
+      hisStubsPerTrack_[tName]->Fill(trk.numStubs());   // Stubs per track.
+      const TP* tp = trk.matchedTP();
       if (algoTMTT) {
         // For genuine tracks, check how often they have too many stubs to be stored in cell memory. (Perhaps worse for high Pt particles in jets?).
         if (tp != nullptr) {
           if (tp->useForAlgEff())
-            profExcessStubsPerTrackVsPt_[tName]->Fill(1. / tp->pt(), trk.getNumStubs() > 16);
+            profExcessStubsPerTrackVsPt_[tName]->Fill(1. / tp->pt(), trk.numStubs() > 16);
         }
       }
-      hisLayersPerTrack_[tName]->Fill(trk.getNumLayers());  // Number of reduced layers with stubs per track.
+      hisLayersPerTrack_[tName]->Fill(trk.numLayers());  // Number of reduced layers with stubs per track.
       hisPSLayersPerTrack_[tName]->Fill(Utility::countLayers(
-          settings_, trk.getStubs(), false, true));  // Number of reduced PS layers with stubs per track.
+          settings_, trk.stubs(), false, true));  // Number of reduced PS layers with stubs per track.
       // Also plot just for genuine tracks.
       if (tp != nullptr && tp->useForAlgEff()) {
-        hisLayersPerTrueTrack_[tName]->Fill(trk.getNumLayers());  // Number of reduced layers with stubs per track.
+        hisLayersPerTrueTrack_[tName]->Fill(trk.numLayers());  // Number of reduced layers with stubs per track.
         hisPSLayersPerTrueTrack_[tName]->Fill(Utility::countLayers(
-            settings_, trk.getStubs(), false, true));  // Number of reduced PS layers with stubs per track.
+            settings_, trk.stubs(), false, true));  // Number of reduced PS layers with stubs per track.
       }
     }
 
@@ -1436,12 +1436,12 @@ namespace tmtt {
 
     for (const L1track3D& trk : tracks) {
       // Only consider tracks that match a tracking particle used for the alg. efficiency measurement.
-      const TP* tp = trk.getMatchedTP();
+      const TP* tp = trk.matchedTP();
       if (tp != nullptr) {
         if (tp->useForAlgEff()) {
-          hisFracMatchStubsOnTracks_[tName]->Fill(trk.getPurity());
+          hisFracMatchStubsOnTracks_[tName]->Fill(trk.purity());
 
-          const vector<const Stub*> stubs = trk.getStubs();
+          const vector<const Stub*> stubs = trk.stubs();
           for (const Stub* s : stubs) {
             // Was this stub produced by correct truth particle?
             const set<const TP*> stubTPs = s->assocTPs();
@@ -1475,7 +1475,7 @@ namespace tmtt {
     for (const TP& tp : vTPs) {
       vector<const L1track3D*> matchedTrks;
       for (const L1track3D& trk : tracks) {
-        const TP* tpAssoc = trk.getMatchedTP();
+        const TP* tpAssoc = trk.matchedTP();
         if (tpAssoc != nullptr) {
           if (tpAssoc->index() == tp.index())
             matchedTrks.push_back(&trk);
@@ -1553,7 +1553,7 @@ namespace tmtt {
 
         // For each tracking particle, find the corresponding reconstructed track(s).
         for (const L1track3D& trk : tracks) {
-          const TP* tpAssoc = trk.getMatchedTP();
+          const TP* tpAssoc = trk.matchedTP();
           if (tpAssoc != nullptr) {
             if (tpAssoc->index() == tp.index()) {
               hisQoverPtRes_[tName]->Fill(trk.qOverPt() - tp.qOverPt());
@@ -1596,11 +1596,11 @@ namespace tmtt {
         bool tpRecoed = false;
         bool tpRecoedPerfect = false;
         for (const L1track3D& trk : tracks) {
-          const TP* tpAssoc = trk.getMatchedTP();
+          const TP* tpAssoc = trk.matchedTP();
           if (tpAssoc != nullptr) {
             if (tpAssoc->index() == tp.index()) {
               tpRecoed = true;
-              if (trk.getPurity() == 1.)
+              if (trk.purity() == 1.)
                 tpRecoedPerfect = true;
             }
           }
@@ -1686,7 +1686,7 @@ namespace tmtt {
         //--- Check if this TP was reconstructed anywhere in the tracker..
         bool tpRecoed = false;
         for (const L1track3D& trk : tracks) {
-          const TP* tpAssoc = trk.getMatchedTP();
+          const TP* tpAssoc = trk.matchedTP();
           if (tpAssoc != nullptr) {
             if (tpAssoc->index() == tp.index())
               tpRecoed = true;
@@ -2311,7 +2311,7 @@ namespace tmtt {
       for (const L1fittedTrack& fitTrk : fittedTracks) {
         nFitTracks++;
         // Get matched truth particle, if any.
-        const TP* tp = fitTrk.getMatchedTP();
+        const TP* tp = fitTrk.matchedTP();
         if (tp != nullptr)
           nFitsMatchingTP++;
         // Count fitted tracks per nonant.
@@ -2335,7 +2335,7 @@ namespace tmtt {
       // Count stubs assigned to fitted tracks.
       unsigned int nTotStubs = 0;
       for (const L1fittedTrack& fitTrk : fittedTracks) {
-        unsigned int nStubs = fitTrk.getNumStubs();
+        unsigned int nStubs = fitTrk.numStubs();
         hisStubsPerFitTrack_[fitName]->Fill(nStubs);
         nTotStubs += nStubs;
       }
@@ -2352,10 +2352,10 @@ namespace tmtt {
         tpPerfRecoedMap[&tp] = false;
         unsigned int nMatch = 0;
         for (const L1fittedTrack& fitTrk : fittedTracks) {
-          const TP* assocTP = fitTrk.getMatchedTP();  // Get the TP the fitted track matches to, if any.
+          const TP* assocTP = fitTrk.matchedTP();  // Get the TP the fitted track matches to, if any.
           if (assocTP == &tp) {
             tpRecoedMap[&tp] = true;
-            if (fitTrk.getPurity() == 1.)
+            if (fitTrk.purity() == 1.)
               tpPerfRecoedMap[&tp] = true;
             nMatch++;
           }
@@ -2385,17 +2385,17 @@ namespace tmtt {
         unsigned int nSkippedLayers = 0;
         unsigned int numUpdateCalls = 0;
         if (fitName.find("KF") != string::npos) {
-          fitTrk.getInfoKF(nSkippedLayers, numUpdateCalls);
+          fitTrk.infoKF(nSkippedLayers, numUpdateCalls);
           hisKalmanNumUpdateCalls_[fitName]->Fill(numUpdateCalls);
         }
 
         //--- Compare fitted tracks that match truth particles to those that don't.
 
         // Get original HT track candidate prior to fit for comparison.
-        const L1track3D* htTrk = fitTrk.getL1track3D();
+        const L1track3D* htTrk = fitTrk.l1track3D();
 
         // Get matched truth particle, if any.
-        const TP* tp = fitTrk.getMatchedTP();
+        const TP* tp = fitTrk.matchedTP();
 
         if (tp != nullptr) {
           hisFitQinvPtMatched_[fitName]->Fill(fitTrk.qOverPt());
@@ -2422,7 +2422,7 @@ namespace tmtt {
           profFitChi2DofVsTrueD0Matched_[fitName]->Fill(std::abs(tp->d0()), fitTrk.chi2dof());
 
           // Check chi2/dof for perfectly reconstructed tracks.
-          if (fitTrk.getPurity() == 1.) {
+          if (fitTrk.purity() == 1.) {
             hisFitChi2PerfMatched_[fitName]->Fill(fitTrk.chi2());
             hisFitChi2DofPerfMatched_[fitName]->Fill(fitTrk.chi2dof());
           }
@@ -2446,9 +2446,9 @@ namespace tmtt {
           hisFitVsSeedEtaMatched_[fitName]->Fill(htTrk->eta(), fitTrk.eta());
 
           // Study incorrect hits on matched tracks.
-          hisNumStubsVsPurityMatched_[fitName]->Fill(fitTrk.getNumStubs(), fitTrk.getPurity());
+          hisNumStubsVsPurityMatched_[fitName]->Fill(fitTrk.numStubs(), fitTrk.purity());
 
-          const vector<const Stub*>& stubs = fitTrk.getStubs();
+          const vector<const Stub*>& stubs = fitTrk.stubs();
           for (const Stub* s : stubs) {
             // Was this stub produced by correct truth particle?
             const set<const TP*>& stubTPs = s->assocTPs();
@@ -2498,8 +2498,8 @@ namespace tmtt {
         }
 
         // Study how incorrect stubs on track affect fit chi2.
-        profFitChi2VsPurity_[fitName]->Fill(fitTrk.getPurity(), fitTrk.chi2());
-        profFitChi2DofVsPurity_[fitName]->Fill(fitTrk.getPurity(), fitTrk.chi2dof());
+        profFitChi2VsPurity_[fitName]->Fill(fitTrk.purity(), fitTrk.chi2());
+        profFitChi2DofVsPurity_[fitName]->Fill(fitTrk.purity(), fitTrk.chi2dof());
 
         // Look at stub residuals w.r.t. fitted (or true) track.
         if (tp != nullptr) {
@@ -2515,10 +2515,10 @@ namespace tmtt {
           float recalcChiSquared_1_rphi = 0.;
           float recalcChiSquared_1_rz = 0.;
           float recalcChiSquared_2 = 0.;
-          const vector<const Stub*> stubs = fitTrk.getStubs();
+          const vector<const Stub*> stubs = fitTrk.stubs();
           if (recalc_debug)
-            cout << "RECALC loop stubs : HT cell=(" << fitTrk.getCellLocationHT().first << ","
-                 << fitTrk.getCellLocationHT().second << ")   TP PDG_ID=" << tp->pdgId() << endl;
+            cout << "RECALC loop stubs : HT cell=(" << fitTrk.cellLocationHT().first << ","
+                 << fitTrk.cellLocationHT().second << ")   TP PDG_ID=" << tp->pdgId() << endl;
           for (const Stub* s : stubs) {
             // Was this stub produced by correct truth particle?
             const set<const TP*> stubTPs = s->assocTPs();
@@ -2614,7 +2614,7 @@ namespace tmtt {
               sigmaPhi2_proj += phiExtra2;
             } else {
               // Fit uses Pt of L1track3D to estimate scattering.
-              double phiExtra_fit = settings_->kalmanMultiScattTerm() / (fitTrk.getL1track3D()->pt());
+              double phiExtra_fit = settings_->kalmanMultiScattTerm() / (fitTrk.l1track3D()->pt());
               double phiExtra2_fit = phiExtra_fit * phiExtra_fit;
               sigmaPhi2_proj += phiExtra2_fit;
             }
@@ -2706,7 +2706,7 @@ namespace tmtt {
       // Study helix param resolution.
 
       for (const L1fittedTrack& fitTrk : fittedTracks) {
-        const TP* tp = fitTrk.getMatchedTP();
+        const TP* tp = fitTrk.matchedTP();
         if (tp != nullptr) {
           // IRT
           if ((resPlotOpt_ && tp->useForAlgEff()) ||
