@@ -13,7 +13,7 @@ namespace tmtt {
 
   TVectorD ChiSquaredFit4::seed(const L1track3D& l1track3D) {
     TVectorD x(4);
-    x[INVR] = getSettings()->invPtToInvR() * l1track3D.qOverPt();
+    x[INVR] = settings_->invPtToInvR() * l1track3D.qOverPt();
     x[PHI0] = l1track3D.phi0();
     x[T] = l1track3D.tanLambda();
     x[Z0] = l1track3D.z0();
@@ -80,7 +80,7 @@ namespace tmtt {
   TMatrixD ChiSquaredFit4::Vinv() {
     TMatrixD Vinv(2 * stubs_.size(), 2 * stubs_.size());
     // Scattering term scaling as 1/Pt.
-    double sigmaScat = getSettings()->kalmanMultiScattTerm() * std::abs(qOverPt_seed_);
+    double sigmaScat = settings_->kalmanMultiScattTerm() * std::abs(qOverPt_seed_);
     for (unsigned i = 0; i < stubs_.size(); i++) {
       double sigmaPerp = stubs_[i]->sigmaPerp();
       double sigmaPar = stubs_[i]->sigmaPar();
@@ -117,7 +117,7 @@ namespace tmtt {
     ilargestresid_ = -1;
 
     // Scattering term scaling as 1/Pt.
-    double sigmaScat = getSettings()->kalmanMultiScattTerm() * std::abs(qOverPt_seed_);
+    double sigmaScat = settings_->kalmanMultiScattTerm() * std::abs(qOverPt_seed_);
 
     for (unsigned int i = 0; i < n; i++) {
       double ri = stubs_[i]->r();

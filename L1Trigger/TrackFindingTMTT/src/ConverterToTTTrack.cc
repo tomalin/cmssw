@@ -43,13 +43,13 @@ namespace tmtt {
     const double& rinv = invPtToInvR_ * trk->qOverPt();
     const double& phi0 = trk->phi0();
     constexpr double mva = -1.; // MVA quality flags not yet set.
-    const double& magneticField = settings_->getBfield();
+    const double& magneticField = settings_->magneticField();
     
     TTTrack<Ref_Phase2TrackerDigi_> track(rinv, phi0, tanL, z0, d0, chi2rphi, chi2rz, 
 					  mva, mva, mva, hitPattern, nPar, magneticField);
 
     // Set references to stubs on this track.
-    std::vector<TTStubRef> ttstubrefs = this->getStubRefs(trk);
+    std::vector<TTStubRef> ttstubrefs = this->stubRefs(trk);
     track.setStubRefs(ttstubrefs);
 
     // Note which (eta,phi) sector this track was reconstructed in.
@@ -63,7 +63,7 @@ namespace tmtt {
 
 //=== Get references to stubs on track. (Works for either L1track3D or L1fittedTrack).
 
-std::vector<TTStubRef> ConverterToTTTrack::getStubRefs(const L1trackBase* trk) const {
+std::vector<TTStubRef> ConverterToTTTrack::stubRefs(const L1trackBase* trk) const {
   std::vector<TTStubRef> ttstubrefs;
   const std::vector<const Stub*> stubs = trk->stubs();
   for (const Stub* s : stubs) {

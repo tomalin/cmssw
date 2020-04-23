@@ -10,35 +10,10 @@ using namespace std;
 
 namespace tmtt {
 
-  /*
-// Scattering constants - HISTORIC NOT USED.
-
-constexpr unsigned nlayer_eta[25] = 
-{ 6, 6, 6, 6,
-6, 6, 6, 6, 6, 6, 6, 7, 7, 7,
-7, 7, 7, 7, 6, 6, 6, 6, 6, 6};
-
-constexpr double matx_outer[25] = {
-0.16, 0.17, 0.18, 0.19, 0.20, 
-0.21, 0.26, 0.22, 0.26, 0.38,
-0.41, 0.40, 0.44, 0.50, 0.54,
-0.60, 0.44, 0.48, 0.60, 0.68,
-0.50, 0.48, 0.64, 0.39, 0.20
-};
-
-constexpr double matx_inner[25] = {
-0.14, 0.1, 0.1, 0.1, 0.1, 
-0.1, 0.1, 0.1, 0.1, 0.1, 
-0.12, 0.1, 0.1, 0.1, 0.15,
-0.20, 0.25, 0.25, 0.3, 0.3,
-0.35, 0.40, 0.40, 0.6, 0.6
-};
-*/
-
-  std::vector<double> KFParamsComb::getTrackParams(const KalmanState* state) const {
+  std::vector<double> KFParamsComb::trackParams(const KalmanState* state) const {
     std::vector<double> y(nPar_);
     std::vector<double> x = state->xa();
-    y[QOVERPT] = 2. * x.at(INV2R) / getSettings()->invPtToInvR();
+    y[QOVERPT] = 2. * x.at(INV2R) / settings_->invPtToInvR();
     y[PHI0] = reco::deltaPhi(x.at(PHI0) + sectorPhi(), 0.);
     y[Z0] = x.at(Z0);
     y[T] = x.at(T);
@@ -51,25 +26,25 @@ constexpr double matx_inner[25] = {
   /* If using 5 param helix fit, get track params with beam-spot constraint & track fit chi2 from applying it. */
   /* (N.B. chi2rz unchanged by constraint) */
 
-  std::vector<double> KFParamsComb::getTrackParams_BeamConstr(const KalmanState* state, double& chi2rphi) const {
+  std::vector<double> KFParamsComb::trackParams_BeamConstr(const KalmanState* state, double& chi2rphi) const {
     if (nPar_ == 5) {
       std::vector<double> y(nPar_);
       std::vector<double> x = state->xa();
       TMatrixD cov_xa = state->pxxa();
-      double deltaChi2rphi = (x.at(D0) * x.at(D0)) / cov_xa[D0][D0];
-      chi2rphi = state->chi2rphi() + deltaChi2rphi;
+      double delChi2rphi = (x.at(D0) * x.at(D0)) / cov_xa[D0][D0];
+      chi2rphi = state->chi2rphi() + delChi2rphi;
       // Apply beam-spot constraint to helix params in transverse plane only, as most sensitive to it.
       x[INV2R] -= x.at(D0) * (cov_xa[INV2R][D0] / cov_xa[D0][D0]);
       x[PHI0] -= x.at(D0) * (cov_xa[PHI0][D0] / cov_xa[D0][D0]);
       x[D0] = 0.0;
-      y[QOVERPT] = 2. * x.at(INV2R) / getSettings()->invPtToInvR();
+      y[QOVERPT] = 2. * x.at(INV2R) / settings_->invPtToInvR();
       y[PHI0] = reco::deltaPhi(x.at(PHI0) + sectorPhi(), 0.);
       y[Z0] = x.at(Z0);
       y[T] = x.at(T);
       y[D0] = x.at(D0);
       return y;
     } else {
-      return (this->getTrackParams(state));
+      return (this->trackParams(state));
     }
   }
 
@@ -111,7 +86,7 @@ constexpr double matx_inner[25] = {
   /* Seed the state vector */
   std::vector<double> KFParamsComb::seedx(const L1track3D& l1track3D) const {
     std::vector<double> x(nPar_);
-    x[INV2R] = getSettings()->invPtToInvR() * l1track3D.qOverPt() / 2;
+    x[INV2R] = settings_->invPtToInvR() * l1track3D.qOverPt() / 2;
     x[PHI0] = reco::deltaPhi(l1track3D.phi0() - sectorPhi(), 0.);
     x[Z0] = l1track3D.z0();
     x[T] = l1track3D.tanLambda();
@@ -126,12 +101,12 @@ constexpr double matx_inner[25] = {
   TMatrixD KFParamsComb::seedP(const L1track3D& l1track3D) const {
     TMatrixD p(nPar_, nPar_);
 
-    double invPtToInv2R = getSettings()->invPtToInvR() / 2;
+    double invPtToInv2R = settings_->invPtToInvR() / 2;
 
     // Assumed track seed (from HT) uncertainty in transverse impact parameter.
     const float d0Sigma = 1.0;
 
-    if (getSettings()->hybrid()) {
+    if (settings_->hybrid()) {
       p(INV2R, INV2R) = 0.0157 * 0.0157 * invPtToInv2R * invPtToInv2R * 4;
       p(PHI0, PHI0) = 0.0051 * 0.0051 * 4;
       p(Z0, Z0) = 5.0 * 5.0;
@@ -155,7 +130,7 @@ constexpr double matx_inner[25] = {
         p(D0, D0) = d0Sigma * d0Sigma;
       }
 
-      if (getSettings()->numEtaRegions() <= 12) {
+      if (settings_->numEtaRegions() <= 12) {
         // Inflate eta errors
         p(T, T) = p(T, T) * 2 * 2;
       }
@@ -185,7 +160,7 @@ constexpr double matx_inner[25] = {
   // Assumed hit resolution in (phi,z)
   TMatrixD KFParamsComb::PddMeas(const StubCluster* stubCluster, const KalmanState* state) const {
     double inv2R =
-        (getSettings()->invPtToInvR()) * 0.5 * state->candidate().qOverPt();  // alternatively use state->xa().at(INV2R)
+        (settings_->invPtToInvR()) * 0.5 * state->candidate().qOverPt();  // alternatively use state->xa().at(INV2R)
     double inv2R2 = inv2R * inv2R;
 
     double tanl = state->xa().at(T);  // factor of 0.9 improves rejection
@@ -199,7 +174,7 @@ constexpr double matx_inner[25] = {
 
     // consider error due to integerisation only for z (r in encap) coord when enabled
     double err_digi2(0);
-    if (getSettings()->enableDigitize())
+    if (settings_->enableDigitize())
       err_digi2 = 0.15625 * 0.15625 / 12.0;
 
     double a = stubCluster->sigmaX() * stubCluster->sigmaX();
@@ -208,7 +183,7 @@ constexpr double matx_inner[25] = {
     double invr2 = 1. / r2;
 
     // Scattering term scaling as 1/Pt.
-    double sigmaScat = getSettings()->kalmanMultiScattTerm() / (state->candidate().pt());
+    double sigmaScat = settings_->kalmanMultiScattTerm() / (state->candidate().pt());
     double sigmaScat2 = sigmaScat * sigmaScat;
 
     if (stubCluster->barrel()) {
@@ -217,9 +192,9 @@ constexpr double matx_inner[25] = {
       if (stubCluster->tiltedBarrel()) {
         // Convert uncertainty in (r,phi) to (z,phi).
         float scaleTilted = 1.;
-        if (getSettings()->kalmanHOtilted()) {
-          if (getSettings()->useApproxB()) {  // Simple firmware approximation
-            scaleTilted = getApproxB(stubCluster->z(), stubCluster->r());
+        if (settings_->kalmanHOtilted()) {
+          if (settings_->useApproxB()) {  // Simple firmware approximation
+            scaleTilted = approxB(stubCluster->z(), stubCluster->r());
           } else {  // Exact C++ implementation.
             float tilt = stubCluster->moduleTilt();
             scaleTilted = sin(tilt) + cos(tilt) * tanl;
@@ -232,7 +207,7 @@ constexpr double matx_inner[25] = {
         vz = b;
       }
 
-      if (getSettings()->kalmanHOdodgy()) {
+      if (settings_->kalmanHOdodgy()) {
         // Use original (Dec. 2016) dodgy implementation was this.
         vz = b;
       }
@@ -244,10 +219,10 @@ constexpr double matx_inner[25] = {
       if (not stubCluster->psModule()) {  // Neglect these terms in PS
         double beta = 0.;
         // Add correlation term related to conversion of stub residuals from (r,phi) to (z,phi).
-        if (getSettings()->kalmanHOprojZcorr() == 2)
+        if (settings_->kalmanHOprojZcorr() == 2)
           beta += -inv2R;
         // Add alpha correction for non-radial 2S endcap strips..
-        if (getSettings()->kalmanHOalpha() == 2)
+        if (settings_->kalmanHOalpha() == 2)
           beta += -stubCluster->alpha();  // alpha is 0 except in endcap 2S disks
 
         double beta2 = beta * beta;
@@ -260,13 +235,13 @@ constexpr double matx_inner[25] = {
         //vcorr = b * ((-stubCluster->alpha()) * tanl);
 
         // IRT - This higher order correction doesn't significantly improve the track fit performance, so commented out.
-        //if (getSettings()->kalmanHOhelixExp()) {
+        //if (settings_->kalmanHOhelixExp()) {
         //  float dsByDr = 1. + (1./2.)*r2*inv2R2; // Allows for z = z0 + s*tanL, where s is not exactly r due to circle.
         //  vcorr *= dsByDr;
         //  vz *= dsByDr * dsByDr;
         //}
 
-        if (getSettings()->kalmanHOdodgy()) {
+        if (settings_->kalmanHOdodgy()) {
           // Use original (Dec. 2016) dodgy implementation was this.
           vphi = (a * invr2) + (b * inv2R2) + sigmaScat2;
           vcorr = 0.;
@@ -279,36 +254,6 @@ constexpr double matx_inner[25] = {
     p(Z, Z) = vz;
     p(PHI, Z) = vcorr;
     p(Z, PHI) = vcorr;
-
-    return p;
-  }
-
-  // State uncertainty due to scattering -- HISTORIC NOT USED
-  TMatrixD KFParamsComb::PxxModel(const KalmanState* state, const StubCluster* stubCluster) const {
-    TMatrixD p(nPar_, nPar_);
-
-    /*
-    if( getSettings()->kalmanMultiScattFactor() ){
-
-    unsigned i_eta = abs( stubCluster->eta() / 0.1 );
-    if( i_eta > 24 ) i_eta = 24;
-    double dl = matx_outer[i_eta] / nlayer_eta[i_eta];
-
-    unsigned stub_itr = state->nextLayer();
-
-    const KalmanState * last_update_state = state->last_update_state();
-    unsigned last_itr(1);
-    if( last_update_state ) last_itr = last_update_state->nextLayer();
-    dl = ( stub_itr - last_itr ) * dl; 
-
-    if( dl ){
-    std::vector<double> y = getTrackParams( state );
-    double dtheta0 = 1./sqrt(3) * 0.0136 * std::abs(y[QOVERPT]) * sqrt(dl)*( 1+0.038*log(dl) ); 
-    dtheta0 *= getSettings()->kalmanMultiScattFactor();
-    p(PHI0, PHI0) = dtheta0 * dtheta0; // Despite the name, I think this is uncertainty in phi0. I guess uncertainty in theta0 neglected compared to detector resolution.
-    }
-    }
-  */
 
     return p;
   }
@@ -334,7 +279,7 @@ constexpr double matx_inner[25] = {
     unsigned nStubLayers = state.nStubLayers();
     bool goodState(true);
 
-    std::vector<double> y = getTrackParams(&state);
+    std::vector<double> y = trackParams(&state);
     double qOverPt = y[QOVERPT];
     double pt = std::abs(1 / qOverPt);
     double z0 = std::abs(y[Z0]);
@@ -343,7 +288,7 @@ constexpr double matx_inner[25] = {
 
     if (z0 > z0Cut[nStubLayers])
       goodState = false;
-    if (pt < getSettings()->houghMinPt() - ptTolerance[nStubLayers])
+    if (pt < settings_->houghMinPt() - ptTolerance[nStubLayers])
       goodState = false;
     if (nPar_ == 5) {
       double d0 = std::abs(state.xa()[D0]);
@@ -355,7 +300,7 @@ constexpr double matx_inner[25] = {
 
     double chi2scaled = state.chi2scaled();  // chi2(r-phi) scaled down to improve electron performance.
 
-    if (getSettings()->kalmanMultiScattTerm() > 0.0001) {  // Scattering taken into account
+    if (settings_->kalmanMultiScattTerm() > 0.0001) {  // Scattering taken into account
 
       if (chi2scaled > chi2Cut[nStubLayers])
         goodState = false;  // No separate pT selection needed
@@ -391,8 +336,8 @@ constexpr double matx_inner[25] = {
 
     const bool countUpdateCalls = false;  // Print statement to count calls to Updator.
 
-    if (countUpdateCalls || (getSettings()->kalmanDebugLevel() >= 2 && tpa_ != nullptr) ||
-        (getSettings()->kalmanDebugLevel() >= 2 && getSettings()->hybrid())) {
+    if (countUpdateCalls || (settings_->kalmanDebugLevel() >= 2 && tpa_ != nullptr) ||
+        (settings_->kalmanDebugLevel() >= 2 && settings_->hybrid())) {
       if (not goodState)
         cout << "State veto:";
       if (goodState)

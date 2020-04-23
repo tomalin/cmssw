@@ -16,14 +16,14 @@ namespace tmtt {
 
   ChiSquaredFitBase::ChiSquaredFitBase(const Settings* settings, const uint nPar) : TrackFitGeneric(settings), chiSq_(0.0) {
     // Bad stub killing settings
-    numFittingIterations_ = getSettings()->numTrackFitIterations();
-    killTrackFitWorstHit_ = getSettings()->killTrackFitWorstHit();
+    numFittingIterations_ = settings_->numTrackFitIterations();
+    killTrackFitWorstHit_ = settings_->killTrackFitWorstHit();
     generalResidualCut_ =
-        getSettings()->generalResidualCut();  // The cut used to remove bad stubs (if nStubs > minLayers)
-    killingResidualCut_ = getSettings()->killingResidualCut();  // The cut used to kill off tracks entirely
+        settings_->generalResidualCut();  // The cut used to remove bad stubs (if nStubs > minLayers)
+    killingResidualCut_ = settings_->killingResidualCut();  // The cut used to kill off tracks entirely
 
     //--- These two parameters are used to check if after the fit, there are still enough stubs on the track
-    minStubLayers_ = getSettings()->minStubLayers();
+    minStubLayers_ = settings_->minStubLayers();
     nPar_ = nPar;
   }
 
@@ -48,7 +48,7 @@ namespace tmtt {
 
     // Get cut on number of layers including variation due to dead sectors, pt dependence etc.
     minStubLayersRed_ = Utility::numLayerCut(Utility::AlgoStep::FIT,
-                                             getSettings(),
+                                             settings_,
                                              l1track3D.iPhiSec(),
                                              l1track3D.iEtaReg(),
                                              std::abs(l1track3D.qOverPt()),
@@ -82,22 +82,22 @@ namespace tmtt {
           } else if (largestresid_ > generalResidualCut_) {
             std::vector<const Stub*> stubsTmp = stubs_;
             stubsTmp.erase(stubsTmp.begin() + ilargestresid_);
-            if (Utility::countLayers(getSettings(), stubsTmp) >= minStubLayersRed_)
+            if (Utility::countLayers(settings_, stubsTmp) >= minStubLayersRed_)
               killWorstStub = true;
           } else {
             // Get better apparent tracking performance by always killing worst stub until only 4 layers left.
-            if (Utility::countLayers(getSettings(), stubs_) > minStubLayersRed_)
+            if (Utility::countLayers(settings_, stubs_) > minStubLayersRed_)
               killWorstStub = true;
           }
         }
 
         if (killWorstStub) {
           stubs_.erase(stubs_.begin() + ilargestresid_);
-          if (getSettings()->debug() == 6)
+          if (settings_->debug() == 6)
             std::cout << __FILE__ " : Killed stub " << ilargestresid_ << "." << std::endl;
 
           // Reject tracks with too many killed stubs & stop iterating.
-          unsigned int nLayers = Utility::countLayers(getSettings(), stubs_);  // Count tracker layers with stubs
+          unsigned int nLayers = Utility::countLayers(settings_, stubs_);  // Count tracker layers with stubs
           bool valid = nLayers >= minStubLayersRed_;
 
           if (not valid) {
@@ -111,17 +111,17 @@ namespace tmtt {
     }
 
     // Reject tracks with too many killed stubs
-    unsigned int nLayers = Utility::countLayers(getSettings(), stubs_);  // Count tracker layers with stubs
+    unsigned int nLayers = Utility::countLayers(settings_, stubs_);  // Count tracker layers with stubs
     bool valid = nLayers >= minStubLayersRed_;
 
     if (valid) {
       const unsigned int hitPattern = 0;  // FIX: Needs setting
       const float chi2rz = 0;             // FIX: Needs setting
-      return L1fittedTrack(getSettings(),
+      return L1fittedTrack(settings_,
                            l1track3D,
                            stubs_,
                            hitPattern,
-                           x[INVR] / (getSettings()->invPtToInvR()),
+                           x[INVR] / (settings_->invPtToInvR()),
                            0,
                            x[PHI0],
                            x[Z0],

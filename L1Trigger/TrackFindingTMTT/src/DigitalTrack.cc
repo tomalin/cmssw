@@ -34,9 +34,9 @@ namespace tmtt {
         nbinsPt_((int)settings->houghNbinsPt()),
         invPtToDPhi_(settings->invPtToDphi()) {}
 
-  //=== Get digitisation configuration parameters for the specific track fitter being used here.
+  //=== Load digitisation configuration parameters for the specific track fitter being used here.
 
-  void DigitalTrack::getDigiCfg(const string& fitterName) {
+  void DigitalTrack::loadDigiCfg(const string& fitterName) {
     if (fitterName == "SimpleLR4") {
       // SimpleLR4 track fitter
       skipTrackDigi_ = settings_->slr_skipTrackDigi();
@@ -124,7 +124,7 @@ namespace tmtt {
     nHelixParams_ = nHelixParams;
 
     // Get digitisation parameters for this particular track fitter.
-    this->getDigiCfg(fitterName);
+    this->loadDigiCfg(fitterName);
 
     double phiCentreSec0 = -M_PI / float(numPhiNonants_) + M_PI / float(numPhiSectors_);
     phiSectorCentre_ = phiSectorWidth_ * float(iPhiSec) + phiCentreSec0;

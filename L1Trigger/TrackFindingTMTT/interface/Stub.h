@@ -301,7 +301,7 @@ namespace tmtt {
     void setTrackerGeometryVersion(const TrackerGeometry* trackerGeometry, const TrackerTopology* trackerTopology);
 
     // Function to calculate approximation for dphiOverBendCorrection aka B
-    double getApproxB();
+    double approxB();
 
     // No HT firmware can access directly the stub bend info.
     void check1() const {

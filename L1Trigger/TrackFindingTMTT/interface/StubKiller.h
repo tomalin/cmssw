@@ -38,7 +38,7 @@ namespace tmtt {
 
     bool killStubInDeadModule(const TTStub<Ref_Phase2TrackerDigi_>* stub);
 
-    const std::map<DetId, float>& getListOfDeadModules() { return deadModules_; }
+    const std::map<DetId, float>& listOfDeadModules() { return deadModules_; }
 
   private:
     void chooseModulesToKill();

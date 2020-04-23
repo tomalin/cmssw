@@ -100,7 +100,7 @@ namespace demo {
     const MagneticField* theMagneticField = &(iSetup.getData(magneticFieldToken_));
     float bField = theMagneticField->inTesla(GlobalPoint(0, 0, 0)).z();  // B field in Tesla.
     cout << endl << "--- B field = " << bField << " Tesla ---" << endl << endl;
-    settings_.setBfield(bField);
+    settings_.setMagneticField(bField);
 
     // Get tracker geometry
     trackerGeometry_ = &(iSetup.getData(trackerGeometryToken_));

@@ -554,7 +554,7 @@ namespace tmtt {
   //=== Always uses beam-spot constrained trajectory if available.
   //=== (If fitted track is outside HT array, it it put in the closest bin inside it).
 
-  pair<unsigned int, unsigned int> HTrphi::getCell(const L1fittedTrack* fitTrk) const {
+  pair<unsigned int, unsigned int> HTrphi::cell(const L1fittedTrack* fitTrk) const {
     bool beamConstraint = fitTrk->done_bcon();  // Is beam-spot constraint available? (e.g. 5 param helix fit)
     // Get HT axis variables corresponding to this fitted track.
     float qOverPt = beamConstraint ? fitTrk->qOverPt_bcon() : fitTrk->qOverPt();

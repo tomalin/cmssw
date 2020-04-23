@@ -19,15 +19,15 @@ namespace tmtt {
 
   SimpleLR4::SimpleLR4(const Settings* settings) : TrackFitGeneric(settings) {
     // Initialize digitization parameters
-    phiMult_ = pow(2., getSettings()->phiSBits()) / getSettings()->phiSRange();
-    rTMult_ = pow(2., getSettings()->rtBits()) / getSettings()->rtRange();
-    zMult_ = pow(2., getSettings()->zBits()) / getSettings()->zRange();
-    z0Mult_ = pow(2., getSettings()->slr_z0Bits()) / getSettings()->slr_z0Range();
-    phiTMult_ = pow(2., getSettings()->slr_phi0Bits()) / getSettings()->slr_phi0Range();
+    phiMult_ = pow(2., settings_->phiSBits()) / settings_->phiSRange();
+    rTMult_ = pow(2., settings_->rtBits()) / settings_->rtRange();
+    zMult_ = pow(2., settings_->zBits()) / settings_->zRange();
+    z0Mult_ = pow(2., settings_->slr_z0Bits()) / settings_->slr_z0Range();
+    phiTMult_ = pow(2., settings_->slr_phi0Bits()) / settings_->slr_phi0Range();
 
-    qOverPtMult_ = pow(2., getSettings()->slr_oneOver2rBits()) / getSettings()->slr_oneOver2rRange();
-    tanLambdaMult_ = pow(2., getSettings()->slr_tanlambdaBits()) / getSettings()->slr_tanlambdaRange();
-    chi2Mult_ = pow(2., getSettings()->slr_chisquaredBits()) / getSettings()->slr_chisquaredRange();
+    qOverPtMult_ = pow(2., settings_->slr_oneOver2rBits()) / settings_->slr_oneOver2rRange();
+    tanLambdaMult_ = pow(2., settings_->slr_tanlambdaBits()) / settings_->slr_tanlambdaRange();
+    chi2Mult_ = pow(2., settings_->slr_chisquaredBits()) / settings_->slr_chisquaredRange();
 
     numeratorPtMult_ = rTMult_ * phiMult_;
     numeratorPhiMult_ = rTMult_ * rTMult_ * phiMult_;
@@ -36,22 +36,22 @@ namespace tmtt {
     denominatorMult_ = rTMult_ * rTMult_;
     resMult_ = rTMult_ * qOverPtMult_;
 
-    digitize_ = getSettings()->digitizeSLR() and getSettings()->enableDigitize();
-    dividerBitsHelix_ = getSettings()->dividerBitsHelix();
-    dividerBitsHelixZ_ = getSettings()->dividerBitsHelixZ();
-    shiftingBitsDenRPhi_ = getSettings()->ShiftingBitsDenRPhi();
-    shiftingBitsDenRZ_ = getSettings()->ShiftingBitsDenRZ();
+    digitize_ = settings_->digitizeSLR() and settings_->enableDigitize();
+    dividerBitsHelix_ = settings_->dividerBitsHelix();
+    dividerBitsHelixZ_ = settings_->dividerBitsHelixZ();
+    shiftingBitsDenRPhi_ = settings_->ShiftingBitsDenRPhi();
+    shiftingBitsDenRZ_ = settings_->ShiftingBitsDenRZ();
 
-    shiftingBitsPhi_ = getSettings()->ShiftingBitsPhi();
-    shiftingBitsz0_ = getSettings()->ShiftingBitsZ0();
-    shiftingBitsPt_ = getSettings()->ShiftingBitsPt();
-    shiftingBitsLambda_ = getSettings()->ShiftingBitsLambda();
+    shiftingBitsPhi_ = settings_->ShiftingBitsPhi();
+    shiftingBitsz0_ = settings_->ShiftingBitsZ0();
+    shiftingBitsPt_ = settings_->ShiftingBitsPt();
+    shiftingBitsLambda_ = settings_->ShiftingBitsLambda();
 
-    phiSectorWidth_ = 2. * M_PI / float(getSettings()->numPhiSectors());
-    phiNonantWidth_ = 2. * M_PI / float(getSettings()->numPhiNonants());
+    phiSectorWidth_ = 2. * M_PI / float(settings_->numPhiSectors());
+    phiNonantWidth_ = 2. * M_PI / float(settings_->numPhiNonants());
 
-    chi2cut_ = getSettings()->slr_chi2cut();
-    chosenRofPhi_ = getSettings()->chosenRofPhi();
+    chi2cut_ = settings_->slr_chi2cut();
+    chosenRofPhi_ = settings_->chosenRofPhi();
     if (digitize_)
       chosenRofPhi_ = floor(chosenRofPhi_ * rTMult_) / rTMult_;
   };
@@ -61,17 +61,17 @@ namespace tmtt {
   }
 
   L1fittedTrack SimpleLR4::fit(const L1track3D& l1track3D) {
-    if (getSettings()->debug() == 6)
+    if (settings_->debug() == 6)
       cout << "=============== FITTING TRACK ====================" << endl;
 
     minStubLayersRed_ = Utility::numLayerCut(Utility::AlgoStep::FIT,
-                                             getSettings(),
+                                             settings_,
                                              l1track3D.iPhiSec(),
                                              l1track3D.iEtaReg(),
                                              std::abs(l1track3D.qOverPt()),
                                              l1track3D.eta());
 
-    invPtToDPhi_ = -getSettings()->invPtToDphi();
+    invPtToDPhi_ = -settings_->invPtToDphi();
 
     double phiCentreSec0 = -0.5 * phiNonantWidth_ + 0.5 * phiSectorWidth_;
     phiSectorCentre_ = phiSectorWidth_ * double(l1track3D.iPhiSec()) - phiCentreSec0;
@@ -111,14 +111,14 @@ namespace tmtt {
         SumR = SumR + digiStub.rt();
         SumPhi = SumPhi + digiStub.phiS();
         SumR2 = SumR2 + digiStub.rt() * digiStub.rt();
-        if (getSettings()->debug() == 6)
+        if (settings_->debug() == 6)
           cout << "phiS " << digiStub.iDigi_PhiS() << " rT " << digiStub.iDigi_Rt() << " z " << digiStub.iDigi_Z()
                << endl;
       } else {
         float phi = 0;
         if (l1track3D.iPhiSec() == 0 and (const_cast<Stub*>(stub))->phi() > 0) {
           phi = (const_cast<Stub*>(stub))->phi() - 2 * M_PI;
-        } else if (l1track3D.iPhiSec() == getSettings()->numPhiSectors() and (const_cast<Stub*>(stub))->phi() < 0) {
+        } else if (l1track3D.iPhiSec() == settings_->numPhiSectors() and (const_cast<Stub*>(stub))->phi() < 0) {
           phi = (const_cast<Stub*>(stub))->phi() + 2 * M_PI;
         } else {
           phi = (const_cast<Stub*>(stub))->phi();
@@ -127,7 +127,7 @@ namespace tmtt {
         SumR = SumR + (const_cast<Stub*>(stub))->r();
         SumPhi = SumPhi + phi;
         SumR2 = SumR2 + (const_cast<Stub*>(stub))->r() * (const_cast<Stub*>(stub))->r();
-        if (getSettings()->debug() == 6)
+        if (settings_->debug() == 6)
           cout << "phi " << phi << " r " << (const_cast<Stub*>(stub))->r() << " z " << (const_cast<Stub*>(stub))->z()
                << endl;
       }
@@ -171,11 +171,11 @@ namespace tmtt {
       phiT = floor(phiT * phiTMult_) / phiTMult_;
     }
 
-    if (getSettings()->debug() == 6 and digitize_)
+    if (settings_->debug() == 6 and digitize_)
       cout << setw(10) << "First Helix parameters: qOverPt = " << qOverPt << " (" << floor(qOverPt * qOverPtMult_)
            << "), phiT = " << phiT << " (" << floor(phiT * phiTMult_) << ") " << endl;
 
-    if (getSettings()->debug() == 6 and !digitize_)
+    if (settings_->debug() == 6 and !digitize_)
       cout << "First Helix Parameters: qOverPt = " << qOverPt << " phi0 " << phi0 << endl;
 
     // ================== RESIDUAL CALCULATION ON RPHI ========================
@@ -193,13 +193,13 @@ namespace tmtt {
 
         ResPhi = digiStub.iDigi_PhiS() * pow(2., shiftingBitsDenRPhi_ - shiftingBitsPt_) -
                  floor(phiT * phiTMult_) * pow(2.,
-                                               shiftingBitsDenRPhi_ - shiftingBitsPt_ - getSettings()->slr_phi0Bits() +
-                                                   getSettings()->phiSBits()) -
+                                               shiftingBitsDenRPhi_ - shiftingBitsPt_ - settings_->slr_phi0Bits() +
+                                                   settings_->phiSBits()) -
                  floor(qOverPt * qOverPtMult_) * digiStub.iDigi_Rt();
 
-        if (getSettings()->debug() == 6) {
+        if (settings_->debug() == 6) {
           // cout << "floor(phiT*phiTMult_) " << floor(phiT*phiTMult_) << endl;
-          // cout << "dsp_PhiSPhiT "<< digiStub.iDigi_PhiS() - floor(phiT*phiTMult_) << " shift_right(dsp_QoverPt_Rt,divider_shift- divider_pt) "<< floor(qOverPt*qOverPtMult_)*digiStub.iDigi_Rt()/(pow(2., ShiftingBits_- shiftingBitsPt_ ) )<< " getSettings()->rtRange() "<< getSettings()->rtRange() << endl;
+          // cout << "dsp_PhiSPhiT "<< digiStub.iDigi_PhiS() - floor(phiT*phiTMult_) << " shift_right(dsp_QoverPt_Rt,divider_shift- divider_pt) "<< floor(qOverPt*qOverPtMult_)*digiStub.iDigi_Rt()/(pow(2., ShiftingBits_- shiftingBitsPt_ ) )<< " settings_->rtRange() "<< settings_->rtRange() << endl;
           cout << "DIGI RESIDUAL " << ResPhi << endl;
         }
         ResPhi = floor(ResPhi) / resMult_;
@@ -214,7 +214,7 @@ namespace tmtt {
 
       std::pair<const Stub*, double> ResStubPair(stub, Res);
       vRes.push_back(ResStubPair);
-      if (getSettings()->debug() == 6) {
+      if (settings_->debug() == 6) {
         if (const_cast<Stub*>(stub)->assocTP() != nullptr)
           cout << " Stub Residual " << Res << " TP " << const_cast<Stub*>(stub)->assocTP()->index() << endl;
         else
@@ -224,28 +224,28 @@ namespace tmtt {
 
     double LargResidual = 9999.;
     // Find largest residuals
-    while (vRes.size() > minStubLayersRed_ and LargResidual > getSettings()->ResidualCut()) {
+    while (vRes.size() > minStubLayersRed_ and LargResidual > settings_->ResidualCut()) {
       std::vector<std::pair<const Stub*, double> >::iterator maxResIt =
           max_element(vRes.begin(), vRes.end(), pair_compare);
       LargResidual = (*maxResIt).second;
-      if (getSettings()->debug() == 6)
+      if (settings_->debug() == 6)
         cout << "Largest Residual " << LargResidual << endl;
 
-      if (LargResidual > getSettings()->ResidualCut()) {
+      if (LargResidual > settings_->ResidualCut()) {
         if ((*maxResIt).first->psModule()) {
           if (psStubs > 2) {
-            if (getSettings()->debug() == 6)
+            if (settings_->debug() == 6)
               cout << "removing PS residual " << (*maxResIt).second << endl;
             vRes.erase(maxResIt);
             psStubs--;
           } else {
-            if (getSettings()->debug() == 6)
+            if (settings_->debug() == 6)
               cout << "residual " << (*maxResIt).second << " set to -1. " << endl;
             (*maxResIt).second = -1.;
           }
         } else {
           vRes.erase(maxResIt);
-          if (getSettings()->debug() == 6)
+          if (settings_->debug() == 6)
             cout << "removing residual " << (*maxResIt).second << endl;
         }
       }
@@ -290,7 +290,7 @@ namespace tmtt {
           SumR_ps += digiStub.rt();
           SumR2_ps += digiStub.rt() * digiStub.rt();
         }
-        if (getSettings()->debug() == 6) {
+        if (settings_->debug() == 6) {
           cout << "phiS " << digiStub.iDigi_PhiS() << " rT " << digiStub.iDigi_Rt() << " z " << digiStub.iDigi_Z()
                << endl;
         }
@@ -298,7 +298,7 @@ namespace tmtt {
         float phi = 0;
         if (l1track3D.iPhiSec() == 0 and (const_cast<Stub*>(stub))->phi() > 0) {
           phi = (const_cast<Stub*>(stub))->phi() - 2 * M_PI;
-        } else if (l1track3D.iPhiSec() == getSettings()->numPhiSectors() and (const_cast<Stub*>(stub))->phi() < 0) {
+        } else if (l1track3D.iPhiSec() == settings_->numPhiSectors() and (const_cast<Stub*>(stub))->phi() < 0) {
           phi = (const_cast<Stub*>(stub))->phi() + 2 * M_PI;
         } else {
           phi = (const_cast<Stub*>(stub))->phi();
@@ -314,7 +314,7 @@ namespace tmtt {
           SumR_ps += (const_cast<Stub*>(stub))->r();
           SumR2_ps += (const_cast<Stub*>(stub))->r() * (const_cast<Stub*>(stub))->r();
         }
-        if (getSettings()->debug() == 6)
+        if (settings_->debug() == 6)
           cout << "phi " << phi << " r " << (const_cast<Stub*>(stub))->r() << " z " << (const_cast<Stub*>(stub))->z()
                << endl;
       }
@@ -364,8 +364,8 @@ namespace tmtt {
           numeratorLambda * reciprocalZ / pow(2., dividerBitsHelixZ_ + shiftingBitsDenRZ_ - shiftingBitsLambda_);
       zT = numeratorZ0 * reciprocalZ / pow(2., dividerBitsHelixZ_ + shiftingBitsDenRZ_ - shiftingBitsz0_);
 
-      phi0 = phiSectorCentre_ + phiT - qOverPt * getSettings()->chosenRofPhi();
-      z0 = zT - tanLambda * getSettings()->chosenRofPhi();
+      phi0 = phiSectorCentre_ + phiT - qOverPt * settings_->chosenRofPhi();
+      z0 = zT - tanLambda * settings_->chosenRofPhi();
 
       qOverPt = floor(qOverPt * qOverPtMult_) / qOverPtMult_;
       phiT = floor(phiT * phiTMult_) / phiTMult_;
@@ -375,7 +375,7 @@ namespace tmtt {
 
     // qOverPt /= -invPtToDPhi_;
 
-    if (getSettings()->debug() == 6 and digitize_) {
+    if (settings_->debug() == 6 and digitize_) {
       cout << "HT mbin " << int(l1track3D.cellLocationHT().first) - 16 << " cbin "
            << int(l1track3D.cellLocationHT().second) - 32 << " iPhi " << l1track3D.iPhiSec() << " iEta "
            << l1track3D.iEtaReg() << endl;
@@ -387,7 +387,7 @@ namespace tmtt {
            << "), phiT = " << phiT << " (" << floor(phiT * phiTMult_) << "), zT = " << zT << " (" << floor(zT * z0Mult_)
            << "), tanLambda = " << tanLambda << " (" << floor(tanLambda * tanLambdaMult_) << ")"
            << " z0 " << z0 << endl;
-    } else if (getSettings()->debug() == 6) {
+    } else if (settings_->debug() == 6) {
       cout << setw(10) << "Final Helix parameters: qOverPt = " << qOverPt << ", phi0 = " << phi0 << ", z0 = " << z0
            << ", tanLambda = " << tanLambda << endl;
     }
@@ -428,7 +428,7 @@ namespace tmtt {
 
       chi2_phi += std::abs(ResPhi * ResPhi);
       chi2_z += std::abs(ResZ * ResZ);
-      if (getSettings()->debug() == 6) {
+      if (settings_->debug() == 6) {
         cout << "Stub ResPhi " << ResPhi * RPhiSigma << " ResSigma " << RPhiSigma << " Res " << ResPhi << " chi2 "
              << chi2_phi << endl;
         cout << "Stub ResZ " << ResZ * RZSigma << " ResSigma " << RZSigma << " Res " << ResZ << " chi2 " << chi2_z
@@ -451,7 +451,7 @@ namespace tmtt {
     if (chi2 < chi2cut_)
       accepted = true;
 
-    if (getSettings()->debug() == 6)
+    if (settings_->debug() == 6)
       cout << "qOverPt " << qOverPt << " phiT " << phiT << endl;
 
     // This condition can only happen if cfg param TrackFitCheat = True.
@@ -460,7 +460,7 @@ namespace tmtt {
 
     // Kinematic cuts -- NOT YET IN FIRMWARE!!!
     constexpr float tolerance = 0.1;
-    if (std::abs(qOverPt) > 1. / (getSettings()->houghMinPt() - tolerance))
+    if (std::abs(qOverPt) > 1. / (settings_->houghMinPt() - tolerance))
       accepted = false;
     if (std::abs(z0) > 20.)
       accepted = false;
@@ -469,12 +469,12 @@ namespace tmtt {
       // Create the L1fittedTrack object
       const unsigned int hitPattern = 0;  // FIX: Needs setting
       L1fittedTrack fitTrk(
-          getSettings(), l1track3D, fitStubs, hitPattern, qOverPt, 0., phi0, z0, tanLambda, chi2_phi, chi2_z, nHelixPar);
+          settings_, l1track3D, fitStubs, hitPattern, qOverPt, 0., phi0, z0, tanLambda, chi2_phi, chi2_z, nHelixPar);
 
-      if (getSettings()->enableDigitize())
+      if (settings_->enableDigitize())
         fitTrk.digitizeTrack("SimpleLR4");
 
-      if (getSettings()->debug() == 6 and digitize_) {
+      if (settings_->debug() == 6 and digitize_) {
         cout << "Digitized parameters " << endl;
         cout << "HT mbin " << int(l1track3D.cellLocationHT().first) - 16 << " cbin "
              << int(l1track3D.cellLocationHT().second) - 32 << " iPhi " << l1track3D.iPhiSec() << " iEta "
@@ -486,7 +486,7 @@ namespace tmtt {
              << floor(tanLambda * tanLambdaMult_) << ")" << endl;
       }
 
-      if (getSettings()->debug() == 6) {
+      if (settings_->debug() == 6) {
         cout << "FitTrack helix parameters " << int(fitTrk.cellLocationFit().first) - 16 << ", "
              << int(fitTrk.cellLocationFit().second) - 32 << " HT parameters "
              << int(fitTrk.cellLocationHT().first) - 16 << ", " << int(fitTrk.cellLocationHT().second) - 32

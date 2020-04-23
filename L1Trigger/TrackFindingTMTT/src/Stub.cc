@@ -53,7 +53,7 @@ namespace tmtt {
         stubWindowSuggest_(settings) {  //work in progress on better constructor for new hybrid
     if (psModule && barrel) {
       double zMax[4];
-      settings->get_zMaxNonTilted(zMax);
+      settings->zMaxNonTilted(zMax);
       tiltedBarrel_ = (std::abs(z) > zMax[layerid]);
     } else {
       tiltedBarrel_ = false;
@@ -201,7 +201,7 @@ namespace tmtt {
     //dphiOverBend_ = barrel_  ?  pitchOverSep_  :  pitchOverSep_*std::abs(z_)/r_;
     // EJC - This new equation is valid in general case, so works for both flat and tilted geom.
     dphiOverBendCorrection_ = std::abs(cos(this->theta() - moduleTilt_) / sin(this->theta()));
-    dphiOverBendCorrection_approx_ = getApproxB();
+    dphiOverBendCorrection_approx_ = approxB();
     if (settings->useApproxB()) {
       dphiOverBend_ = pitchOverSep_ * dphiOverBendCorrection_approx_;
     } else {
@@ -512,7 +512,7 @@ namespace tmtt {
   }
 
   //=== Function to calculate approximation for dphiOverBendCorrection aka B
-  double Stub::getApproxB() {
+  double Stub::approxB() {
     if (tiltedBarrel_) {
       return settings_->bApprox_gradient() * std::abs(z_) / r_ + settings_->bApprox_intercept();
     } else {

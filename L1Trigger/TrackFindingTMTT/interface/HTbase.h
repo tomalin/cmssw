@@ -58,8 +58,8 @@ namespace tmtt {
     virtual unsigned int numStubsExc() const;
 
     // Get all the cells that make up the array, which in turn give access to the stubs inside them.
-    // N.B. You can use getAllCells().size1() and getAllCells().size2() to get the dimensions ofthe array.
-    virtual const matrix<HTcell>& getAllCells() const { return htArray_; }
+    // N.B. You can use allCells().size1() and allCells().size2() to get the dimensions ofthe array.
+    virtual const matrix<HTcell>& allCells() const { return htArray_; }
 
     //=== Info about track candidates found.
 
@@ -105,7 +105,7 @@ namespace tmtt {
 
     // Which cell in HT array should this fitted track be in, based on its fitted trajectory?
     // Returns 999999 in at least one index if fitted track not expected to be in any cell in this array.
-    virtual std::pair<unsigned int, unsigned int> getCell(const L1fittedTrack* fitTrk) const = 0;
+    virtual std::pair<unsigned int, unsigned int> cell(const L1fittedTrack* fitTrk) const = 0;
 
     // Disable filters (used for debugging).
     virtual void disableBendFilter();

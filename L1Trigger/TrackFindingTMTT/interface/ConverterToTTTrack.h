@@ -27,7 +27,7 @@ namespace tmtt {
   private:
 
     // Get references to stubs on track. (Works for either L1track3D or L1fittedTrack).
-    std::vector<TTStubRef> getStubRefs(const L1trackBase* trk) const;
+    std::vector<TTStubRef> stubRefs(const L1trackBase* trk) const;
 
   private:
     const Settings* settings_;  // Configuration parameters.

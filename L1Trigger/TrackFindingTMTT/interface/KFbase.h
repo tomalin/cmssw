@@ -47,19 +47,19 @@ namespace tmtt {
     L1fittedTrack fit(const L1track3D &l1track3D);
 
   protected:
-    static std::vector<double> getTrackParams(const KFbase *p, const KalmanState *state);
-    virtual std::vector<double> getTrackParams(const KalmanState *state) const = 0;
+    static std::vector<double> trackParams(const KFbase *p, const KalmanState *state);
+    virtual std::vector<double> trackParams(const KalmanState *state) const = 0;
 
     // Get track params with beam-spot constraint & chi2 (r-phi) after applying it..
-    virtual std::vector<double> getTrackParams_BeamConstr(const KalmanState *state, double &chi2rphi_bcon) const {
+    virtual std::vector<double> trackParams_BeamConstr(const KalmanState *state, double &chi2rphi_bcon) const {
       chi2rphi_bcon = 0.0;
-      return (this->getTrackParams(state));  // Returns unconstrained result, unless derived class overrides it.
+      return (this->trackParams(state));  // Returns unconstrained result, unless derived class overrides it.
     }
 
     double sectorPhi() const {
       float phiCentreSec0 =
-          -M_PI / float(getSettings()->numPhiNonants()) + M_PI / float(getSettings()->numPhiSectors());
-      return 2. * M_PI * float(iCurrentPhiSec_) / float(getSettings()->numPhiSectors()) + phiCentreSec0;
+          -M_PI / float(settings_->numPhiNonants()) + M_PI / float(settings_->numPhiSectors());
+      return 2. * M_PI * float(iCurrentPhiSec_) / float(settings_->numPhiSectors()) + phiCentreSec0;
     }
     //bool kalmanUpdate( const StubCluster *stubCluster, KalmanState &state, KalmanState &new_state, const TP *tpa );
     virtual const KalmanState *kalmanUpdate(
@@ -84,11 +84,11 @@ namespace tmtt {
     std::vector<double> Hx(const TMatrixD &pH, const std::vector<double> &x) const;
     std::vector<double> Fx(const TMatrixD &pF, const std::vector<double> &x) const;
     TMatrixD HxxH(const TMatrixD &pH, const TMatrixD &xx) const;
-    void getDeltaChi2(const TMatrixD &dcov,
+    void deltaChi2(const TMatrixD &dcov,
                       const std::vector<double> &delta,
                       bool debug,
-                      double &deltaChi2rphi,
-                      double &deltaChi2rz) const;
+                      double &delChi2rphi,
+                      double &delChi2rz) const;
     TMatrixD GetKalmanMatrix(const TMatrixD &h, const TMatrixD &pxcov, const TMatrixD &dcov) const;
     void GetAdjustedState(const TMatrixD &K,
                           const TMatrixD &pxcov,
@@ -107,7 +107,6 @@ namespace tmtt {
     virtual std::vector<double> d(const StubCluster *stubCluster) const = 0;
     virtual TMatrixD H(const StubCluster *stubCluster) const = 0;
     virtual TMatrixD F(const StubCluster *stubCluster = 0, const KalmanState *state = 0) const = 0;
-    virtual TMatrixD PxxModel(const KalmanState *state, const StubCluster *stubCluster) const = 0;
     virtual TMatrixD PddMeas(const StubCluster *stubCluster, const KalmanState *state) const = 0;
 
     virtual std::vector<double> residual(const StubCluster *stubCluster,
@@ -120,10 +119,9 @@ namespace tmtt {
 
     virtual void calcChi2(const KalmanState &state, double &chi2rphi, double &chi2rz) const;
 
-    virtual double getRofState(unsigned layerId, const std::vector<double> &xa) const { return 0; }
-    virtual unsigned int getKalmanLayer(
+    virtual unsigned int kalmanLayer(
         unsigned int iEtaReg, unsigned int layerIDreduced, bool barrel, float r, float z) const;
-    virtual bool getKalmanAmbiguousLayer(unsigned int iEtaReg, unsigned int kfLayer);
+    virtual bool kalmanAmbiguousLayer(unsigned int iEtaReg, unsigned int kfLayer);
 
     std::vector<const KalmanState *> doKF(const L1track3D &l1track3D,
                                           const std::vector<const StubCluster *> &stubClusters,
@@ -137,14 +135,14 @@ namespace tmtt {
     void printStub(std::ostream &os, const Stub *stub, bool addReturn = true) const;
     void printStubs(std::ostream &os, std::vector<const Stub *> &stubs) const;
 
-    double DeltaRphiForClustering(unsigned layerId, unsigned endcapRing);
-    double DeltaRForClustering(unsigned endcapRing);
+    double deltaRphiForClustering(unsigned layerId, unsigned endcapRing);
+    double deltaRForClustering(unsigned endcapRing);
     bool isOverlap(const Stub *a, const Stub *b, OVERLAP_TYPE type);
 
-    std::set<unsigned> getKalmanDeadLayers(bool &remove2PSCut) const;
+    std::set<unsigned> kalmanDeadLayers(bool &remove2PSCut) const;
 
     // Function to calculate approximation for tilted barrel modules (aka B) copied from Stub class.
-    float getApproxB(float z, float r) const;
+    float approxB(float z, float r) const;
 
     // Is this HLS code?
     virtual bool isHLS() { return false; };

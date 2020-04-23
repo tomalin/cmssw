@@ -433,10 +433,10 @@ namespace tmtt {
 
     double cSpeed() const { return 2.99792458e10; }  // Speed of light (cm/s)
     double invPtToInvR() const {
-      return (this->getBfield()) * (this->cSpeed()) / 1.0E13;
+      return (this->magneticField()) * (this->cSpeed()) / 1.0E13;
     }  // B*c/1E11 - converts q/Pt to 1/radius_of_curvature
     double invPtToDphi() const {
-      return (this->getBfield()) * (this->cSpeed()) / 2.0E13;
+      return (this->magneticField()) * (this->cSpeed()) / 2.0E13;
     }  // B*c/2E11 - converts q/Pt to track angle at some radius from beamline.
     double trackerOuterRadius() const { return 112.7; }  // max. occuring stub radius.
     double trackerInnerRadius() const { return 21.8; }   // min. occuring stub radius.
@@ -450,11 +450,11 @@ namespace tmtt {
 
     //=== Set and get B-field value in Tesla.
     // N.B. This must bet std::set for each event, and can't be initialized at the beginning of the job.
-    void setBfield(float bField) { bField_ = bField; }
-    float getBfield() const {
-      if (bField_ == 0.)
+    void setMagneticField(float magneticField) { magneticField_ = magneticField; }
+    float magneticField() const {
+      if (magneticField_ == 0.)
         throw cms::Exception("LogicError") << "Settings: You attempted to access the B field before it was initialized";
-      return bField_;
+      return magneticField_;
     }
 
     //=== Settings used for HYBRID TRACKING code only.
@@ -469,7 +469,7 @@ namespace tmtt {
     double psNStrips() const { return psNStrips_; }
     double psPixelLength() const { return psPixelLength_; }
     // max z at which non-tilted modules are found in inner 3 barrel layers. (Element 0 not used).
-    void get_zMaxNonTilted(double (&zMax)[4]) const {
+    void zMaxNonTilted(double (&zMax)[4]) const {
       zMax[1] = zMaxNonTilted_[1];
       zMax[2] = zMaxNonTilted_[2];
       zMax[3] = zMaxNonTilted_[3];
@@ -729,7 +729,7 @@ namespace tmtt {
     bool writeOutEdmFile_;
 
     // B-field in Tesla
-    float bField_;
+    float magneticField_;
 
     // Hybrid tracking
     bool hybrid_;

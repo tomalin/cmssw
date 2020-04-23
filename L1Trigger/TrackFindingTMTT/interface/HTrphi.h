@@ -62,7 +62,7 @@ namespace tmtt {
     // Which cell in HT array should this fitted track be in, based on its fitted trajectory?
     // Always uses beam-spot constrained trajectory if available.
     // (If fitted track is outside HT array, it it put in the closest bin inside it).
-    std::pair<unsigned int, unsigned int> getCell(const L1fittedTrack* fitTrk) const;
+    std::pair<unsigned int, unsigned int> cell(const L1fittedTrack* fitTrk) const;
 
     // Check if specified cell has been merged with its 2x2 neighbours into a single cell,
     // as it is in low Pt region.

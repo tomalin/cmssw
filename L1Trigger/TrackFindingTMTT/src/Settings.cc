@@ -84,7 +84,7 @@ namespace tmtt {
     zMaxNonTilted_[2] = 24.6;
     zMaxNonTilted_[3] = 33.9;
 
-    bField_ = 3.81120228767395;
+    magneticField_ = 3.81120228767395;
 
     // Stub digitization params for hybrid (copied from TrackFindingTMTT/interface/HLS/KFconstants.h
     double rMult_hybrid = 1. / 0.02929688;
@@ -376,7 +376,7 @@ namespace tmtt {
         writeOutEdmFile_(iConfig.getUntrackedParameter<bool>("WriteOutEdmFile", true)),
 
         // Bfield in Tesla. (Unknown at job initiation. Set to true value for each event
-        bField_(0.),
+        magneticField_(0.),
 
         // Hybrid tracking
         hybrid_(iConfig.getParameter<bool>("Hybrid")),

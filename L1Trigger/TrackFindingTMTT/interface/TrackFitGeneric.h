@@ -30,11 +30,7 @@ namespace tmtt {
     // Fit a track candidate obtained from the Hough Transform.
     virtual L1fittedTrack fit(const L1track3D& l1track3D) { return L1fittedTrack(); }
 
-    const Settings* getSettings() const { return settings_; }
-
-    const std::string fitterName() const { return fitterName_; }
-
-  private:
+  protected:
     // Configuration parameters
     const Settings* settings_;
     const std::string fitterName_;

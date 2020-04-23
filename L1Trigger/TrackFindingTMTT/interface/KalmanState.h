@@ -11,13 +11,13 @@ namespace tmtt {
   class KFbase;
   class KalmanState;
   class StubCluster;
-
-  typedef std::vector<double> (*GET_TRACK_PARAMS)(const KFbase *p, const KalmanState *state);
+  class Settings;
 
   class KalmanState {
   public:
     KalmanState();
-    KalmanState(const L1track3D &candidate,
+    KalmanState(const Settings* settings,
+		const L1track3D &candidate,
                 unsigned n_skipped,
                 unsigned kLayer_next,
                 unsigned layerId,
@@ -28,14 +28,14 @@ namespace tmtt {
                 const TMatrixD &dcov,
                 const StubCluster *stubcl,
                 double chi2rphi,
-                double chi2rz,
-                const KFbase *fitter,
-                GET_TRACK_PARAMS f);
+                double chi2rz);
+
     KalmanState(const KalmanState &p);
     ~KalmanState() {}
 
     KalmanState &operator=(const KalmanState &other);
 
+    const Settings* settings() const {return settings_;}
     unsigned nextLayer() const { return kLayerNext_; }
     unsigned layerId() const { return layerId_; }
     unsigned endcapRing() const { return endcapRing_; }
@@ -67,14 +67,11 @@ namespace tmtt {
     double reducedChi2() const;
     const KalmanState *last_update_state() const;
     std::vector<const Stub *> stubs() const;
-    const KFbase *fitter() const { return fitter_; }
-    GET_TRACK_PARAMS fXtoTrackParams() const { return fXtoTrackParams_; };
 
     static bool orderChi2(const KalmanState *left, const KalmanState *right);
     static bool orderMinSkipChi2(const KalmanState *left, const KalmanState *right);
 
     static bool order(const KalmanState *left, const KalmanState *right);
-    void dump(std::ostream &os, const TP *tp = 0, bool all = 0) const;
     void setChi2(double chi2rphi, double chi2rz) {
       chi2rphi_ = chi2rphi;
       chi2rz_ = chi2rz;
@@ -85,6 +82,7 @@ namespace tmtt {
     //void getHLSselect(unsigned int& mBinHelix, unsigned int& cBinHelix, bool& consistent) const { mBinHelix = mBinHelixHLS_; cBinHelix = cBinHelixHLS_; consistent = consistentHLS_;}
 
   private:
+    const Settings* settings_;
     unsigned kLayerNext_;
     unsigned layerId_;
     unsigned endcapRing_;
@@ -100,8 +98,6 @@ namespace tmtt {
     double chi2rz_;
     unsigned int kalmanChi2RphiScale_;
     unsigned n_stubs_;
-    const KFbase *fitter_;
-    GET_TRACK_PARAMS fXtoTrackParams_;
     bool barrel_;
     unsigned n_skipped_;
     L1track3D l1track3D_;

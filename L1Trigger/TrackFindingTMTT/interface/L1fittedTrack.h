@@ -181,7 +181,7 @@ namespace tmtt {
     // Get Hough transform cell locations in units of bin number, corresponding to the fitted helix parameters of the track.
     // Always uses the beam-spot constrained helix params if they are available.
     // (If fitted track is outside HT array, it it put in the closest bin inside it).
-    std::pair<unsigned int, unsigned int> cellLocationFit() const { return htRphiTmp_.getCell(this); }
+    std::pair<unsigned int, unsigned int> cellLocationFit() const { return htRphiTmp_.cell(this); }
     // Also get HT cell determined by Hough transform.
     std::pair<unsigned int, unsigned int> cellLocationHT() const { return l1track3D_->cellLocationHT(); }
 

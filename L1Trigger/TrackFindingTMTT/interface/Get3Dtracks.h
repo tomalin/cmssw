@@ -74,7 +74,7 @@ namespace tmtt {
 
     bool ranRZfilter() const { return runRZfilter_; }  // Was r-z filter required/run?
 
-    const TrkRZfilter& getRZfilter() const { return rzFilter_; }
+    const TrkRZfilter& rzFilter() const { return rzFilter_; }
 
   private:
     // Convert 2D HT tracks within the current sector to 3D tracks,

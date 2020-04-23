@@ -976,7 +976,7 @@ namespace tmtt {
     for (unsigned int iEtaReg = 0; iEtaReg < numEtaRegions_; iEtaReg++) {
       // Get dimensions of HT array (assumed same for all phi sectors)
       unsigned int iPhiSecDummy = 0;
-      const matrix<HTcell>& rphiHTcellsDummy = mHtRphis(iPhiSecDummy, iEtaReg).getAllCells();
+      const matrix<HTcell>& rphiHTcellsDummy = mHtRphis(iPhiSecDummy, iEtaReg).allCells();
       const unsigned int nbins1 = rphiHTcellsDummy.size1();
       const unsigned int nbins2 = rphiHTcellsDummy.size2();
       // Loop over cells inside HT array
@@ -986,7 +986,7 @@ namespace tmtt {
           unsigned int nStubsInCellPhiSum = 0;
           for (unsigned int iPhiSec = 0; iPhiSec < numPhiSectors_; iPhiSec++) {
             const HTrphi& htRphi = mHtRphis(iPhiSec, iEtaReg);
-            const matrix<HTcell>& rphiHTcells = htRphi.getAllCells();
+            const matrix<HTcell>& rphiHTcells = htRphi.allCells();
             nStubsInCellPhiSum += rphiHTcells(m, n).numStubs();
           }
           // Plot total number of stubs in this cell, summed over all phi sectors.
@@ -1037,12 +1037,12 @@ namespace tmtt {
         //--- Histograms for Seed Filter
         if (settings_->rzFilterName() == "SeedFilter") {
           // Check number of track seeds per sector that r-z "seed" filter checked.
-          const vector<unsigned int> numSeedComb = get3Dtrk.getRZfilter().numSeedCombsPerTrk();
+          const vector<unsigned int> numSeedComb = get3Dtrk.rzFilter().numSeedCombsPerTrk();
           for (const unsigned int& num : numSeedComb) {
             hisNumSeedCombinations_->Fill(num);
           }
           // Same again, but this time only considering seeds the r-z filters defined as "good".
-          const vector<unsigned int> numGoodSeedComb = get3Dtrk.getRZfilter().numGoodSeedCombsPerTrk();
+          const vector<unsigned int> numGoodSeedComb = get3Dtrk.rzFilter().numGoodSeedCombsPerTrk();
           for (const unsigned int& num : numGoodSeedComb) {
             hisNumGoodSeedCombinations_->Fill(num);
           }

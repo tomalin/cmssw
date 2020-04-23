@@ -310,8 +310,8 @@ namespace tmtt {
         throw cms::Exception("LogicError") << "DigitalTrack: You forgot to call makeDigitalTrack()!";
     }
 
-    // Get digitisation configuration parameters for the specific track fitter being used here.
-    void getDigiCfg(const std::string& fitterName);
+    // Load digitisation configuration parameters for the specific track fitter being used here.
+    void loadDigiCfg(const std::string& fitterName);
 
     // Check that stub coords. are within assumed digitization range.
     void checkInRange() const;
