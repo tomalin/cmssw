@@ -97,18 +97,18 @@ process.Timing = cms.Service("Timing", summaryOnly = cms.untracked.bool(True))
 process.load('L1Trigger.TrackFindingTMTT.TMTrackProducer_Ultimate_cff')
 #
 # Enable histogramming & use of MC truth (considerably increases CPU)
-process.TMTrackProducer.EnableMCtruth = cms.bool(True)
-process.TMTrackProducer.EnableHistos  = cms.bool(True)
+process.TMTrackProducer.EnableMCtruth = True
+process.TMTrackProducer.EnableHistos  = True
 #
 #--- Optionally override default configuration parameters here (example given of how).
 
-#process.TMTrackProducer.TrackFitSettings.TrackFitters = cms.vstring(
+#process.TMTrackProducer.TrackFitSettings.TrackFitters = [
 #                                "KF5ParamsComb",
 #                                "KF4ParamsComb"
 #                                "KF4ParamsCombHLS",
 #                                "ChiSquaredFit4",
 #                                "SimpleLR4"
-#                                )
+#                                ]
 
 # If the input samples contain stubs and the truth association, then you can just use the following path
 process.p = cms.Path(process.TMTrackProducer)
