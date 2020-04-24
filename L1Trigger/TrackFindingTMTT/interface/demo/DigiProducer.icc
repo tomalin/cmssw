@@ -1,4 +1,4 @@
-#include <L1Trigger/TrackFindingTMTT/interfaceDemo/DigiProducer.h>
+#include <L1Trigger/TrackFindingTMTT/interface/demo/DigiProducer.h>
 #include <L1Trigger/TrackFindingTMTT/interface/InputData.h>
 #include <L1Trigger/TrackFindingTMTT/interface/Sector.h>
 #include <L1Trigger/TrackFindingTMTT/interface/HTrphi.h>
@@ -16,7 +16,7 @@
 #include "FWCore/MessageService/interface/MessageLogger.h"
 #include "FWCore/Framework/interface/ESHandle.h"
 
-#include "L1Trigger/TrackFindingTMTT/interfaceDemo/DigiConverter.h"
+#include "L1Trigger/TrackFindingTMTT/interface/demo/DigiConverter.h"
 
 #include "boost/numeric/ublas/matrix.hpp"
 #include <iostream>

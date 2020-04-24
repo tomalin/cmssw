@@ -131,7 +131,7 @@ namespace tmtt {
     // Access to booleans indicating if the stub has been digitized.
     bool digitizedForGPinput() const { return digitizedForGPinput_; }
     bool digitizedForHTinput() const { return digitizedForHTinput_; }
-    std::string digitizedForSForTFinput() const {
+    const std::string& digitizedForSForTFinput() const {
       return digitizedForSForTFinput_;
     }  // Returns which SF or TF digitisation was done for, if any.
     bool digitizedForDRinput() const { return digitizedForDRinput_; }

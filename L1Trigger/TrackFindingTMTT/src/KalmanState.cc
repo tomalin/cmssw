@@ -156,7 +156,7 @@ namespace tmtt {
     while (state) {
       const StubCluster *stbcl = state->stubCluster();
       if (stbcl) {
-        std::vector<const Stub *> stubs = stbcl->stubs();
+        const std::vector<const Stub *>& stubs = stbcl->stubs();
         all_stubs.insert(all_stubs.end(), stubs.begin(), stubs.end());
       }
       state = state->last_state();

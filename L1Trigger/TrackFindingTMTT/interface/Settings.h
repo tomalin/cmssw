@@ -203,7 +203,7 @@ namespace tmtt {
     //=== Options controlling r-z track filters (or any other track filters run after the Hough transform, as opposed to inside it).
 
     // Specify preferred r-z filter (from those available inside TrkRZfilter.cc) - currently only "SeedFilter".
-    std::string rzFilterName() const { return rzFilterName_; }
+    const std::string& rzFilterName() const { return rzFilterName_; }
     // --- Options relevant for Seed filter, (so only relevant if rzFilterName()="SeedFilter").
     // Added resolution beyond that estimated from hit resolution.
     double seedResolution() const { return seedResolution_; }
