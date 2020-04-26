@@ -1,11 +1,13 @@
-///=== This is the Kalman Combinatorial Filter for 4 & 5 helix parameters track fit algorithm.
-
 #ifndef L1Trigger_TrackFindingTMTT_KFParamsComb_h
 #define L1Trigger_TrackFindingTMTT_KFParamsComb_h
 
 #include "L1Trigger/TrackFindingTMTT/interface/KFbase.h"
 #include <TMatrixD.h>
 #include "L1Trigger/TrackFindingTMTT/interface/L1track3D.h"
+
+///=== This is the Kalman Combinatorial Filter for 4 & 5 helix parameters track fit algorithm.
+///=== All variable names & equations come from Fruhwirth KF paper
+///=== http://dx.doi.org/10.1016/0168-9002%2887%2990887-4
 
 namespace tmtt {
 
@@ -17,15 +19,28 @@ namespace tmtt {
     virtual ~KFParamsComb() {}
 
   protected:
+
+    // Convert to physical helix params instead of local ones used by KF
     virtual std::vector<double> trackParams(const KalmanState* state) const;
     virtual std::vector<double> trackParams_BeamConstr(const KalmanState* state, double& chi2rphi) const;
-    virtual std::vector<double> seedx(const L1track3D& l1track3D) const;
-    virtual TMatrixD seedP(const L1track3D& l1track3D) const;
-    virtual std::vector<double> d(const StubCluster* stubCluster) const;
-    virtual TMatrixD H(const StubCluster* stubCluster) const;
-    virtual TMatrixD dH(const StubCluster* stubCluster) const;
-    virtual TMatrixD F(const StubCluster* stubCluster = 0, const KalmanState* state = 0) const;
-    virtual TMatrixD PddMeas(const StubCluster* stubCluster, const KalmanState* state) const;
+
+    //--- Input data
+
+    // Seed track helix params & covariance matrix
+    virtual std::vector<double> seedX(const L1track3D& l1track3D) const;
+    virtual TMatrixD seedC(const L1track3D& l1track3D) const;
+    // Stub coordinate measurements & resolution
+    virtual std::vector<double> vectorM(const Stub* stub) const;
+    virtual TMatrixD matrixV(const Stub* stub, const KalmanState* state) const;
+
+    //--- KF maths matrix multiplications
+
+    // Derivate of helix intercept point w.r.t. helix params.
+    virtual TMatrixD matrixH(const Stub* stub) const;
+    // Kalman helix ref point extrapolation matrix
+    virtual TMatrixD matrixF(const Stub* stub = 0, const KalmanState* state = 0) const;
+
+    // Does helix state pass cuts?
     virtual bool isGoodState(const KalmanState& state) const;
   };
 

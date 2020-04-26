@@ -2507,8 +2507,6 @@ namespace tmtt {
           // Choose to get residuals from truth particle or fitted track?
           // (Only applies to chi2 method 2 below).
           const bool recalc_useTP = false;
-          // debug printout
-          const bool recalc_debug = false;
           // In residual plots, use residuals from method 2. (Imperfect, as neglects r-phi to r-z correlation).
           const bool recalc_method2 = true;
 
@@ -2516,9 +2514,6 @@ namespace tmtt {
           float recalcChiSquared_1_rz = 0.;
           float recalcChiSquared_2 = 0.;
           const vector<const Stub*> stubs = fitTrk.stubs();
-          if (recalc_debug)
-            cout << "RECALC loop stubs : HT cell=(" << fitTrk.cellLocationHT().first << ","
-                 << fitTrk.cellLocationHT().second << ")   TP PDG_ID=" << tp->pdgId() << endl;
           for (const Stub* s : stubs) {
             // Was this stub produced by correct truth particle?
             const set<const TP*> stubTPs = s->assocTPs();
@@ -2629,15 +2624,6 @@ namespace tmtt {
             if (trueStub) {
               recalcChiSquared_2 +=
                   V00 * pow(deltaPhi_proj, 2) + V11 * pow(deltaZ_proj, 2) + 2 * V01 * deltaPhi_proj * deltaZ_proj;
-              if (recalc_debug) {
-                cout << "  RECALC BARREL=" << s->barrel() << " PS=" << s->psModule() << " ID=" << s->index() << endl;
-                cout << "  RECALC RESID: 1000*rphi=" << 1000 * deltaPhi_proj << " rz=" << deltaZ_proj << endl;
-                cout << "  RECALC SIGMA: 1000*rphi=" << 1000 * sqrt(sigmaPhi2_proj) << " rz=" << sqrt(sigmaZ2_proj)
-                     << endl;
-                cout << "  RECALC CHI2=" << recalcChiSquared_2 << " & DELTA CHI2: rphi=" << V00 * pow(deltaPhi_proj, 2)
-                     << " rz=" << V11 * pow(deltaZ_proj, 2) << endl
-                     << endl;
-              }
             }
 
             float sigmaPhi = sqrt(sigmaPhi2);

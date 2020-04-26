@@ -2,17 +2,17 @@
 
 #include "L1Trigger/TrackFindingTMTT/interface/KFParamsComb.h"
 #include "L1Trigger/TrackFindingTMTT/interface/KalmanState.h"
-#include "L1Trigger/TrackFindingTMTT/interface/StubCluster.h"
 #include "DataFormats/Math/interface/deltaPhi.h"
-//#define CKF_DEBUG
 
 using namespace std;
 
 namespace tmtt {
 
-  std::vector<double> KFParamsComb::trackParams(const KalmanState* state) const {
-    std::vector<double> y(nPar_);
-    std::vector<double> x = state->xa();
+/* Get physical helix params */
+
+  vector<double> KFParamsComb::trackParams(const KalmanState* state) const {
+    vector<double> y(nPar_);
+    vector<double> x = state->xa();
     y[QOVERPT] = 2. * x.at(INV2R) / settings_->invPtToInvR();
     y[PHI0] = reco::deltaPhi(x.at(PHI0) + sectorPhi(), 0.);
     y[Z0] = x.at(Z0);
@@ -26,11 +26,11 @@ namespace tmtt {
   /* If using 5 param helix fit, get track params with beam-spot constraint & track fit chi2 from applying it. */
   /* (N.B. chi2rz unchanged by constraint) */
 
-  std::vector<double> KFParamsComb::trackParams_BeamConstr(const KalmanState* state, double& chi2rphi) const {
+  vector<double> KFParamsComb::trackParams_BeamConstr(const KalmanState* state, double& chi2rphi) const {
     if (nPar_ == 5) {
-      std::vector<double> y(nPar_);
-      std::vector<double> x = state->xa();
-      TMatrixD cov_xa = state->pxxa();
+      vector<double> y(nPar_);
+      vector<double> x = state->xa();
+      TMatrixD cov_xa = state->matrixC();
       double delChi2rphi = (x.at(D0) * x.at(D0)) / cov_xa[D0][D0];
       chi2rphi = state->chi2rphi() + delChi2rphi;
       // Apply beam-spot constraint to helix params in transverse plane only, as most sensitive to it.
@@ -48,11 +48,12 @@ namespace tmtt {
     }
   }
 
-  /* The Kalman measurement matrix = derivative of helix intercept w.r.t. helix params 
- * Here I always measure phi(r), and z(r) */
-  TMatrixD KFParamsComb::H(const StubCluster* stubCluster) const {
+/* The Kalman measurement matrix = derivative of helix intercept w.r.t. helix params */
+/* Here I always measure phi(r), and z(r) */
+
+  TMatrixD KFParamsComb::matrixH(const Stub* stub) const {
     TMatrixD h(2, nPar_);
-    double r = stubCluster->r();
+    double r = stub->r();
     h(PHI, INV2R) = -r;
     h(PHI, PHI0) = 1;
     if (nPar_ == 5) {
@@ -63,29 +64,10 @@ namespace tmtt {
     return h;
   }
 
-  // Not used?
+  /* Helix state seed  */
 
-  TMatrixD KFParamsComb::dH(const StubCluster* stubCluster) const {
-    double dr(0);
-    if (stubCluster->layerId() > 10) {
-      dr = stubCluster->sigmaZ();
-    }
-
-    double r = stubCluster->r();
-
-    TMatrixD h(2, nPar_);
-    h(PHI, INV2R) = -dr;
-    if (nPar_ == 5) {
-      h(PHI, D0) = dr / (r * r);
-    }
-    h(Z, T) = dr;
-
-    return h;
-  }
-
-  /* Seed the state vector */
-  std::vector<double> KFParamsComb::seedx(const L1track3D& l1track3D) const {
-    std::vector<double> x(nPar_);
+  vector<double> KFParamsComb::seedX(const L1track3D& l1track3D) const {
+    vector<double> x(nPar_);
     x[INV2R] = settings_->invPtToInvR() * l1track3D.qOverPt() / 2;
     x[PHI0] = reco::deltaPhi(l1track3D.phi0() - sectorPhi(), 0.);
     x[Z0] = l1track3D.z0();
@@ -97,8 +79,9 @@ namespace tmtt {
     return x;
   }
 
-  /* Seed the covariance matrix */
-  TMatrixD KFParamsComb::seedP(const L1track3D& l1track3D) const {
+  /* Helix state seed covariance matrix */
+
+  TMatrixD KFParamsComb::seedC(const L1track3D& l1track3D) const {
     TMatrixD p(nPar_, nPar_);
 
     double invPtToInv2R = settings_->invPtToInvR() / 2;
@@ -139,26 +122,28 @@ namespace tmtt {
     return p;
   }
 
-  /* The forecast matrix
- * (here equals identity matrix) */
-  TMatrixD KFParamsComb::F(const StubCluster* stubCluster, const KalmanState* state) const {
+/* The forecast matrix (identity matrix in this KF formulation) */
+
+  TMatrixD KFParamsComb::matrixF(const Stub* stub, const KalmanState* state) const {
     TMatrixD F(nPar_, nPar_);
     for (unsigned int n = 0; n < nPar_; n++)
       F(n, n) = 1;
     return F;
   }
 
-  /* the vector of measurements */
-  std::vector<double> KFParamsComb::d(const StubCluster* stubCluster) const {
-    std::vector<double> meas;
+  /* Stub position measurements in (phi,z) */
+
+  vector<double> KFParamsComb::vectorM(const Stub* stub) const {
+    vector<double> meas;
     meas.resize(2);
-    meas[PHI] = reco::deltaPhi(stubCluster->phi(), sectorPhi());
-    meas[Z] = stubCluster->z();
+    meas[PHI] = reco::deltaPhi(stub->phi(), sectorPhi());
+    meas[Z] = stub->z();
     return meas;
   }
 
-  // Assumed hit resolution in (phi,z)
-  TMatrixD KFParamsComb::PddMeas(const StubCluster* stubCluster, const KalmanState* state) const {
+  // Stub position resolution in (phi,z)
+
+  TMatrixD KFParamsComb::matrixV(const Stub* stub, const KalmanState* state) const {
     double inv2R =
         (settings_->invPtToInvR()) * 0.5 * state->candidate().qOverPt();  // alternatively use state->xa().at(INV2R)
     double inv2R2 = inv2R * inv2R;
@@ -177,26 +162,26 @@ namespace tmtt {
     if (settings_->enableDigitize())
       err_digi2 = 0.15625 * 0.15625 / 12.0;
 
-    double a = stubCluster->sigmaX() * stubCluster->sigmaX();
-    double b = stubCluster->sigmaZ() * stubCluster->sigmaZ() + err_digi2;
-    double r2 = stubCluster->r() * stubCluster->r();
+    double a = stub->sigmaX() * stub->sigmaX();
+    double b = stub->sigmaZ() * stub->sigmaZ() + err_digi2;
+    double r2 = stub->r() * stub->r();
     double invr2 = 1. / r2;
 
     // Scattering term scaling as 1/Pt.
     double sigmaScat = settings_->kalmanMultiScattTerm() / (state->candidate().pt());
     double sigmaScat2 = sigmaScat * sigmaScat;
 
-    if (stubCluster->barrel()) {
+    if (stub->barrel()) {
       vphi = (a * invr2) + sigmaScat2;
 
-      if (stubCluster->tiltedBarrel()) {
+      if (stub->tiltedBarrel()) {
         // Convert uncertainty in (r,phi) to (z,phi).
         float scaleTilted = 1.;
         if (settings_->kalmanHOtilted()) {
           if (settings_->useApproxB()) {  // Simple firmware approximation
-            scaleTilted = approxB(stubCluster->z(), stubCluster->r());
+            scaleTilted = approxB(stub->z(), stub->r());
           } else {  // Exact C++ implementation.
-            float tilt = stubCluster->moduleTilt();
+            float tilt = stub->moduleTilt();
             scaleTilted = sin(tilt) + cos(tilt) * tanl;
           }
         }
@@ -216,14 +201,14 @@ namespace tmtt {
       vphi = a * invr2 + sigmaScat2;
       vz = (b * tanl2);
 
-      if (not stubCluster->psModule()) {  // Neglect these terms in PS
+      if (not stub->psModule()) {  // Neglect these terms in PS
         double beta = 0.;
         // Add correlation term related to conversion of stub residuals from (r,phi) to (z,phi).
         if (settings_->kalmanHOprojZcorr() == 2)
           beta += -inv2R;
         // Add alpha correction for non-radial 2S endcap strips..
         if (settings_->kalmanHOalpha() == 2)
-          beta += -stubCluster->alpha();  // alpha is 0 except in endcap 2S disks
+          beta += -stub->alpha();  // alpha is 0 except in endcap 2S disks
 
         double beta2 = beta * beta;
         vphi += b * beta2;
@@ -231,8 +216,8 @@ namespace tmtt {
 
         // IRT - for checking efficiency of removing phi-z correlation from projection.
         // "ultimate_off1"
-        //vphi  = a * invr2 + b * pow(-stubCluster->alpha(), 2) + b * inv2R2 + sigmaScat2;
-        //vcorr = b * ((-stubCluster->alpha()) * tanl);
+        //vphi  = a * invr2 + b * pow(-stub->alpha(), 2) + b * inv2R2 + sigmaScat2;
+        //vcorr = b * ((-stub->alpha()) * tanl);
 
         // IRT - This higher order correction doesn't significantly improve the track fit performance, so commented out.
         //if (settings_->kalmanHOhelixExp()) {
@@ -258,6 +243,8 @@ namespace tmtt {
     return p;
   }
 
+/* Check if helix state passes cuts */
+
   bool KFParamsComb::isGoodState(const KalmanState& state) const {
     // Cut values. (Layer 0 entry here is dummy). -- todo : make configurable
 
@@ -279,7 +266,7 @@ namespace tmtt {
     unsigned nStubLayers = state.nStubLayers();
     bool goodState(true);
 
-    std::vector<double> y = trackParams(&state);
+    vector<double> y = trackParams(&state);
     double qOverPt = y[QOVERPT];
     double pt = std::abs(1 / qOverPt);
     double z0 = std::abs(y[Z0]);
