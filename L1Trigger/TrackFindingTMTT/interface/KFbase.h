@@ -2,6 +2,7 @@
 #define L1Trigger_TrackFindingTMTT_KFbase_h
 
 #include <TMatrixD.h>
+#include <TVectorD.h>
 #include "L1Trigger/TrackFindingTMTT/interface/TrackFitGeneric.h"
 #include "L1Trigger/TrackFindingTMTT/interface/Stub.h"
 #include "L1Trigger/TrackFindingTMTT/interface/Settings.h"
@@ -64,13 +65,11 @@ namespace tmtt {
                                unsigned nSkipped,
                                unsigned layer,
                                const KalmanState *last_state,
-                               const std::vector<double> &x,
+                               const TVectorD &x,
                                const TMatrixD &pxx,
                                const TMatrixD &K,
                                const TMatrixD &dcov,
-                               const Stub *stub,
-                               double chi2rphi,
-                               double chi2rz);
+                               const Stub *stub);
 
     //--- Small utilities
 
@@ -78,9 +77,9 @@ namespace tmtt {
     void resetStates();
 
     // Convert to physical helix params instead of local ones used by KF
-    virtual std::vector<double> trackParams(const KalmanState *state) const = 0;
+    virtual TVectorD trackParams(const KalmanState *state) const = 0;
     // Ditto after applying beam-spot constraint.
-    virtual std::vector<double> trackParams_BeamConstr(const KalmanState *state, double &chi2rphi_bcon) const = 0;
+    virtual TVectorD trackParams_BeamConstr(const KalmanState *state, double &chi2rphi_bcon) const = 0;
 
     // Get phi of centre of sector containing track.
     double sectorPhi() const {
@@ -92,42 +91,41 @@ namespace tmtt {
     //--- Input data
 
     // Seed track helix params & covariance matrix
-    virtual std::vector<double> seedX(const L1track3D &l1track3D) const = 0;
+    virtual TVectorD seedX(const L1track3D &l1track3D) const = 0;
     virtual TMatrixD seedC(const L1track3D &l1track3D) const = 0;
 
     // Stub coordinate measurements & resolution
-    virtual std::vector<double> vectorM(const Stub *stub) const = 0;
+    virtual TVectorD vectorM(const Stub *stub) const = 0;
     virtual TMatrixD matrixV(const Stub *stub, const KalmanState *state) const = 0;
 
     //--- KF maths matrix multiplications
 
     // Derivate of helix intercept point w.r.t. helix params.
     virtual TMatrixD matrixH(const Stub *stub) const = 0;
-    // Product of H*x (where x = helix params)
-    std::vector<double> vectorHx(const TMatrixD &pH, const std::vector<double> &x) const;
     // Kalman helix ref point extrapolation matrix
     virtual TMatrixD matrixF(const Stub *stub = 0, const KalmanState *state = 0) const = 0;
-    // Product of F*x
-    std::vector<double> vectorFx(const TMatrixD &pF, const std::vector<double> &x) const;
     // Product of H*C*H(transpose) (where C = helix covariance matrix)
     TMatrixD matrixHCHt(const TMatrixD &h, const TMatrixD &c) const;
+    // Change in chi2 with this update.
     void deltaChi2(const TMatrixD &dcov,
-                      const std::vector<double> &delta,
+                      const TVectorD &delta,
                       bool debug,
                       double &delChi2rphi,
                       double &delChi2rz) const;
+    // Kalman gain matrix
     TMatrixD GetKalmanMatrix(const TMatrixD &h, const TMatrixD &pxcov, const TMatrixD &dcov) const;
+    // Update helix state & its covariance matrix.
     void GetAdjustedState(const TMatrixD &K,
                           const TMatrixD &pxcov,
-                          const std::vector<double> &x,
-                          const Stub *stub,
-                          const std::vector<double> &delta,
-                          std::vector<double> &new_x,
+                          const TVectorD &x,
+                          const TMatrixD &h,
+                          const TVectorD &delta,
+                          TVectorD &new_x,
                           TMatrixD &new_xcov) const;
 
     // Residuals of stub with respect to helix.
-    virtual std::vector<double> residual(const Stub *stub,
-                                         const std::vector<double> &x,
+    virtual TVectorD residual(const Stub *stub,
+                                         const TVectorD &x,
                                          double candQoverPt) const;
 
     // Helix state pases cuts.

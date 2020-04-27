@@ -21,16 +21,16 @@ namespace tmtt {
   protected:
 
     // Convert to physical helix params instead of local ones used by KF
-    virtual std::vector<double> trackParams(const KalmanState* state) const;
-    virtual std::vector<double> trackParams_BeamConstr(const KalmanState* state, double& chi2rphi) const;
+    virtual TVectorD trackParams(const KalmanState* state) const;
+    virtual TVectorD trackParams_BeamConstr(const KalmanState* state, double& chi2rphi) const;
 
     //--- Input data
 
     // Seed track helix params & covariance matrix
-    virtual std::vector<double> seedX(const L1track3D& l1track3D) const;
+    virtual TVectorD seedX(const L1track3D& l1track3D) const;
     virtual TMatrixD seedC(const L1track3D& l1track3D) const;
     // Stub coordinate measurements & resolution
-    virtual std::vector<double> vectorM(const Stub* stub) const;
+    virtual TVectorD vectorM(const Stub* stub) const;
     virtual TMatrixD matrixV(const Stub* stub, const KalmanState* state) const;
 
     //--- KF maths matrix multiplications

@@ -1,4 +1,4 @@
-//=== This is the base class for the Kalman Combinatorial Filter track fit algorithm.
+///=== This is the base class for the Kalman Combinatorial Filter track fit algorithm.
 
 ///=== Written by: S. Summers, K. Uchida, M. Pesaresi, I.Tomalin
 
@@ -25,7 +25,7 @@ namespace tmtt {
 /* Print truth particle */
 
   void KFbase::printTP(std::ostream &os, const TP *tp) const {
-    vector<double> tpParams(5);
+    TVectorD tpParams(5);
     bool useForAlgEff(false);
     if (tp) {
       useForAlgEff = tp->useForAlgEff();
@@ -38,7 +38,7 @@ namespace tmtt {
     if (tp) {
       os << "  TP index = " << tp->index() << " useForAlgEff = " << useForAlgEff << " ";
       const string helixNames[5] = {"qOverPt", "phi0", "z0", "tanL", "d0"};
-      for (unsigned int i = 0; i < tpParams.size(); i++) {
+      for (int i = 0; i < tpParams.GetNrows(); i++) {
         os << helixNames[i] << ":" << tpParams[i] << ", ";
       }
       os << "  inv2R = " << tp->qOverPt() * settings_->invPtToInvR() * 0.5;
@@ -247,7 +247,7 @@ namespace tmtt {
 /* Initialize cfg parameters */
 
   KFbase::KFbase(const Settings *settings, const uint nPar, const string &fitterName, const uint nMeas)
-      : TrackFitGeneric(settings, fitterName) {
+    : TrackFitGeneric(settings, fitterName) {
     nPar_ = nPar;
     nMeas_ = nMeas;
     numEtaRegions_ = settings->numEtaRegions();
@@ -304,14 +304,15 @@ namespace tmtt {
       //cout<<"Final KF candidate eta="<<cand->candidate().iEtaReg()<<" ns="<<cand->nSkippedLayers()<<" klid="<<cand->nextLayer()-1<<" n="<<cand->nStubLayers()<<endl;
 
       // Get track helix params.
-      vector<double> trackPars = trackParams(cand);
+      TVectorD trackPars = trackParams(cand);
+      double d0 = (nPar_ == 5)  ?  trackPars[D0]  : 0.;
 
       L1fittedTrack fitTrk(settings_,
                            l1track3D,
                            cand->stubs(),
                            cand->hitPattern(),
                            trackPars[QOVERPT],
-                           trackPars[D0],
+                           d0,
                            trackPars[PHI0],
                            trackPars[Z0],
                            trackPars[T],
@@ -344,7 +345,7 @@ namespace tmtt {
       if (settings_->kalmanAddBeamConstr()) {
         if (nPar_ == 5) {
           double chi2rphi_bcon = 0.;
-          vector<double> trackPars_bcon = trackParams_BeamConstr(cand, chi2rphi_bcon);
+          TVectorD trackPars_bcon = trackParams_BeamConstr(cand, chi2rphi_bcon);
           fitTrk.setBeamConstr(trackPars_bcon[QOVERPT], trackPars_bcon[PHI0], chi2rphi_bcon);
         }
       }
@@ -418,12 +419,12 @@ namespace tmtt {
         best_state_by_nstubs;  // Best state (if any) for each viable no. of stubs on track value.
 
     // seed helix params & their covariance.
-    vector<double> x0 = seedX(l1track3D);
+    TVectorD x0 = seedX(l1track3D);
     TMatrixD pxx0 = seedC(l1track3D);
     TMatrixD K(nPar_, 2);
     TMatrixD dcov(2, 2);
 
-    const KalmanState *state0 = mkState(l1track3D, 0, -1, nullptr, x0, pxx0, K, dcov, nullptr, 0, 0);
+    const KalmanState *state0 = mkState(l1track3D, 0, -1, nullptr, x0, pxx0, K, dcov, nullptr);
 
     // internal containers - i.e. the state FIFO. Contains estimate of helix params in last/next layer, with multiple entries if there were multiple stubs, yielding multiple states.
     vector<const KalmanState *> new_states;
@@ -674,7 +675,7 @@ namespace tmtt {
              << stateFinal->hitPattern() << std::dec << " phiSec=" << l1track3D.iPhiSec()
              << " etaReg=" << l1track3D.iEtaReg() << " HT(m,c)=(" << l1track3D.cellLocationHT().first << ","
              << l1track3D.cellLocationHT().second << ")";
-        vector<double> y = trackParams(stateFinal);
+        TVectorD y = trackParams(stateFinal);
         cout << " q/pt=" << y[QOVERPT] << " tanL=" << y[T] << " z0=" << y[Z0] << " phi0=" << y[PHI0];
         if (nPar_ == 5)
           cout << " d0=" << y[D0];
@@ -706,41 +707,41 @@ namespace tmtt {
     numUpdateCalls_++;  // For monitoring, count calls to updator per track.
 
     // Helix params & their covariance.
-    vector<double> xa = state.xa();
-    TMatrixD cov_xa = state.matrixC();
+    TVectorD vecX = state.vectorX();
+    TMatrixD matC = state.matrixC();
     if (state.barrel() && !stub->barrel()) {
       if (settings_->kalmanDebugLevel() >= 4) {
         cout << "STATE BARREL TO ENDCAP BEFORE " << endl;
-        cout << "state : " << xa.at(0) << " " << xa.at(1) << " " << xa.at(2) << " " << xa.at(3) << endl;
+        cout << "state : " << vecX[0] << " " << vecX[1] << " " << vecX[2] << " " << vecX[3] << endl;
         cout << "cov(x): " << endl;
-        cov_xa.Print();
+        matC.Print();
       }
       if (settings_->kalmanDebugLevel() >= 4) {
         cout << "STATE BARREL TO ENDCAP AFTER " << endl;
-        cout << "state : " << xa.at(0) << " " << xa.at(1) << " " << xa.at(2) << " " << xa.at(3) << endl;
+        cout << "state : " << vecX[0] << " " << vecX[1] << " " << vecX[2] << " " << vecX[3] << endl;
         cout << "cov(x): " << endl;
-        cov_xa.Print();
+        matC.Print();
       }
     }
-    // Matrix to propagate helix params from one layer to next (=identity matrix).
+    // Matrix to propagate helix reference point from one layer to next.
     TMatrixD f = matrixF(stub, &state);
-    TMatrixD ft(TMatrixD::kTransposed, f);
+    TMatrixD fTrans(TMatrixD::kTransposed, f);
     if (settings_->kalmanDebugLevel() >= 4) {
       cout << "f" << endl;
       f.Print();
-      cout << "ft" << endl;
-      ft.Print();
     }
 
-    vector<double> fx = vectorFx(f, xa);  // Multiply matrices to get helix params at next layer.
+    // Multiply matrices to get helix params at next layer.
+    TVectorD fx = f*vecX;  
     if (settings_->kalmanDebugLevel() >= 4) {
       cout << "fx = [";
       for (unsigned i = 0; i < nPar_; i++)
-        cout << fx.at(i) << ", ";
+        cout << fx(i) << ", ";
       cout << "]" << endl;
     }
 
-    vector<double> delta = residual(stub, fx, state.candidate().qOverPt());
+    // Get stub residuals.
+    TVectorD delta = residual(stub, fx, state.candidate().qOverPt());
     if (settings_->kalmanDebugLevel() >= 4) {
       cout << "delta = " << delta[0] << ", " << delta[1] << endl;
     }
@@ -754,18 +755,18 @@ namespace tmtt {
 
     if (settings_->kalmanDebugLevel() >= 4) {
       cout << "previous state covariance" << endl;
-      cov_xa.Print();
+      matC.Print();
     }
-    // Get contribution to helix parameter covariance from scattering (left at zero).
+    // Get scattering contribution to helix parameter covariance (currently zero).
     TMatrixD pxxm(nPar_, nPar_);
     if (settings_->kalmanDebugLevel() >= 4) {
       cout << "model xcov" << endl;
       pxxm.Print();
     }
-    // Get covariance on helix parameters.
-    TMatrixD pxcov = f * cov_xa * ft + pxxm;
+    // Get covariance on helix parameters at new reference point including scattering..
+    TMatrixD pxcov = f * matC * fTrans + pxxm;
     if (settings_->kalmanDebugLevel() >= 4) {
-      cout << "forcast xcov + model xcov" << endl;
+      cout << "forecast xcov + model xcov" << endl;
       pxcov.Print();
     }
     // Get hit position covariance matrix.
@@ -781,21 +782,22 @@ namespace tmtt {
       k.Print();
     }
 
-    vector<double> new_xa(nPar_);
-    TMatrixD new_matrixC;
-    GetAdjustedState(k, pxcov, fx, stub, delta, new_xa, new_matrixC);
+    // Update helix state & its covariance matrix.
+    TVectorD new_vecX(nPar_);
+    TMatrixD new_matrixC(nPar_,nPar_);
+    GetAdjustedState(k, pxcov, fx, h, delta, new_vecX, new_matrixC);
     if (settings_->kalmanDebugLevel() >= 4) {
       if (nPar_ == 4)
-        cout << "adjusted x = " << new_xa[0] << ", " << new_xa[1] << ", " << new_xa[2] << ", " << new_xa[3] << endl;
+        cout << "adjusted x = " << new_vecX[0] << ", " << new_vecX[1] << ", " << new_vecX[2] << ", " << new_vecX[3] << endl;
       else if (nPar_ == 5)
-        cout << "adjusted x = " << new_xa[0] << ", " << new_xa[1] << ", " << new_xa[2] << ", " << new_xa[3] << ", "
-             << new_xa[4] << endl;
+        cout << "adjusted x = " << new_vecX[0] << ", " << new_vecX[1] << ", " << new_vecX[2] << ", " << new_vecX[3] << ", "
+             << new_vecX[4] << endl;
       cout << "adjusted covx " << endl;
       new_matrixC.Print();
     }
 
     const KalmanState *new_state = mkState(
-					   state.candidate(), nSkipped, layer, &state, new_xa, new_matrixC, k, dcov, stub, 0, 0);
+					   state.candidate(), nSkipped, layer, &state, new_vecX, new_matrixC, k, dcov, stub);
 
     return new_state;
   }
@@ -808,12 +810,12 @@ namespace tmtt {
     }
     double delChi2rphi(0), delChi2rz(0);
 
-    if (state.last_state()) {
+    if (state.last_state() != nullptr) {
       const Stub *stub = state.stub();
 
       if (stub) {
-        vector<double> delta =
-            residual(stub, state.last_state()->xa(), state.last_state()->candidate().qOverPt());
+        TVectorD delta =
+            residual(stub, state.last_state()->vectorX(), state.last_state()->candidate().qOverPt());
         TMatrixD dcov = matrixV(stub, &state);
 
         if (settings_->kalmanDebugLevel() >= 4) {
@@ -848,7 +850,7 @@ namespace tmtt {
 /* Calculate change in track fit chi2 */
 
   void KFbase::deltaChi2(const TMatrixD &dcov,
-                                  const vector<double> &delta,
+                                  const TVectorD &delta,
                                   bool debug,
                                   double &delChi2rphi,
                                   double &delChi2rz) const {
@@ -867,8 +869,9 @@ namespace tmtt {
     dcovi.Invert();
 
     // Change in chi2 (with r-phi/r-z correlation term included in r-phi component)
-    delChi2rphi = delta.at(0) * delta.at(0) * dcovi(0, 0) + 2 * delta.at(0) * delta.at(1) * dcovi(0, 1);
-    delChi2rz = delta.at(1) * delta.at(1) * dcovi(1, 1);
+    delChi2rphi = delta[PHI] * delta[PHI] * dcovi[PHI][PHI] 
+      + 2 * delta[PHI] * delta[Z] * dcovi[PHI][Z];
+    delChi2rz = delta[Z] * delta[Z] * dcovi[Z][Z];
 
     if (debug) {
       cout << "CHI SQUARE OUTPUT" << endl;
@@ -876,137 +879,39 @@ namespace tmtt {
       dcov.Print();
       cout << "cov inv" << endl;
       dcovi.Print();
-      for (unsigned i = 0; i < delta.size(); i++)
-        cout << delta.at(i) << " ";
+      for (int i = 0; i < delta.GetNrows(); i++)
+        cout << delta(i) << " ";
       cout << endl;
     }
     return;
   }
 
-/* Product of H*x (where x = helix params) */
-
-  vector<double> KFbase::vectorHx(const TMatrixD &pH, const vector<double> &x) const {
-    vector<double> m((unsigned)pH.GetNrows(), 0);
-    if (pH.GetNcols() != (int)x.size()) {
-      cerr << "Hx() : H and x have different dimensions" << endl;
-    } else {
-      for (int i = 0; i < pH.GetNcols(); i++) {
-        for (int j = 0; j < pH.GetNrows(); j++) {
-          m.at(j) += pH(j, i) * x.at(i);
-        }
-      }
-    }
-    return m;
-  }
-
-/* Product of F*x */
-
-  vector<double> KFbase::vectorFx(const TMatrixD &pF, const vector<double> &x) const { return vectorHx(pF, x); }
-
   TMatrixD KFbase::matrixHCHt(const TMatrixD &h, const TMatrixD &c) const {
-    int nd = (unsigned)h.GetNrows();
-    TMatrixD tmp(nd, nPar_);
-    TMatrixD mmatrixHCHt(nd, nd);
-    if (h.GetNcols() != c.GetNcols() || h.GetNcols() != c.GetNrows()) {
-      cerr << "matrixHCHt() : H and c have different dimensions" << endl;
-    } else {
-      for (int i = 0; i < h.GetNrows(); i++) {
-        for (int j = 0; j < c.GetNrows(); j++) {
-          for (int k = 0; k < c.GetNcols(); k++) {
-            tmp(i, k) += h(i, j) * c(j, k);
-          }
-        }
-      }
-      for (int i = 0; i < tmp.GetNrows(); i++) {
-        for (int j = 0; j < h.GetNcols(); j++) {
-          for (int k = 0; k < h.GetNrows(); k++) {
-            mmatrixHCHt(i, k) += tmp(i, j) * h(k, j);
-          }
-        }
-      }
-    }
-    return mmatrixHCHt;
+    TMatrixD hTrans(TMatrixD::kTransposed, h);
+    return h*c*hTrans;
   }
 
 /* Determine Kalman gain matrix K */
 
   TMatrixD KFbase::GetKalmanMatrix(const TMatrixD &h, const TMatrixD &pxcov, const TMatrixD &dcov) const {
-    TMatrixD pxcovht(pxcov.GetNrows(), 2);
-    for (int i = 0; i < pxcov.GetNrows(); i++) {
-      for (int j = 0; j < pxcov.GetNcols(); j++) {
-        for (int k = 0; k < h.GetNrows(); k++) {
-          pxcovht(i, k) += pxcov(i, j) * h(k, j);
-        }
-      }
-    }
-    if (settings_->kalmanDebugLevel() >= 4) {
-      cout << "pxcovht" << endl;
-      pxcovht.Print();
-    }
-
-    TMatrixD tmp(dcov.GetNrows(), dcov.GetNcols());
-    TMatrixD hxxh = matrixHCHt(h, pxcov);
-    tmp = dcov + hxxh;
-
-    if (settings_->kalmanDebugLevel() >= 4) {
-      cout << "hxxh" << endl;
-      hxxh.Print();
-      cout << "dcov + hxxh " << endl;
-      tmp.Print();
-    }
-
-    TMatrixD K(pxcovht.GetNrows(), tmp.GetNcols());
-
-    if (tmp.Determinant() == 0)
-      return K;
-    tmp.Invert();
-
-    for (int i = 0; i < pxcovht.GetNrows(); i++) {
-      for (int j = 0; j < pxcovht.GetNcols(); j++) {
-        for (int k = 0; k < tmp.GetNcols(); k++) {
-          K(i, k) += pxcovht(i, j) * tmp(j, k);
-        }
-      }
-    }
+    TMatrixD hTrans(TMatrixD::kTransposed, h);
+    TMatrixD pxcovht = pxcov*hTrans;
+    TMatrixD tmp(TMatrixD::kInverted, dcov + matrixHCHt(h, pxcov));
+    TMatrixD K = pxcovht * tmp;
     return K;
   }
 
   void KFbase::GetAdjustedState(const TMatrixD &K,
                                       const TMatrixD &pxcov,
-                                      const vector<double> &x,
-                                      const Stub *stub,
-                                      const vector<double> &delta,
-                                      vector<double> &new_x,
+                                      const TVectorD &x,
+                                      const TMatrixD &h,
+                                      const TVectorD &delta,
+                                      TVectorD &new_x,
                                       TMatrixD &new_xcov) const {
-    TMatrixD h = matrixH(stub);
-
-    for (int i = 0; i < K.GetNrows(); i++) {
-      new_x.at(i) = x.at(i);
-      for (int j = 0; j < K.GetNcols(); j++) {
-        new_x.at(i) += K(i, j) * delta.at(j);
-      }
-    }
-
-    TMatrixD tmp(K.GetNrows(), h.GetNcols());
-    for (int i = 0; i < K.GetNrows(); i++) {
-      tmp(i, i) = 1;
-    }
-    for (int i = 0; i < K.GetNrows(); i++) {
-      for (int j = 0; j < K.GetNcols(); j++) {
-        for (int k = 0; k < h.GetNcols(); k++) {
-          tmp(i, k) += -1 * K(i, j) * h(j, k);
-        }
-      }
-    }
-    new_xcov.Clear();
-    new_xcov.ResizeTo(pxcov.GetNrows(), pxcov.GetNcols());
-    for (int i = 0; i < tmp.GetNrows(); i++) {
-      for (int j = 0; j < tmp.GetNcols(); j++) {
-        for (int k = 0; k < pxcov.GetNcols(); k++) {
-          new_xcov(i, k) += tmp(i, j) * pxcov(j, k);
-        }
-      }
-    }
+    new_x = x + K*delta;
+    const TMatrixD unitMatrix(TMatrixD::kUnit, TMatrixD(nPar_, nPar_));
+    TMatrixD tmp = unitMatrix - K*h;
+    new_xcov =  tmp*pxcov;
   }
 
   void KFbase::resetStates() {
@@ -1020,13 +925,11 @@ namespace tmtt {
                                            unsigned nSkipped,
 				           unsigned layer,
                                            const KalmanState *last_state,
-                                           const vector<double> &x,
+                                           const TVectorD &x,
                                            const TMatrixD &pxx,
                                            const TMatrixD &K,
                                            const TMatrixD &dcov,
-                                           const Stub *stub,
-                                           double chi2rphi,
-                                           double chi2rz) {
+				     const Stub *stub) {
     KalmanState *new_state = new KalmanState(settings_,
 					     candidate,
                                              nSkipped,
@@ -1037,14 +940,12 @@ namespace tmtt {
                                              K,
                                              dcov,
                                              stub,
-                                             chi2rphi,
-                                             chi2rz);
+                                             0,
+                                             0);
 
-    if (chi2rphi + chi2rz == 0) {
-      double new_state_chi2rphi = 0., new_state_chi2rz = 0.;
-      this->calcChi2(*new_state, new_state_chi2rphi, new_state_chi2rz);
-      new_state->setChi2(new_state_chi2rphi, new_state_chi2rz);
-    }
+    double new_state_chi2rphi = 0., new_state_chi2rz = 0.;
+    this->calcChi2(*new_state, new_state_chi2rphi, new_state_chi2rz);
+    new_state->setChi2(new_state_chi2rphi, new_state_chi2rz);
 
     state_list_.push_back(new_state);
     return new_state;
@@ -1052,24 +953,22 @@ namespace tmtt {
 
 /* Calculate stub residual w.r.t. helix */
 
-  vector<double> KFbase::residual(const Stub *stub,
-                                             const vector<double> &x,
+  TVectorD KFbase::residual(const Stub *stub,
+                                             const TVectorD &x,
                                              double candQoverPt) const {
-    vector<double> vd = vectorM(stub);  // Get (phi relative to sector, z) of hit.
-    vector<double> hx =
-        vectorHx(matrixH(stub), x);  // Ditto for intercept of helix with layer, in linear approximation.
-    vector<double> delta(2);
-    for (unsigned i = 0; i < 2; i++)
-      delta.at(i) = vd.at(i) - hx.at(i);
+    TVectorD vd = vectorM(stub);  // Get (phi relative to sector, z) of hit.
+    TMatrixD h = matrixH(stub);
+    TVectorD hx = h*x;  // Get intercept of helix with layer (linear approx).
+    TVectorD delta = vd - hx;
 
     // Calculate higher order corrections to residuals.
 
     if (not settings_->kalmanHOdodgy()) {
-      vector<double> correction = {0., 0.};
+      TVectorD correction(2);
 
-      float inv2R = (settings_->invPtToInvR()) * 0.5 * candQoverPt;  // alternatively use x().at(0)
-      float tanL = x.at(2);
-      float z0 = x.at(3);
+      float inv2R = (settings_->invPtToInvR()) * 0.5 * candQoverPt; 
+      float tanL = x[T];
+      float z0 = x[Z0];
 
       float deltaS = 0.;
       if (settings_->kalmanHOhelixExp()) {
@@ -1107,11 +1006,10 @@ namespace tmtt {
       }
 
       // Apply correction to residuals.
-      delta[0] += correction[0];
-      delta[1] += correction[1];
+      delta += correction;
     }
 
-    delta.at(0) = reco::deltaPhi(delta.at(0), 0.);
+    delta[0] = reco::deltaPhi(delta[0], 0.);
 
     return delta;
   }

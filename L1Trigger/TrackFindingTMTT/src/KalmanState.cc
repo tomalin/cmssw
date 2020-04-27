@@ -22,7 +22,7 @@ namespace tmtt {
                            unsigned nSkipped,
                            int kLayer,
                            const KalmanState *last_state,
-                           const std::vector<double> &vecX,
+                           const TVectorD &vecX,
                            const TMatrixD &matC,
                            const TMatrixD &matK,
                            const TMatrixD &matV,
@@ -75,7 +75,7 @@ namespace tmtt {
         r_(p.r()),
         z_(p.z()),
         last_state_(p.last_state()),
-        vecX_(p.xa()),
+        vecX_(p.vectorX()),
         matC_(p.matrixC()),
         matK_(p.matrixK()),
         matV_(p.matrixV()),
@@ -97,7 +97,7 @@ namespace tmtt {
     r_ = other.r();
     z_ = other.z();
     last_state_ = other.last_state();
-    vecX_ = other.xa();
+    vecX_ = other.vectorX();
     matC_ = other.matrixC();
     matK_ = other.matrixK();
     matV_ = other.matrixV();
@@ -126,8 +126,8 @@ namespace tmtt {
   }
 
   double KalmanState::reducedChi2() const {
-    if (2 * n_stubs_ - vecX_.size() > 0)
-      return (this->chi2()) / (2 * n_stubs_ - vecX_.size());
+    if (2 * n_stubs_ - vecX_.GetNrows() > 0)
+      return (this->chi2()) / (2 * n_stubs_ - vecX_.GetNrows());
     else
       return 0;
   }

@@ -10,15 +10,15 @@ namespace tmtt {
 
 /* Get physical helix params */
 
-  vector<double> KFParamsComb::trackParams(const KalmanState* state) const {
-    vector<double> y(nPar_);
-    vector<double> x = state->xa();
-    y[QOVERPT] = 2. * x.at(INV2R) / settings_->invPtToInvR();
-    y[PHI0] = reco::deltaPhi(x.at(PHI0) + sectorPhi(), 0.);
-    y[Z0] = x.at(Z0);
-    y[T] = x.at(T);
+  TVectorD KFParamsComb::trackParams(const KalmanState* state) const {
+    TVectorD y(nPar_);
+    TVectorD x = state->vectorX();
+    y[QOVERPT] = 2. * x(INV2R) / settings_->invPtToInvR();
+    y[PHI0] = reco::deltaPhi(x(PHI0) + sectorPhi(), 0.);
+    y[Z0] = x(Z0);
+    y[T] = x(T);
     if (nPar_ == 5) {
-      y[D0] = x.at(D0);
+      y[D0] = x(D0);
     }
     return y;
   }
@@ -26,22 +26,22 @@ namespace tmtt {
   /* If using 5 param helix fit, get track params with beam-spot constraint & track fit chi2 from applying it. */
   /* (N.B. chi2rz unchanged by constraint) */
 
-  vector<double> KFParamsComb::trackParams_BeamConstr(const KalmanState* state, double& chi2rphi) const {
+  TVectorD KFParamsComb::trackParams_BeamConstr(const KalmanState* state, double& chi2rphi) const {
     if (nPar_ == 5) {
-      vector<double> y(nPar_);
-      vector<double> x = state->xa();
-      TMatrixD cov_xa = state->matrixC();
-      double delChi2rphi = (x.at(D0) * x.at(D0)) / cov_xa[D0][D0];
+      TVectorD y(nPar_);
+      TVectorD x = state->vectorX();
+      TMatrixD matC = state->matrixC();
+      double delChi2rphi = (x(D0) * x(D0)) / matC[D0][D0];
       chi2rphi = state->chi2rphi() + delChi2rphi;
       // Apply beam-spot constraint to helix params in transverse plane only, as most sensitive to it.
-      x[INV2R] -= x.at(D0) * (cov_xa[INV2R][D0] / cov_xa[D0][D0]);
-      x[PHI0] -= x.at(D0) * (cov_xa[PHI0][D0] / cov_xa[D0][D0]);
+      x[INV2R] -= x(D0) * (matC[INV2R][D0] / matC[D0][D0]);
+      x[PHI0] -= x(D0) * (matC[PHI0][D0] / matC[D0][D0]);
       x[D0] = 0.0;
-      y[QOVERPT] = 2. * x.at(INV2R) / settings_->invPtToInvR();
-      y[PHI0] = reco::deltaPhi(x.at(PHI0) + sectorPhi(), 0.);
-      y[Z0] = x.at(Z0);
-      y[T] = x.at(T);
-      y[D0] = x.at(D0);
+      y[QOVERPT] = 2. * x(INV2R) / settings_->invPtToInvR();
+      y[PHI0] = reco::deltaPhi(x(PHI0) + sectorPhi(), 0.);
+      y[Z0] = x(Z0);
+      y[T] = x(T);
+      y[D0] = x(D0);
       return y;
     } else {
       return (this->trackParams(state));
@@ -66,8 +66,8 @@ namespace tmtt {
 
   /* Helix state seed  */
 
-  vector<double> KFParamsComb::seedX(const L1track3D& l1track3D) const {
-    vector<double> x(nPar_);
+  TVectorD KFParamsComb::seedX(const L1track3D& l1track3D) const {
+    TVectorD x(nPar_);
     x[INV2R] = settings_->invPtToInvR() * l1track3D.qOverPt() / 2;
     x[PHI0] = reco::deltaPhi(l1track3D.phi0() - sectorPhi(), 0.);
     x[Z0] = l1track3D.z0();
@@ -125,17 +125,14 @@ namespace tmtt {
 /* The forecast matrix (identity matrix in this KF formulation) */
 
   TMatrixD KFParamsComb::matrixF(const Stub* stub, const KalmanState* state) const {
-    TMatrixD F(nPar_, nPar_);
-    for (unsigned int n = 0; n < nPar_; n++)
-      F(n, n) = 1;
-    return F;
+    const TMatrixD unitMatrix(TMatrixD::kUnit, TMatrixD(nPar_, nPar_));
+    return unitMatrix;
   }
 
   /* Stub position measurements in (phi,z) */
 
-  vector<double> KFParamsComb::vectorM(const Stub* stub) const {
-    vector<double> meas;
-    meas.resize(2);
+  TVectorD KFParamsComb::vectorM(const Stub* stub) const {
+    TVectorD meas(2);
     meas[PHI] = reco::deltaPhi(stub->phi(), sectorPhi());
     meas[Z] = stub->z();
     return meas;
@@ -145,10 +142,10 @@ namespace tmtt {
 
   TMatrixD KFParamsComb::matrixV(const Stub* stub, const KalmanState* state) const {
     double inv2R =
-        (settings_->invPtToInvR()) * 0.5 * state->candidate().qOverPt();  // alternatively use state->xa().at(INV2R)
+        (settings_->invPtToInvR()) * 0.5 * state->candidate().qOverPt();  // alternatively use state->vectorX()(INV2R)
     double inv2R2 = inv2R * inv2R;
 
-    double tanl = state->xa().at(T);  // factor of 0.9 improves rejection
+    double tanl = state->vectorX()(T);  // factor of 0.9 improves rejection
     double tanl2 = tanl * tanl;
 
     TMatrixD p(2, 2);
@@ -266,7 +263,7 @@ namespace tmtt {
     unsigned nStubLayers = state.nStubLayers();
     bool goodState(true);
 
-    vector<double> y = trackParams(&state);
+    TVectorD y = trackParams(&state);
     double qOverPt = y[QOVERPT];
     double pt = std::abs(1 / qOverPt);
     double z0 = std::abs(y[Z0]);
@@ -278,7 +275,7 @@ namespace tmtt {
     if (pt < settings_->houghMinPt() - ptTolerance[nStubLayers])
       goodState = false;
     if (nPar_ == 5) {
-      double d0 = std::abs(state.xa()[D0]);
+      double d0 = std::abs(state.vectorX()[D0]);
       if (d0 > d0Cut[nStubLayers])
         goodState = false;
     }

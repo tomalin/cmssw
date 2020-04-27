@@ -2,6 +2,7 @@
 #define L1Trigger_TrackFindingTMTT_KalmanState_h
 
 #include <TMatrixD.h>
+#include <TVectorD.h>
 #include "L1Trigger/TrackFindingTMTT/interface/Stub.h"
 #include "L1Trigger/TrackFindingTMTT/interface/KFbase.h"
 #include <map>
@@ -25,7 +26,7 @@ namespace tmtt {
                 unsigned nSkipped,
                 int kLayer,
                 const KalmanState *last_state,
-                const std::vector<double> &vecX,
+                const TVectorD &vecX,
                 const TMatrixD &matC,
                 const TMatrixD &matK,
                 const TMatrixD &matV,
@@ -51,7 +52,7 @@ namespace tmtt {
     double z() const { return z_; }
     const KalmanState *last_state() const { return last_state_; }
     // Helix parameters (1/2R, phi relative to sector, z0, tanLambda)
-    const std::vector<double> &xa() const { return vecX_; }
+    const TVectorD &vectorX() const { return vecX_; }
     // Covariance matrix on helix params.
     const TMatrixD &matrixC() const { return matC_; }
     // Kalman Gain matrix
@@ -91,7 +92,7 @@ namespace tmtt {
     double r_;
     double z_;
     const KalmanState *last_state_;
-    std::vector<double> vecX_;
+    TVectorD vecX_;
     TMatrixD matC_;
     TMatrixD matK_;
     TMatrixD matV_;
