@@ -8,81 +8,25 @@ using namespace std;
 
 namespace tmtt {
 
-/* Get physical helix params */
-
-  TVectorD KFParamsComb::trackParams(const KalmanState* state) const {
-    TVectorD y(nPar_);
-    TVectorD x = state->vectorX();
-    y[QOVERPT] = 2. * x(INV2R) / settings_->invPtToInvR();
-    y[PHI0] = reco::deltaPhi(x(PHI0) + sectorPhi(), 0.);
-    y[Z0] = x(Z0);
-    y[T] = x(T);
-    if (nPar_ == 5) {
-      y[D0] = x(D0);
-    }
-    return y;
-  }
-
-  /* If using 5 param helix fit, get track params with beam-spot constraint & track fit chi2 from applying it. */
-  /* (N.B. chi2rz unchanged by constraint) */
-
-  TVectorD KFParamsComb::trackParams_BeamConstr(const KalmanState* state, double& chi2rphi) const {
-    if (nPar_ == 5) {
-      TVectorD y(nPar_);
-      TVectorD x = state->vectorX();
-      TMatrixD matC = state->matrixC();
-      double delChi2rphi = (x(D0) * x(D0)) / matC[D0][D0];
-      chi2rphi = state->chi2rphi() + delChi2rphi;
-      // Apply beam-spot constraint to helix params in transverse plane only, as most sensitive to it.
-      x[INV2R] -= x(D0) * (matC[INV2R][D0] / matC[D0][D0]);
-      x[PHI0] -= x(D0) * (matC[PHI0][D0] / matC[D0][D0]);
-      x[D0] = 0.0;
-      y[QOVERPT] = 2. * x(INV2R) / settings_->invPtToInvR();
-      y[PHI0] = reco::deltaPhi(x(PHI0) + sectorPhi(), 0.);
-      y[Z0] = x(Z0);
-      y[T] = x(T);
-      y[D0] = x(D0);
-      return y;
-    } else {
-      return (this->trackParams(state));
-    }
-  }
-
-/* The Kalman measurement matrix = derivative of helix intercept w.r.t. helix params */
-/* Here I always measure phi(r), and z(r) */
-
-  TMatrixD KFParamsComb::matrixH(const Stub* stub) const {
-    TMatrixD h(2, nPar_);
-    double r = stub->r();
-    h(PHI, INV2R) = -r;
-    h(PHI, PHI0) = 1;
-    if (nPar_ == 5) {
-      h(PHI, D0) = -1. / r;
-    }
-    h(Z, Z0) = 1;
-    h(Z, T) = r;
-    return h;
-  }
-
   /* Helix state seed  */
 
   TVectorD KFParamsComb::seedX(const L1track3D& l1track3D) const {
-    TVectorD x(nPar_);
-    x[INV2R] = settings_->invPtToInvR() * l1track3D.qOverPt() / 2;
-    x[PHI0] = reco::deltaPhi(l1track3D.phi0() - sectorPhi(), 0.);
-    x[Z0] = l1track3D.z0();
-    x[T] = l1track3D.tanLambda();
+    TVectorD vecX(nPar_);
+    vecX[INV2R] = settings_->invPtToInvR() * l1track3D.qOverPt() / 2;
+    vecX[PHI0] = reco::deltaPhi(l1track3D.phi0() - sectorPhi(), 0.);
+    vecX[Z0] = l1track3D.z0();
+    vecX[T] = l1track3D.tanLambda();
     if (nPar_ == 5) {
-      x[D0] = l1track3D.d0();
+      vecX[D0] = l1track3D.d0();
     }
 
-    return x;
+    return vecX;
   }
 
   /* Helix state seed covariance matrix */
 
   TMatrixD KFParamsComb::seedC(const L1track3D& l1track3D) const {
-    TMatrixD p(nPar_, nPar_);
+    TMatrixD matC(nPar_, nPar_);
 
     double invPtToInv2R = settings_->invPtToInvR() / 2;
 
@@ -90,43 +34,36 @@ namespace tmtt {
     const float d0Sigma = 1.0;
 
     if (settings_->hybrid()) {
-      p(INV2R, INV2R) = 0.0157 * 0.0157 * invPtToInv2R * invPtToInv2R * 4;
-      p(PHI0, PHI0) = 0.0051 * 0.0051 * 4;
-      p(Z0, Z0) = 5.0 * 5.0;
-      p(T, T) = 0.25 * 0.25 * 4;
+      matC[INV2R][INV2R] = 0.0157 * 0.0157 * invPtToInv2R * invPtToInv2R * 4;
+      matC[PHI0][PHI0] = 0.0051 * 0.0051 * 4;
+      matC[Z0][Z0] = 5.0 * 5.0;
+      matC[T][T] = 0.25 * 0.25 * 4;
       // N.B. (z0, tanL, d0) seed uncertainties could be smaller for hybrid, if seeded in PS? -- not tried
       //if (l1track3D.seedPS() > 0) { // Tracklet seed used PS layers
-      //  p(Z0,Z0) /= (4.*4.).;
-      //  p(T,T) /= (4.*4.);
+      //  matC[Z0][Z0] /= (4.*4.).;
+      //  matC[T][T] /= (4.*4.);
       // }
       if (nPar_ == 5) {
-        p(D0, D0) = d0Sigma * d0Sigma;
+        matC[D0][D0] = d0Sigma * d0Sigma;
       }
 
     } else {
       // optimised for 18x2 with additional error factor in pt/phi to avoid pulling towards wrong HT params
-      p(INV2R, INV2R) = 0.0157 * 0.0157 * invPtToInv2R * invPtToInv2R * 4;  // Base on HT cell size
-      p(PHI0, PHI0) = 0.0051 * 0.0051 * 4;                                  // Based on HT cell size.
-      p(Z0, Z0) = 5.0 * 5.0;
-      p(T, T) = 0.25 * 0.25 * 4;  // IRT: increased by factor 4, as was affecting fit chi2.
+      matC[INV2R][INV2R] = 0.0157 * 0.0157 * invPtToInv2R * invPtToInv2R * 4;  // Base on HT cell size
+      matC[PHI0][PHI0] = 0.0051 * 0.0051 * 4;                                  // Based on HT cell size.
+      matC[Z0][Z0] = 5.0 * 5.0;
+      matC[T][T] = 0.25 * 0.25 * 4;  // IRT: increased by factor 4, as was affecting fit chi2.
       if (nPar_ == 5) {
-        p(D0, D0) = d0Sigma * d0Sigma;
+        matC[D0][D0] = d0Sigma * d0Sigma;
       }
 
       if (settings_->numEtaRegions() <= 12) {
         // Inflate eta errors
-        p(T, T) = p(T, T) * 2 * 2;
+        matC[T][T] = matC[T][T] * 2 * 2;
       }
     }
 
-    return p;
-  }
-
-/* The forecast matrix (identity matrix in this KF formulation) */
-
-  TMatrixD KFParamsComb::matrixF(const Stub* stub, const KalmanState* state) const {
-    const TMatrixD unitMatrix(TMatrixD::kUnit, TMatrixD(nPar_, nPar_));
-    return unitMatrix;
+    return matC;
   }
 
   /* Stub position measurements in (phi,z) */
@@ -147,8 +84,6 @@ namespace tmtt {
 
     double tanl = state->vectorX()(T);  // factor of 0.9 improves rejection
     double tanl2 = tanl * tanl;
-
-    TMatrixD p(2, 2);
 
     double vphi(0);
     double vz(0);
@@ -232,12 +167,76 @@ namespace tmtt {
       }
     }
 
-    p(PHI, PHI) = vphi;
-    p(Z, Z) = vz;
-    p(PHI, Z) = vcorr;
-    p(Z, PHI) = vcorr;
+    TMatrixD matV(2, 2);
+    matV(PHI, PHI) = vphi;
+    matV(Z, Z) = vz;
+    matV(PHI, Z) = vcorr;
+    matV(Z, PHI) = vcorr;
 
-    return p;
+    return matV;
+  }
+
+/* The Kalman measurement matrix = derivative of helix intercept w.r.t. helix params */
+/* Here I always measure phi(r), and z(r) */
+
+  TMatrixD KFParamsComb::matrixH(const Stub* stub) const {
+    TMatrixD matH(2, nPar_);
+    double r = stub->r();
+    matH(PHI, INV2R) = -r;
+    matH(PHI, PHI0) = 1;
+    if (nPar_ == 5) {
+      matH(PHI, D0) = -1. / r;
+    }
+    matH(Z, Z0) = 1;
+    matH(Z, T) = r;
+    return matH;
+  }
+
+/* Kalman helix ref point extrapolation matrix */
+
+  TMatrixD KFParamsComb::matrixF(const Stub* stub, const KalmanState* state) const {
+    const TMatrixD unitMatrix(TMatrixD::kUnit, TMatrixD(nPar_, nPar_));
+    return unitMatrix;
+  }
+
+/* Get physical helix params */
+
+  TVectorD KFParamsComb::trackParams(const KalmanState* state) const {
+    TVectorD vecX = state->vectorX();
+    TVectorD vecY(nPar_);
+    vecY[QOVERPT] = 2. * vecX[INV2R] / settings_->invPtToInvR();
+    vecY[PHI0] = reco::deltaPhi(vecX[PHI0] + sectorPhi(), 0.);
+    vecY[Z0] = vecX[Z0];
+    vecY[T] = vecX[T];
+    if (nPar_ == 5) {
+      vecY[D0] = vecX[D0];
+    }
+    return vecY;
+  }
+
+  /* If using 5 param helix fit, get track params with beam-spot constraint & track fit chi2 from applying it. */
+  /* (N.B. chi2rz unchanged by constraint) */
+
+  TVectorD KFParamsComb::trackParams_BeamConstr(const KalmanState* state, double& chi2rphi) const {
+    if (nPar_ == 5) {
+      TVectorD vecX = state->vectorX();
+      TMatrixD matC = state->matrixC();
+      TVectorD vecY(nPar_);
+      double delChi2rphi = (vecX[D0] * vecX[D0]) / matC[D0][D0];
+      chi2rphi = state->chi2rphi() + delChi2rphi;
+      // Apply beam-spot constraint to helix params in transverse plane only, as most sensitive to it.
+      vecX[INV2R] -= vecX[D0] * (matC[INV2R][D0] / matC[D0][D0]);
+      vecX[PHI0] -= vecX[D0] * (matC[PHI0][D0] / matC[D0][D0]);
+      vecX[D0] = 0.0;
+      vecY[QOVERPT] = 2. * vecX[INV2R] / settings_->invPtToInvR();
+      vecY[PHI0] = reco::deltaPhi(vecX[PHI0] + sectorPhi(), 0.);
+      vecY[Z0] = vecX[Z0];
+      vecY[T] = vecX[T];
+      vecY[D0] = vecX[D0];
+      return vecY;
+    } else {
+      return (this->trackParams(state));
+    }
   }
 
 /* Check if helix state passes cuts */
@@ -263,10 +262,10 @@ namespace tmtt {
     unsigned nStubLayers = state.nStubLayers();
     bool goodState(true);
 
-    TVectorD y = trackParams(&state);
-    double qOverPt = y[QOVERPT];
+    TVectorD vecY = trackParams(&state);
+    double qOverPt = vecY[QOVERPT];
     double pt = std::abs(1 / qOverPt);
-    double z0 = std::abs(y[Z0]);
+    double z0 = std::abs(vecY[Z0]);
 
     // state parameter selections
 
@@ -329,9 +328,9 @@ namespace tmtt {
       cout << " nlay=" << nStubLayers << " nskip=" << state.nSkippedLayers() << " chi2_scaled=" << chi2scaled;
       if (tpa_ != nullptr)
         cout << " pt(mc)=" << tpa_->pt();
-      cout << " pt=" << pt << " q/pt=" << qOverPt << " tanL=" << y[T] << " z0=" << y[Z0] << " phi0=" << y[PHI0];
+      cout << " pt=" << pt << " q/pt=" << qOverPt << " tanL=" << vecY[T] << " z0=" << vecY[Z0] << " phi0=" << vecY[PHI0];
       if (nPar_ == 5)
-        cout << " d0=" << y[D0];
+        cout << " d0=" << vecY[D0];
       cout << " fake" << (tpa_ == nullptr);
       if (tpa_ != nullptr)
         cout << " pt(mc)=" << tpa_->pt();

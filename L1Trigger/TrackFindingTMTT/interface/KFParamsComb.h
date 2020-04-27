@@ -20,15 +20,12 @@ namespace tmtt {
 
   protected:
 
-    // Convert to physical helix params instead of local ones used by KF
-    virtual TVectorD trackParams(const KalmanState* state) const;
-    virtual TVectorD trackParams_BeamConstr(const KalmanState* state, double& chi2rphi) const;
-
     //--- Input data
 
     // Seed track helix params & covariance matrix
     virtual TVectorD seedX(const L1track3D& l1track3D) const;
     virtual TMatrixD seedC(const L1track3D& l1track3D) const;
+
     // Stub coordinate measurements & resolution
     virtual TVectorD vectorM(const Stub* stub) const;
     virtual TMatrixD matrixV(const Stub* stub, const KalmanState* state) const;
@@ -39,6 +36,10 @@ namespace tmtt {
     virtual TMatrixD matrixH(const Stub* stub) const;
     // Kalman helix ref point extrapolation matrix
     virtual TMatrixD matrixF(const Stub* stub = 0, const KalmanState* state = 0) const;
+
+    // Convert to physical helix params instead of local ones used by KF
+    virtual TVectorD trackParams(const KalmanState* state) const;
+    virtual TVectorD trackParams_BeamConstr(const KalmanState* state, double& chi2rphi) const;
 
     // Does helix state pass cuts?
     virtual bool isGoodState(const KalmanState& state) const;

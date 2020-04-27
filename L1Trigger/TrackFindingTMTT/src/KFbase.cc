@@ -22,86 +22,739 @@ using namespace std;
 
 namespace tmtt {
 
-/* Print truth particle */
+/* Initialize cfg parameters */
 
-  void KFbase::printTP(std::ostream &os, const TP *tp) const {
-    TVectorD tpParams(5);
-    bool useForAlgEff(false);
-    if (tp) {
-      useForAlgEff = tp->useForAlgEff();
-      tpParams[QOVERPT] = tp->qOverPt();
-      tpParams[PHI0] = tp->phi0();
-      tpParams[Z0] = tp->z0();
-      tpParams[T] = tp->tanLambda();
-      tpParams[D0] = tp->d0();
+  KFbase::KFbase(const Settings *settings, const uint nPar, const string &fitterName, const uint nMeas)
+    : TrackFitGeneric(settings, fitterName) {
+    nPar_ = nPar;
+    nMeas_ = nMeas;
+    numEtaRegions_ = settings->numEtaRegions();
+  }
+
+/* Do track fit */
+
+  L1fittedTrack KFbase::fit(const L1track3D &l1track3D) {
+    iPhiSec_ = l1track3D.iPhiSec();
+    iEtaReg_ = l1track3D.iEtaReg();
+    resetStates();
+    numUpdateCalls_ = 0;
+
+    vector<const Stub*> stubs = l1track3D.stubs();
+
+    auto orderByLayer = [](const Stub* a, const Stub* b){return bool(a->layerId() < b->layerId());};
+    sort(stubs.begin(), stubs.end(), orderByLayer ); // Makes debug printout pretty.
+
+    //TP
+    const TP *tpa(0);
+    if (l1track3D.matchedTP()) {
+      tpa = l1track3D.matchedTP();
     }
-    if (tp) {
-      os << "  TP index = " << tp->index() << " useForAlgEff = " << useForAlgEff << " ";
-      const string helixNames[5] = {"qOverPt", "phi0", "z0", "tanL", "d0"};
-      for (int i = 0; i < tpParams.GetNrows(); i++) {
-        os << helixNames[i] << ":" << tpParams[i] << ", ";
+    tpa_ = tpa;
+
+    //track information dump
+    if (settings_->kalmanDebugLevel() >= 1) {
+      cout << "===============================================================================" << endl;
+      cout << "Input track cand: [phiSec,etaReg]=[" << l1track3D.iPhiSec() << "," << l1track3D.iEtaReg() << "]";
+      cout << " HT(m,c)=(" << l1track3D.cellLocationHT().first << "," << l1track3D.cellLocationHT().second
+                << ") q/pt=" << l1track3D.qOverPt() << " tanL=" << l1track3D.tanLambda() << " z0=" << l1track3D.z0()
+                << " phi0=" << l1track3D.phi0() << " nStubs=" << l1track3D.numStubs() << " d0=" << l1track3D.d0()
+                << endl;
+      if (not settings_->hybrid())
+        printTP(cout, tpa);
+      if (settings_->kalmanDebugLevel() >= 2) {
+        printStubLayers(cout, stubs, l1track3D.iEtaReg());
+        printStubs(cout, stubs);
       }
-      os << "  inv2R = " << tp->qOverPt() * settings_->invPtToInvR() * 0.5;
+    }
+
+    //Kalman Filter
+    const KalmanState * cand = doKF(l1track3D, stubs, tpa);
+
+    //return L1fittedTrk for the selected state (if KF produced one it was happy with).
+    if (cand != nullptr) {
+
+      //cout<<"Final KF candidate eta="<<cand->candidate().iEtaReg()<<" ns="<<cand->nSkippedLayers()<<" klid="<<cand->nextLayer()-1<<" n="<<cand->nStubLayers()<<endl;
+
+      // Get track helix params.
+      TVectorD trackPars = trackParams(cand);
+      double d0 = (nPar_ == 5)  ?  trackPars[D0]  : 0.;
+
+      L1fittedTrack fitTrk(settings_,
+                           l1track3D,
+                           cand->stubs(),
+                           cand->hitPattern(),
+                           trackPars[QOVERPT],
+                           d0,
+                           trackPars[PHI0],
+                           trackPars[Z0],
+                           trackPars[T],
+                           cand->chi2rphi(),
+                           cand->chi2rz(),
+                           nPar_);
+
+      bool consistentHLS = false;  // No longer used
+      //    if (this->isHLS()) {
+      //      unsigned int mBinHelixHLS, cBinHelixHLS;
+      //      cand->getHLSselect(mBinHelixHLS, cBinHelixHLS, consistentHLS);
+      //      if( settings_->kalmanDebugLevel() >= 3 ){
+      //        // Check if (m,c) corresponding to helix params are correctly calculated by HLS code.
+      //        bool HLS_OK = ((mBinHelixHLS == fitTrk.cellLocationFit().first) && (cBinHelixHLS == fitTrk.cellLocationFit().second));
+      //        if (not HLS_OK) cout<<"WARNING HLS mBinHelix disagrees with C++:"
+      //                                 <<" (HLS,C++) m=("<<mBinHelixHLS<<","<<fitTrk.cellLocationFit().first <<")"
+      //                                 <<" c=("<<cBinHelixHLS<<","<<fitTrk.cellLocationFit().second<<")"<<endl;
+      //      }
+      //    }
+
+      // Store supplementary info, specific to KF fitter.
+      if (this->isHLS() && nPar_ == 4) {
+        fitTrk.setInfoKF(cand->nSkippedLayers(), numUpdateCalls_, consistentHLS);
+      } else {
+        fitTrk.setInfoKF(cand->nSkippedLayers(), numUpdateCalls_);
+      }
+
+      // If doing 5 parameter fit, optionally also calculate helix params & chi2 with beam-spot constraint applied,
+      // and store inside L1fittedTrack object.
+      if (settings_->kalmanAddBeamConstr()) {
+        if (nPar_ == 5) {
+          double chi2rphi_bcon = 0.;
+          TVectorD trackPars_bcon = trackParams_BeamConstr(cand, chi2rphi_bcon);
+          fitTrk.setBeamConstr(trackPars_bcon[QOVERPT], trackPars_bcon[PHI0], chi2rphi_bcon);
+        }
+      }
+
+      // Fitted track params must lie in same sector as HT originally found track in.
+      if (!settings_->hybrid()) {  // consistentSector() function not yet working for Hybrid.
+
+        // Bodge to take into account digitisation in sector consistency check.
+        if (settings_->enableDigitize())
+          fitTrk.digitizeTrack("KF4ParamsComb");
+
+        if (!fitTrk.consistentSector()) {
+          if (settings_->kalmanDebugLevel() >= 1)
+            cout << "Track rejected by sector consistency test" << endl;
+          L1fittedTrack rejectedTrk;
+          return rejectedTrk;
+        }
+      }
+
+      return fitTrk;
+
+    } else {  // Track rejected by fitter
+
+      if (settings_->kalmanDebugLevel() >= 1) {
+        bool goodTrack = (tpa && tpa->useForAlgEff());  // Matches truth particle.
+        if (goodTrack) {
+          int tpin = tpa->index();
+          cout << "TRACK LOST: eta=" << l1track3D.iEtaReg() << " pt=" << l1track3D.pt() << " tp=" << tpin << endl;
+
+          for (auto stub : stubs) {
+            int kalmanLay = this->kalmanLayer(l1track3D.iEtaReg(),
+                                                   stub->layerIdReduced(),
+                                                   stub->barrel(),
+                                                   stub->r(),
+                                                   stub->z());
+            cout << "    Stub: lay_red=" << stub->layerIdReduced() << " KFlay=" << kalmanLay
+                 << " r=" << stub->r() << " z=" << stub->z() << "   assoc TPs =";
+            for (const TP *tp_i : stub->assocTPs())
+              cout << " " << tp_i->index();
+            cout << endl;
+            if (stub->assocTPs().size() == 0)
+              cout << " none" << endl;
+          }
+          cout << "=====================" << endl;
+        }
+      }
+
+      //dump on the missed TP for efficiency calculation.
+      if (settings_->kalmanDebugLevel() >= 3) {
+        if (tpa && tpa->useForAlgEff()) {
+          cout << "TP for eff. missed addr. index : " << tpa << " " << tpa->index() << endl;
+          printStubs(cout, stubs);
+        }
+      }
+
+      L1fittedTrack rejectedTrk;
+      return rejectedTrk;
+    }
+  }
+
+/* Do track fit (internal function) */
+
+  const KalmanState* KFbase::doKF(const L1track3D &l1track3D,
+                                                      const vector<const Stub *> &stubs,
+                                                      const TP *tpa) {
+
+    const KalmanState* finished_state = nullptr;
+
+    map<unsigned int, const KalmanState *, std::greater<unsigned int>>
+        best_state_by_nstubs;  // Best state (if any) for each viable no. of stubs on track value.
+
+    // seed helix params & their covariance.
+    TVectorD x0 = seedX(l1track3D);
+    TMatrixD pxx0 = seedC(l1track3D);
+    TMatrixD K(nPar_, 2);
+    TMatrixD dcov(2, 2);
+
+    const KalmanState *state0 = mkState(l1track3D, 0, -1, nullptr, x0, pxx0, K, dcov, nullptr, 0, 0);
+
+    // internal containers - i.e. the state FIFO. Contains estimate of helix params in last/next layer, with multiple entries if there were multiple stubs, yielding multiple states.
+    vector<const KalmanState *> new_states;
+    vector<const KalmanState *> prev_states;
+    prev_states.push_back(state0);
+
+    // Get dead layers, if any.
+    // They are assumed to be identical to those defined in StubKiller.cc
+    bool remove2PSCut = settings_->kalmanRemove2PScut();
+    set<unsigned> kfDeadLayers = kalmanDeadLayers(remove2PSCut);
+
+    // arrange stubs into Kalman layers according to eta region
+    int etaReg = l1track3D.iEtaReg();
+    map<int, vector<const Stub *>> layerStubs;
+
+    for (auto stub : stubs) {
+      // Get Kalman encoded layer ID for this stub.
+      int kalmanLay = this->kalmanLayer(
+          etaReg, stub->layerIdReduced(), stub->barrel(), stub->r(), stub->z());
+
+      if (kalmanLay != 7) {
+        if (layerStubs[kalmanLay].size() < settings_->kalmanMaxStubsPerLayer()) {
+          layerStubs[kalmanLay].push_back(stub);
+        } else {
+          // If too many stubs, FW keeps the last stub.
+          layerStubs[kalmanLay].back() = stub;
+        }
+      }
+    }
+
+    // iterate using state->nextLayer() to determine next Kalman layer(s) to add stubs from
+    const unsigned int maxIterations = 6;  // Increase if you want to allow 7 stubs per fitted track.
+    for (unsigned iteration = 0; iteration < maxIterations; iteration++) {
+      int combinations_per_iteration = 0;
+
+      bool easy = (l1track3D.numStubs() < settings_->kalmanMaxStubsEasy());
+      unsigned int kalmanMaxSkipLayers =
+          easy ? settings_->kalmanMaxSkipLayersEasy() : settings_->kalmanMaxSkipLayersHard();
+
+      // update each state from previous iteration (or seed) using stubs in next Kalman layer
+      vector<const KalmanState *>::const_iterator i_state = prev_states.begin();
+      for (; i_state != prev_states.end(); i_state++) {
+        const KalmanState *the_state = *i_state;
+
+        unsigned int layer = the_state->nextLayer(); // Get KF layer where stubs to be searched for next
+        unsigned nSkipped = the_state->nSkippedLayers(); 
+
+        // If this layer is known to be dead, skip to the next layer (layer+1)
+        // The next_states_skipped will then look at layer+2
+        // However, if there are stubs in this layer, then don't skip (e.g. our phi/eta boundaries might not line up exactly with a dead region)
+        // Continue to skip until you reach a functioning layer (or a layer with stubs)
+        unsigned nSkippedDeadLayers = 0;
+        unsigned nSkippedAmbiguousLayers = 0;
+        while (kfDeadLayers.find(layer) != kfDeadLayers.end() && layerStubs[layer].size() == 0) {
+          layer += 1;
+          ++nSkippedDeadLayers;
+        }
+        while (this->kalmanAmbiguousLayer(etaReg, layer) && layerStubs[layer].size() == 0) {
+          layer += 1;
+          ++nSkippedAmbiguousLayers;
+        }
+
+        // containers for updated state+stub combinations
+        vector<const KalmanState *> next_states;
+        vector<const KalmanState *> next_states_skipped;
+
+        // find stubs for this layer
+        vector<const Stub *> thislay_stubs =
+            layerStubs[layer];  // If layer > 6, this will return empty vector, so safe.
+
+        // find stubs for next layer if we skip a layer, except when we are on the penultimate layer,
+        // or we have exceeded the max skipped layers
+        vector<const Stub *> nextlay_stubs;
+
+        // If the next layer (layer+1) is a dead layer, then proceed to the layer after next (layer+2), if possible
+        // Also note if we need to increase "skipped" by one more for these states
+        unsigned nSkippedDeadLayers_nextStubs = 0;
+        unsigned nSkippedAmbiguousLayers_nextStubs = 0;
+        if (nSkipped < kalmanMaxSkipLayers) {
+          if (kfDeadLayers.find(layer + 1) != kfDeadLayers.end() && layerStubs[layer + 1].size() == 0) {
+            nextlay_stubs = layerStubs[layer + 2];
+            nSkippedDeadLayers_nextStubs++;
+          } else if (this->kalmanAmbiguousLayer(etaReg, layer) && layerStubs[layer + 1].size() == 0) {
+            nextlay_stubs = layerStubs[layer + 2];
+            nSkippedAmbiguousLayers_nextStubs++;
+          } else {
+            nextlay_stubs = layerStubs[layer + 1];
+          }
+        }
+
+        // If track was not rejected by isGoodState() is previous iteration, failure here usually means the tracker ran out of layers to explore.
+        // (Due to "kalmanLay" not having unique ID for each layer within a given eta sector).
+        if (settings_->kalmanDebugLevel() >= 2 && best_state_by_nstubs.size() == 0 && thislay_stubs.size() == 0 &&
+            nextlay_stubs.size() == 0)
+          cout << "State is lost by start of iteration " << iteration << " : #thislay_stubs=" << thislay_stubs.size()
+               << " #nextlay_stubs=" << nextlay_stubs.size() << " layer=" << layer << " eta=" << l1track3D.iEtaReg() << endl;
+
+        // If we skipped over a dead layer, only increment "nSkipped" after the stubs in next+1 layer have been obtained
+        nSkipped += nSkippedDeadLayers;
+        nSkipped += nSkippedAmbiguousLayers;
+
+        // check to guarantee no fewer than 2PS hits per state at iteration 1 (r<60cm)
+        // iteration 0 will always include a PS hit, but iteration 1 could use 2S hits unless we include this
+        if (iteration == 1 && !remove2PSCut) {
+          vector<const Stub *> temp_thislaystubs;
+          vector<const Stub *> temp_nextlaystubs;
+          for (auto stub : thislay_stubs) {
+            if (stub->r() < 60.0)
+              temp_thislaystubs.push_back(stub);
+          }
+          for (auto stub : nextlay_stubs) {
+            if (stub->r() < 60.0)
+              temp_nextlaystubs.push_back(stub);
+          }
+          thislay_stubs = temp_thislaystubs;
+          nextlay_stubs = temp_nextlaystubs;
+        }
+
+        combinations_per_iteration += thislay_stubs.size() + nextlay_stubs.size();
+
+        // loop over each stub in this layer and check for compatibility with this state
+        for (unsigned i = 0; i < thislay_stubs.size(); i++) {
+          const Stub *stub = thislay_stubs[i];
+
+          // Update helix params by adding this stub.
+          const KalmanState *new_state = kalmanUpdate(nSkipped, layer, stub, the_state, tpa);
+
+          // Cut on track chi2, pt etc.
+          if (isGoodState(*new_state))
+            next_states.push_back(new_state);
+        }
+
+        // loop over each stub in next layer if we skip, and check for compatibility with this state
+        for (unsigned i = 0; i < nextlay_stubs.size(); i++) {
+          const Stub *stub = nextlay_stubs[i];
+
+          const KalmanState *new_state =
+              kalmanUpdate(nSkipped + 1 + nSkippedDeadLayers_nextStubs + nSkippedAmbiguousLayers_nextStubs,
+                           layer + 1 + nSkippedDeadLayers_nextStubs + nSkippedAmbiguousLayers_nextStubs,
+                           stub,
+                           the_state,
+                           tpa);
+
+          if (isGoodState(*new_state))
+            next_states_skipped.push_back(new_state);
+        }
+
+        // post Kalman filter local sorting per state
+	auto orderByChi2 = [](const KalmanState* a, const KalmanState* b){
+	  return bool(a->chi2scaled() < b->chi2scaled());
+	};
+        sort(next_states.begin(), next_states.end(), orderByChi2);
+        sort(next_states_skipped.begin(), next_states_skipped.end(), orderByChi2);
+
+        int i, max_states, max_states_skip;
+
+        // If layer contained several stubs, so several states now exist, select only the best ones.
+        // -- Disable this by setting to large values, as not used in latest KF firmware.
+        // (But not too big as this wastes CPU).
+
+        switch (iteration) {
+          case 0:
+            max_states = 15;
+            max_states_skip = 15;
+            break;
+          case 1:
+            max_states = 15;
+            max_states_skip = 15;
+            break;
+          case 2:
+            max_states = 15;
+            max_states_skip = 15;
+            break;
+          case 3:
+            max_states = 15;
+            max_states_skip = 15;
+            break;
+          case 4:
+            max_states = 15;
+            max_states_skip = 15;
+            break;
+          case 5:
+            max_states = 15;
+            max_states_skip = 15;
+            break;
+          default:
+            max_states = 15;
+            max_states_skip = 15;
+            break;
+        }
+
+        i = 0;
+        for (auto state : next_states) {
+          if (i < max_states) {
+            new_states.push_back(state);
+          } else {
+            break;
+          }
+          i++;
+        }
+
+        i = 0;
+        for (auto state : next_states_skipped) {
+          if (i < max_states_skip) {
+            new_states.push_back(state);
+          } else {
+            break;
+          }
+          i++;
+        }
+
+      }  //end of state loop
+
+      // copy new_states into prev_states for next iteration or end if we are on
+      // last iteration by clearing all states and making final state selection
+
+      auto orderByMinSkipChi2 = [](const KalmanState* a, const KalmanState* b){
+	return bool((a->chi2scaled()) * (a->nSkippedLayers() + 1) < (b->chi2scaled())*(b->nSkippedLayers() + 1));
+      };
+      sort(new_states.begin(), new_states.end(), orderByMinSkipChi2);  // Sort by chi2*(skippedLayers+1)
+
+      unsigned int nStubs = iteration + 1;
+      // Success. We have at least one state that passes all cuts. Save best state found with this number of stubs.
+      if (nStubs >= settings_->kalmanMinNumStubs() && new_states.size() > 0)
+        best_state_by_nstubs[nStubs] = new_states[0];
+
+      //if ( settings_->kalmanDebugLevel() >= 1 && best_state_by_nstubs.size() == 0 && new_states.size() == 0) cout<<"Track is lost by end iteration "<<iteration<<" : eta="<<l1track3D.iEtaReg()<<endl;
+
+      if (nStubs == settings_->kalmanMaxNumStubs()) {
+        // We're done.
+        prev_states.clear();
+        new_states.clear();
+
+      } else {
+        // Continue iterating.
+        prev_states = new_states;
+        new_states.clear();
+      }
+    }
+
+    if (best_state_by_nstubs.size()) {
+      // Select state with largest number of stubs.
+      finished_state =
+          best_state_by_nstubs.begin()->second;  // First element has largest number of stubs.
+      if (settings_->kalmanDebugLevel() >= 1) {
+        cout << "Track found! final state selection: nLay=" << finished_state->nStubLayers() << " hitPattern=" << std::hex
+             << finished_state->hitPattern() << std::dec << " phiSec=" << l1track3D.iPhiSec()
+             << " etaReg=" << l1track3D.iEtaReg() << " HT(m,c)=(" << l1track3D.cellLocationHT().first << ","
+             << l1track3D.cellLocationHT().second << ")";
+        TVectorD y = trackParams(finished_state);
+        cout << " q/pt=" << y[QOVERPT] << " tanL=" << y[T] << " z0=" << y[Z0] << " phi0=" << y[PHI0];
+        if (nPar_ == 5)
+          cout << " d0=" << y[D0];
+        cout << " chosen from states:";
+        for (const auto &p : best_state_by_nstubs)
+          cout << " " << p.second->chi2() << "/" << p.second->nStubLayers();
+        cout << endl;
+      }
     } else {
-      os << "  Fake";
-    }
-    os << endl;
-  }
-
-/* Print tracker layers with stubs */
-
-  void KFbase::printStubLayers(std::ostream &os, const vector<const Stub *> &stubs, unsigned int iEtaReg) const {
-    if (stubs.size() == 0)
-      os << "stub layers = []" << endl;
-    else {
-      os << "stub layers = [ ";
-      for (unsigned i = 0; i < stubs.size(); i++) {
-        os << stubs[i]->layerId();
-        if (i != stubs.size() - 1)
-          os << ", ";
+      if (settings_->kalmanDebugLevel() >= 1) {
+        cout << "Track lost" << endl;
       }
-      os << " ]   ";
-      os << "KF stub layers = [ ";
-      for (unsigned j = 0; j < stubs.size(); j++) {
-        unsigned int kalmanLay =
-            this->kalmanLayer(iEtaReg, stubs[j]->layerIdReduced(), stubs[j]->barrel(), stubs[j]->r(), stubs[j]->z());
-        os << kalmanLay;
-        if (j != stubs.size() - 1)
-          os << ", ";
+    }
+
+    return finished_state;
+  }
+
+/*--- Update a helix state by adding a stub. */
+
+  const KalmanState *KFbase::kalmanUpdate(unsigned nSkipped, unsigned int layer, const Stub *stub, const KalmanState *state, const TP *tpa) {
+
+    if (settings_->kalmanDebugLevel() >= 4) {
+      cout << "---------------" << endl;
+      cout << "kalmanUpdate" << endl;
+      cout << "---------------" << endl;
+      printStub(cout, stub);
+    }
+
+    numUpdateCalls_++;  // For monitoring, count calls to updator per track.
+
+    // Helix params & their covariance.
+    TVectorD vecX = state->vectorX();
+    TMatrixD matC = state->matrixC();
+    if (state->barrel() && !stub->barrel()) {
+      if (settings_->kalmanDebugLevel() >= 4) {
+        cout << "STATE BARREL TO ENDCAP BEFORE " << endl;
+        cout << "state : " << vecX[0] << " " << vecX[1] << " " << vecX[2] << " " << vecX[3] << endl;
+        cout << "cov(x): " << endl;
+        matC.Print();
       }
-      os << " ]" << endl;
+      if (settings_->kalmanDebugLevel() >= 4) {
+        cout << "STATE BARREL TO ENDCAP AFTER " << endl;
+        cout << "state : " << vecX[0] << " " << vecX[1] << " " << vecX[2] << " " << vecX[3] << endl;
+        cout << "cov(x): " << endl;
+        matC.Print();
+      }
     }
+    // Matrix to propagate helix reference point from one layer to next.
+    TMatrixD matF = matrixF(stub, state);
+    TMatrixD matFtrans(TMatrixD::kTransposed, matF);
+    if (settings_->kalmanDebugLevel() >= 4) {
+      cout << "matF" << endl;
+      matF.Print();
+    }
+
+    // Multiply matrices to get helix params relative to reference point at next layer.
+    TVectorD vecXref = matF*vecX;  
+    if (settings_->kalmanDebugLevel() >= 4) {
+      cout << "vecFref = [";
+      for (unsigned i = 0; i < nPar_; i++)
+        cout << vecXref[i] << ", ";
+      cout << "]" << endl;
+    }
+
+    // Get stub residuals.
+    TVectorD delta = residual(stub, vecXref, state->candidate().qOverPt());
+    if (settings_->kalmanDebugLevel() >= 4) {
+      cout << "delta = " << delta[0] << ", " << delta[1] << endl;
+    }
+
+    // Derivative of predicted (phi,z) intercept with layer w.r.t. helix params.
+    TMatrixD matH = matrixH(stub);
+    if (settings_->kalmanDebugLevel() >= 4) {
+      cout << "matH" << endl;
+      matH.Print();
+    }
+
+    if (settings_->kalmanDebugLevel() >= 4) {
+      cout << "previous state covariance" << endl;
+      matC.Print();
+    }
+    // Get scattering contribution to helix parameter covariance (currently zero).
+    TMatrixD matScat(nPar_, nPar_);
+
+    // Get covariance on helix parameters at new reference point including scattering..
+    TMatrixD matCref = matF * matC * matFtrans + matScat;
+    if (settings_->kalmanDebugLevel() >= 4) {
+      cout << "matCref" << endl;
+      matCref.Print();
+    }
+    // Get hit position covariance matrix.
+    TMatrixD matV = matrixV(stub, state);
+    if (settings_->kalmanDebugLevel() >= 4) {
+      cout << "matV" << endl;
+      matV.Print();
+    }
+
+    TMatrixD matRinv = matrixRinv(matH, matCref, matV);
+        if (settings_->kalmanDebugLevel() >= 4) {
+          cout << "matRinv" << endl;
+          matRinv.Print();
+        }
+
+    // Calculate Kalman Gain matrix.
+    TMatrixD matK = getKalmanGainMatrix(matH, matCref, matRinv);
+    if (settings_->kalmanDebugLevel() >= 4) {
+      cout << "matK" << endl;
+      matK.Print();
+    }
+
+    // Update helix state & its covariance matrix with new stub.
+    TVectorD new_vecX(nPar_);
+    TMatrixD new_matC(nPar_,nPar_);
+    adjustState(matK, matCref, vecXref, matH, delta, new_vecX, new_matC);
+
+    // Update track fit chi2 with new stub.
+    double new_chi2rphi = 0, new_chi2rz=0;
+    this->adjustChi2(state, matRinv, delta, new_chi2rphi, new_chi2rz);
+
+    if (settings_->kalmanDebugLevel() >= 4) {
+      if (nPar_ == 4)
+        cout << "adjusted x = " << new_vecX[0] << ", " << new_vecX[1] << ", " << new_vecX[2] << ", " << new_vecX[3] << endl;
+      else if (nPar_ == 5)
+        cout << "adjusted x = " << new_vecX[0] << ", " << new_vecX[1] << ", " << new_vecX[2] << ", " << new_vecX[3] << ", "
+             << new_vecX[4] << endl;
+      cout << "adjusted C " << endl;
+      new_matC.Print();
+      cout << "adjust chi2rphi=" << new_chi2rphi<<" chi2rz=" << new_chi2rz <<endl;
+    }
+
+    const KalmanState *new_state = mkState(
+					   state->candidate(), nSkipped, layer, state, new_vecX, new_matC, matK, matV, stub, new_chi2rphi, new_chi2rz);
+
+    return new_state;
   }
 
-/* Print a stub */
+/* Create a KalmanState, containing a helix state & next stub it is to be updated with. */
 
-  void KFbase::printStub(std::ostream &os, const Stub *stub, bool addReturn) const {
-    os << "stub ";
-    //   os << "addr=" << stub << " ";
-    os << "index=" << stub->index() << " ";
-    os << "layerId=" << stub->layerId() << " ";
-    os << "endcapRing=" << stub->endcapRing() << " ";
-    os << "r=" << stub->r() << " ";
-    os << "phi=" << stub->phi() << " ";
-    os << "z=" << stub->z() << " ";
-    os << "sigmaX=" << stub->sigmaX() << " ";
-    os << "sigmaZ=" << stub->sigmaZ() << " ";
-    os << "TPids=";
-    std::set<const TP *> tps = stub->assocTPs();
-    for (auto tp : tps)
-      os << tp->index() << ",";
-    if (addReturn)
-      os << endl;
-    else
-      os << " | ";
+  const KalmanState *KFbase::mkState(const L1track3D &candidate,
+                                           unsigned nSkipped,
+				           unsigned layer,
+                                           const KalmanState *last_state,
+                                           const TVectorD &vecX,
+                                           const TMatrixD &matC,
+                                           const TMatrixD &matK,
+                                           const TMatrixD &matV,
+				     const Stub *stub,
+				     double chi2rphi,
+				     double chi2rz) {
+
+    KalmanState *new_state = new KalmanState(settings_,
+					     candidate,
+                                             nSkipped,
+					     layer,
+                                             last_state,
+                                             vecX,
+                                             matC,
+                                             matK,
+                                             matV,
+                                             stub,
+                                             chi2rphi,
+                                             chi2rz);
+
+    state_list_.push_back(new_state);
+    return new_state;
   }
 
-/* Print all stubs */
+/* Product of H*C*H(transpose) (where C = helix covariance matrix) */
 
-  void KFbase::printStubs(std::ostream &os, const vector<const Stub *> &stubs) const {
-    for (auto &stub : stubs) {
-      printStub(os, stub);
+  TMatrixD KFbase::matrixHCHt(const TMatrixD &matH, const TMatrixD &matC) const {
+    TMatrixD matHtrans(TMatrixD::kTransposed, matH);
+    return matH*matC*matHtrans;
+  }
+
+/* Get inverted Kalman R matrix: inverse(V + HCHt) */
+
+TMatrixD KFbase::matrixRinv(const TMatrixD &matH, const TMatrixD &matCref, const TMatrixD &matV) const {
+
+        TMatrixD matHCHt = matrixHCHt(matH, matCref);
+        TMatrixD matR = matV + matHCHt;
+	TMatrixD matRinv(2,2);
+       if (matR.Determinant() > 0) {
+         matRinv = TMatrixD(TMatrixD::kInverted, matR);
+       } else {
+	 // Protection against rare maths instability.
+	 const TMatrixD unitMatrix(TMatrixD::kUnit, TMatrixD(nPar_, nPar_));
+	 const double big = 9.9e9;
+	 matRinv = big*unitMatrix;
+       } 
+        if (settings_->kalmanDebugLevel() >= 4) {
+          cout << "matHCHt" << endl;
+          matHCHt.Print();
+          cout << "matR" << endl;
+          matR.Print();
+        }
+       return matRinv;
     }
+
+/* Determine Kalman gain matrix K */
+
+  TMatrixD KFbase::getKalmanGainMatrix(const TMatrixD &matH, const TMatrixD &matCref, const TMatrixD &matRinv) const {
+    TMatrixD matHtrans(TMatrixD::kTransposed, matH);
+    TMatrixD matCrefht = matCref*matHtrans;
+    TMatrixD matK = matCrefht * matRinv;
+    return matK;
+  }
+
+/* Calculate stub residual w.r.t. helix */
+
+  TVectorD KFbase::residual(const Stub *stub,
+                                             const TVectorD &vecX,
+                                             double candQoverPt) const {
+    TVectorD vd = vectorM(stub);  // Get (phi relative to sector, z) of hit.
+    TMatrixD h = matrixH(stub);
+    TVectorD hx = h*vecX;  // Get intercept of helix with layer (linear approx).
+    TVectorD delta = vd - hx;
+
+    // Calculate higher order corrections to residuals.
+
+    if (not settings_->kalmanHOdodgy()) {
+      TVectorD correction(2);
+
+      float inv2R = (settings_->invPtToInvR()) * 0.5 * candQoverPt; 
+      float tanL = vecX[T];
+      float z0 = vecX[Z0];
+
+      float deltaS = 0.;
+      if (settings_->kalmanHOhelixExp()) {
+        // Higher order correction correction to circle expansion for improved accuracy at low Pt.
+        double corr = stub->r() * inv2R;
+
+        // N.B. In endcap 2S, this correction to correction[0] is exactly cancelled by the deltaS-dependent correction to it below.
+        correction[0] += (1. / 6.) * pow(corr, 3);
+
+        deltaS = (1. / 6.) * (stub->r()) * pow(corr, 2);
+        correction[1] -= deltaS * tanL;
+      }
+
+      if ((not stub->barrel()) && not(stub->psModule())) {
+        // These corrections rely on inside --> outside tracking, so r-z track params in 2S modules known.
+        float rShift = (stub->z() - z0) / tanL - stub->r();
+
+        // The above calc of rShift is approximate, so optionally check it with MC truth.
+        // if (tpa_ != nullptr) rShift = (stub->z() - tpa_->z0())/tpa_->tanLambda() - stub->r();
+
+        if (settings_->kalmanHOhelixExp())
+          rShift -= deltaS;
+
+        if (settings_->kalmanHOprojZcorr() == 1) {
+          // Add correlation term related to conversion of stub residuals from (r,phi) to (z,phi).
+          correction[0] += inv2R * rShift;
+        }
+
+        if (settings_->kalmanHOalpha() == 1) {
+          // Add alpha correction for non-radial 2S endcap strips..
+          correction[0] += stub->alpha() * rShift;
+        }
+
+        //cout<<"ENDCAP 2S STUB: (r,z)=("<<stub->r()<<","<<stub->z()<<") r*delta="<<stub->r() * correction[0]<<" r*alphaCorr="<<stub->r() * stub->alpha() * rShift<<" rShift="<<rShift<<endl;
+      }
+
+      // Apply correction to residuals.
+      delta += correction;
+    }
+
+    delta[0] = reco::deltaPhi(delta[0], 0.);
+
+    return delta;
+  }
+
+/* Update helix state & its covariance matrix with new stub */
+
+  void KFbase::adjustState(const TMatrixD &matK,
+				const TMatrixD &matCref,
+                                      const TVectorD &vecXref,
+                                      const TMatrixD &matH,
+                                      const TVectorD &delta,
+                                      TVectorD &new_vecX,
+                                      TMatrixD &new_matC) const {
+    new_vecX = vecXref + matK*delta;
+    const TMatrixD unitMatrix(TMatrixD::kUnit, TMatrixD(nPar_, nPar_));
+    TMatrixD tmp = unitMatrix - matK*matH;
+    new_matC =  tmp*matCref;
+  }
+
+/* Update track fit chi2 with new stub */
+
+void KFbase::adjustChi2(const KalmanState* state, const TMatrixD &matRinv, const TVectorD& delta, double &chi2rphi, double &chi2rz) const {
+
+    // Change in chi2 (with r-phi/r-z correlation term included in r-phi component)
+    double delChi2rphi = delta[PHI] * delta[PHI] * matRinv[PHI][PHI] 
+      + 2 * delta[PHI] * delta[Z] * matRinv[PHI][Z];
+    double delChi2rz = delta[Z] * delta[Z] * matRinv[Z][Z];
+
+    if (settings_->kalmanDebugLevel() >= 4) {
+      cout << "delta(chi2rphi)="<<delChi2rphi<<" delta(chi2rz)= "<< delChi2rz << endl;
+    }
+      chi2rphi = state->chi2rphi() + delChi2rphi;
+      chi2rz = state->chi2rz() + delChi2rz;
+    return;
+  }
+
+/* Reset internal data ready for next track. */
+
+  void KFbase::resetStates() {
+    for (unsigned int i = 0; i < state_list_.size(); i++) {
+      delete state_list_.at(i);
+    }
+    state_list_.clear();
   }
 
 /* Get Kalman layer mapping (i.e. layer order in which stubs should be processed) */
@@ -244,776 +897,6 @@ namespace tmtt {
     return ambiguous;
   }
 
-/* Initialize cfg parameters */
-
-  KFbase::KFbase(const Settings *settings, const uint nPar, const string &fitterName, const uint nMeas)
-    : TrackFitGeneric(settings, fitterName) {
-    nPar_ = nPar;
-    nMeas_ = nMeas;
-    numEtaRegions_ = settings->numEtaRegions();
-
-    iLastPhiSec_ = 999;
-    iLastEtaReg_ = 999;
-  }
-
-/* Do track fit */
-
-  L1fittedTrack KFbase::fit(const L1track3D &l1track3D) {
-    iLastPhiSec_ = iCurrentPhiSec_;
-    iLastEtaReg_ = iCurrentEtaReg_;
-    iCurrentPhiSec_ = l1track3D.iPhiSec();
-    iCurrentEtaReg_ = l1track3D.iEtaReg();
-    resetStates();
-    numUpdateCalls_ = 0;
-
-    vector<const Stub*> stubs = l1track3D.stubs();
-
-    auto orderByLayer = [](const Stub* a, const Stub* b){return bool(a->layerId() < b->layerId());};
-    sort(stubs.begin(), stubs.end(), orderByLayer ); // Makes debug printout pretty.
-
-    //TP
-    const TP *tpa(0);
-    if (l1track3D.matchedTP()) {
-      tpa = l1track3D.matchedTP();
-    }
-    tpa_ = tpa;
-
-    //track information dump
-    if (settings_->kalmanDebugLevel() >= 1) {
-      cout << "===============================================================================" << endl;
-      cout << "Input track cand: [phiSec,etaReg]=[" << l1track3D.iPhiSec() << "," << l1track3D.iEtaReg() << "]";
-      cout << " HT(m,c)=(" << l1track3D.cellLocationHT().first << "," << l1track3D.cellLocationHT().second
-                << ") q/pt=" << l1track3D.qOverPt() << " tanL=" << l1track3D.tanLambda() << " z0=" << l1track3D.z0()
-                << " phi0=" << l1track3D.phi0() << " nStubs=" << l1track3D.numStubs() << " d0=" << l1track3D.d0()
-                << endl;
-      if (not settings_->hybrid())
-        printTP(cout, tpa);
-      if (settings_->kalmanDebugLevel() >= 2) {
-        printStubLayers(cout, stubs, l1track3D.iEtaReg());
-        printStubs(cout, stubs);
-      }
-    }
-
-    //Kalman Filter
-    vector<const KalmanState *> cands = doKF(l1track3D, stubs, tpa);
-
-    //return L1fittedTrk for the selected state (if KF produced one it was happy with).
-    if (cands.size()) {
-      const KalmanState *cand = cands[0];
-
-      //cout<<"Final KF candidate eta="<<cand->candidate().iEtaReg()<<" ns="<<cand->nSkippedLayers()<<" klid="<<cand->nextLayer()-1<<" n="<<cand->nStubLayers()<<endl;
-
-      // Get track helix params.
-      TVectorD trackPars = trackParams(cand);
-      double d0 = (nPar_ == 5)  ?  trackPars[D0]  : 0.;
-
-      L1fittedTrack fitTrk(settings_,
-                           l1track3D,
-                           cand->stubs(),
-                           cand->hitPattern(),
-                           trackPars[QOVERPT],
-                           d0,
-                           trackPars[PHI0],
-                           trackPars[Z0],
-                           trackPars[T],
-                           cand->chi2rphi(),
-                           cand->chi2rz(),
-                           nPar_);
-
-      bool consistentHLS = false;  // No longer used
-      //    if (this->isHLS()) {
-      //      unsigned int mBinHelixHLS, cBinHelixHLS;
-      //      cand->getHLSselect(mBinHelixHLS, cBinHelixHLS, consistentHLS);
-      //      if( settings_->kalmanDebugLevel() >= 3 ){
-      //        // Check if (m,c) corresponding to helix params are correctly calculated by HLS code.
-      //        bool HLS_OK = ((mBinHelixHLS == fitTrk.cellLocationFit().first) && (cBinHelixHLS == fitTrk.cellLocationFit().second));
-      //        if (not HLS_OK) cout<<"WARNING HLS mBinHelix disagrees with C++:"
-      //                                 <<" (HLS,C++) m=("<<mBinHelixHLS<<","<<fitTrk.cellLocationFit().first <<")"
-      //                                 <<" c=("<<cBinHelixHLS<<","<<fitTrk.cellLocationFit().second<<")"<<endl;
-      //      }
-      //    }
-
-      // Store supplementary info, specific to KF fitter.
-      if (this->isHLS() && nPar_ == 4) {
-        fitTrk.setInfoKF(cand->nSkippedLayers(), numUpdateCalls_, consistentHLS);
-      } else {
-        fitTrk.setInfoKF(cand->nSkippedLayers(), numUpdateCalls_);
-      }
-
-      // If doing 5 parameter fit, optionally also calculate helix params & chi2 with beam-spot constraint applied,
-      // and store inside L1fittedTrack object.
-      if (settings_->kalmanAddBeamConstr()) {
-        if (nPar_ == 5) {
-          double chi2rphi_bcon = 0.;
-          TVectorD trackPars_bcon = trackParams_BeamConstr(cand, chi2rphi_bcon);
-          fitTrk.setBeamConstr(trackPars_bcon[QOVERPT], trackPars_bcon[PHI0], chi2rphi_bcon);
-        }
-      }
-
-      // Fitted track params must lie in same sector as HT originally found track in.
-      if (!settings_->hybrid()) {  // consistentSector() function not yet working for Hybrid.
-
-        // Bodge to take into account digitisation in sector consistency check.
-        if (settings_->enableDigitize())
-          fitTrk.digitizeTrack("KF4ParamsComb");
-
-        if (!fitTrk.consistentSector()) {
-          if (settings_->kalmanDebugLevel() >= 1)
-            cout << "Track rejected by sector consistency test" << endl;
-          L1fittedTrack rejectedTrk;
-          return rejectedTrk;
-        }
-      }
-
-      return fitTrk;
-
-    } else {  // Track rejected by fitter
-
-      if (settings_->kalmanDebugLevel() >= 1) {
-        bool goodTrack = (tpa && tpa->useForAlgEff());  // Matches truth particle.
-        if (goodTrack) {
-          int tpin = tpa->index();
-          cout << "TRACK LOST: eta=" << l1track3D.iEtaReg() << " pt=" << l1track3D.pt() << " tp=" << tpin << endl;
-
-          for (auto stub : stubs) {
-            int kalmanLay = this->kalmanLayer(l1track3D.iEtaReg(),
-                                                   stub->layerIdReduced(),
-                                                   stub->barrel(),
-                                                   stub->r(),
-                                                   stub->z());
-            cout << "    Stub: lay_red=" << stub->layerIdReduced() << " KFlay=" << kalmanLay
-                 << " r=" << stub->r() << " z=" << stub->z() << "   assoc TPs =";
-            for (const TP *tp_i : stub->assocTPs())
-              cout << " " << tp_i->index();
-            cout << endl;
-            if (stub->assocTPs().size() == 0)
-              cout << " none" << endl;
-          }
-          cout << "=====================" << endl;
-        }
-      }
-
-      //dump on the missed TP for efficiency calculation.
-      if (settings_->kalmanDebugLevel() >= 3) {
-        if (tpa && tpa->useForAlgEff()) {
-          cout << "TP for eff. missed addr. index : " << tpa << " " << tpa->index() << endl;
-          printStubs(cout, stubs);
-        }
-      }
-
-      L1fittedTrack rejectedTrk;
-      return rejectedTrk;
-    }
-  }
-
-/* Do track fit (internal function) */
-
-  vector<const KalmanState *> KFbase::doKF(const L1track3D &l1track3D,
-                                                      const vector<const Stub *> &stubs,
-                                                      const TP *tpa) {
-
-    // output container (contains 0 or 1 states).
-    vector<const KalmanState *> finished_states;
-
-    map<unsigned int, const KalmanState *, std::greater<unsigned int>>
-        best_state_by_nstubs;  // Best state (if any) for each viable no. of stubs on track value.
-
-    // seed helix params & their covariance.
-    TVectorD x0 = seedX(l1track3D);
-    TMatrixD pxx0 = seedC(l1track3D);
-    TMatrixD K(nPar_, 2);
-    TMatrixD dcov(2, 2);
-
-    const KalmanState *state0 = mkState(l1track3D, 0, -1, nullptr, x0, pxx0, K, dcov, nullptr);
-
-    // internal containers - i.e. the state FIFO. Contains estimate of helix params in last/next layer, with multiple entries if there were multiple stubs, yielding multiple states.
-    vector<const KalmanState *> new_states;
-    vector<const KalmanState *> prev_states;
-    prev_states.push_back(state0);
-
-    // Get dead layers, if any.
-    // They are assumed to be identical to those defined in StubKiller.cc
-    bool remove2PSCut = settings_->kalmanRemove2PScut();
-    set<unsigned> kfDeadLayers = kalmanDeadLayers(remove2PSCut);
-
-    // arrange stubs into Kalman layers according to eta region
-    int etaReg = l1track3D.iEtaReg();
-    map<int, vector<const Stub *>> layerStubs;
-
-    for (auto stub : stubs) {
-      // Get Kalman encoded layer ID for this stub.
-      int kalmanLay = this->kalmanLayer(
-          etaReg, stub->layerIdReduced(), stub->barrel(), stub->r(), stub->z());
-
-      if (kalmanLay != 7) {
-        if (layerStubs[kalmanLay].size() < settings_->kalmanMaxStubsPerLayer()) {
-          layerStubs[kalmanLay].push_back(stub);
-        } else {
-          // If too many stubs, FW keeps the last stub.
-          layerStubs[kalmanLay].back() = stub;
-        }
-      }
-    }
-
-    // iterate using state->nextLayer() to determine next Kalman layer(s) to add stubs from
-    const unsigned int maxIterations = 6;  // Increase if you want to allow 7 stubs per fitted track.
-    for (unsigned iteration = 0; iteration < maxIterations; iteration++) {
-      int combinations_per_iteration = 0;
-
-      bool easy = (l1track3D.numStubs() < settings_->kalmanMaxStubsEasy());
-      unsigned int kalmanMaxSkipLayers =
-          easy ? settings_->kalmanMaxSkipLayersEasy() : settings_->kalmanMaxSkipLayersHard();
-
-      // update each state from previous iteration (or seed) using stubs in next Kalman layer
-      vector<const KalmanState *>::const_iterator i_state = prev_states.begin();
-      for (; i_state != prev_states.end(); i_state++) {
-        const KalmanState *the_state = *i_state;
-
-        unsigned int layer = the_state->nextLayer(); // Get KF layer where stubs to be searched for next
-        unsigned nSkipped = the_state->nSkippedLayers(); 
-
-        // If this layer is known to be dead, skip to the next layer (layer+1)
-        // The next_states_skipped will then look at layer+2
-        // However, if there are stubs in this layer, then don't skip (e.g. our phi/eta boundaries might not line up exactly with a dead region)
-        // Continue to skip until you reach a functioning layer (or a layer with stubs)
-        unsigned nSkippedDeadLayers = 0;
-        unsigned nSkippedAmbiguousLayers = 0;
-        while (kfDeadLayers.find(layer) != kfDeadLayers.end() && layerStubs[layer].size() == 0) {
-          layer += 1;
-          ++nSkippedDeadLayers;
-        }
-        while (this->kalmanAmbiguousLayer(etaReg, layer) && layerStubs[layer].size() == 0) {
-          layer += 1;
-          ++nSkippedAmbiguousLayers;
-        }
-
-        // containers for updated state+stub combinations
-        vector<const KalmanState *> next_states;
-        vector<const KalmanState *> next_states_skipped;
-
-        // find stubs for this layer
-        vector<const Stub *> thislay_stubs =
-            layerStubs[layer];  // If layer > 6, this will return empty vector, so safe.
-
-        // find stubs for next layer if we skip a layer, except when we are on the penultimate layer,
-        // or we have exceeded the max skipped layers
-        vector<const Stub *> nextlay_stubs;
-
-        // If the next layer (layer+1) is a dead layer, then proceed to the layer after next (layer+2), if possible
-        // Also note if we need to increase "skipped" by one more for these states
-        unsigned nSkippedDeadLayers_nextStubs = 0;
-        unsigned nSkippedAmbiguousLayers_nextStubs = 0;
-        if (nSkipped < kalmanMaxSkipLayers) {
-          if (kfDeadLayers.find(layer + 1) != kfDeadLayers.end() && layerStubs[layer + 1].size() == 0) {
-            nextlay_stubs = layerStubs[layer + 2];
-            nSkippedDeadLayers_nextStubs++;
-          } else if (this->kalmanAmbiguousLayer(etaReg, layer) && layerStubs[layer + 1].size() == 0) {
-            nextlay_stubs = layerStubs[layer + 2];
-            nSkippedAmbiguousLayers_nextStubs++;
-          } else {
-            nextlay_stubs = layerStubs[layer + 1];
-          }
-        }
-
-        // If track was not rejected by isGoodState() is previous iteration, failure here usually means the tracker ran out of layers to explore.
-        // (Due to "kalmanLay" not having unique ID for each layer within a given eta sector).
-        if (settings_->kalmanDebugLevel() >= 2 && best_state_by_nstubs.size() == 0 && thislay_stubs.size() == 0 &&
-            nextlay_stubs.size() == 0)
-          cout << "State is lost by start of iteration " << iteration << " : #thislay_stubs=" << thislay_stubs.size()
-               << " #nextlay_stubs=" << nextlay_stubs.size() << " layer=" << layer << " eta=" << l1track3D.iEtaReg() << endl;
-
-        // If we skipped over a dead layer, only increment "nSkipped" after the stubs in next+1 layer have been obtained
-        nSkipped += nSkippedDeadLayers;
-        nSkipped += nSkippedAmbiguousLayers;
-
-        // check to guarantee no fewer than 2PS hits per state at iteration 1 (r<60cm)
-        // iteration 0 will always include a PS hit, but iteration 1 could use 2S hits unless we include this
-        if (iteration == 1 && !remove2PSCut) {
-          vector<const Stub *> temp_thislaystubs;
-          vector<const Stub *> temp_nextlaystubs;
-          for (auto stub : thislay_stubs) {
-            if (stub->r() < 60.0)
-              temp_thislaystubs.push_back(stub);
-          }
-          for (auto stub : nextlay_stubs) {
-            if (stub->r() < 60.0)
-              temp_nextlaystubs.push_back(stub);
-          }
-          thislay_stubs = temp_thislaystubs;
-          nextlay_stubs = temp_nextlaystubs;
-        }
-
-        combinations_per_iteration += thislay_stubs.size() + nextlay_stubs.size();
-
-        // loop over each stub in this layer and check for compatibility with this state
-        for (unsigned i = 0; i < thislay_stubs.size(); i++) {
-          const Stub *stub = thislay_stubs[i];
-
-          // Update helix params by adding this stub.
-          const KalmanState *new_state = kalmanUpdate(nSkipped, layer, stub, *the_state, tpa);
-
-          // Cut on track chi2, pt etc.
-          if (isGoodState(*new_state))
-            next_states.push_back(new_state);
-        }
-
-        // loop over each stub in next layer if we skip, and check for compatibility with this state
-        for (unsigned i = 0; i < nextlay_stubs.size(); i++) {
-          const Stub *stub = nextlay_stubs[i];
-
-          const KalmanState *new_state =
-              kalmanUpdate(nSkipped + 1 + nSkippedDeadLayers_nextStubs + nSkippedAmbiguousLayers_nextStubs,
-                           layer + 1 + nSkippedDeadLayers_nextStubs + nSkippedAmbiguousLayers_nextStubs,
-                           stub,
-                           *the_state,
-                           tpa);
-
-          if (isGoodState(*new_state))
-            next_states_skipped.push_back(new_state);
-        }
-
-        // post Kalman filter local sorting per state
-	auto orderByChi2 = [](const KalmanState* a, const KalmanState* b){
-	  return bool(a->chi2scaled() < b->chi2scaled());
-	};
-        sort(next_states.begin(), next_states.end(), orderByChi2);
-        sort(next_states_skipped.begin(), next_states_skipped.end(), orderByChi2);
-
-        int i, max_states, max_states_skip;
-
-        // If layer contained several stubs, so several states now exist, select only the best ones.
-        // -- Disable this by setting to large values, as not used in latest KF firmware.
-        // (But not too big as this wastes CPU).
-
-        switch (iteration) {
-          case 0:
-            max_states = 15;
-            max_states_skip = 15;
-            break;
-          case 1:
-            max_states = 15;
-            max_states_skip = 15;
-            break;
-          case 2:
-            max_states = 15;
-            max_states_skip = 15;
-            break;
-          case 3:
-            max_states = 15;
-            max_states_skip = 15;
-            break;
-          case 4:
-            max_states = 15;
-            max_states_skip = 15;
-            break;
-          case 5:
-            max_states = 15;
-            max_states_skip = 15;
-            break;
-          default:
-            max_states = 15;
-            max_states_skip = 15;
-            break;
-        }
-
-        i = 0;
-        for (auto state : next_states) {
-          if (i < max_states) {
-            new_states.push_back(state);
-          } else {
-            break;
-          }
-          i++;
-        }
-
-        i = 0;
-        for (auto state : next_states_skipped) {
-          if (i < max_states_skip) {
-            new_states.push_back(state);
-          } else {
-            break;
-          }
-          i++;
-        }
-
-      }  //end of state loop
-
-      // copy new_states into prev_states for next iteration or end if we are on
-      // last iteration by clearing all states and making final state selection
-
-      auto orderByMinSkipChi2 = [](const KalmanState* a, const KalmanState* b){
-	return bool((a->chi2scaled()) * (a->nSkippedLayers() + 1) < (b->chi2scaled())*(b->nSkippedLayers() + 1));
-      };
-      sort(new_states.begin(), new_states.end(), orderByMinSkipChi2);  // Sort by chi2*(skippedLayers+1)
-
-      unsigned int nStubs = iteration + 1;
-      // Success. We have at least one state that passes all cuts. Save best state found with this number of stubs.
-      if (nStubs >= settings_->kalmanMinNumStubs() && new_states.size() > 0)
-        best_state_by_nstubs[nStubs] = new_states[0];
-
-      //if ( settings_->kalmanDebugLevel() >= 1 && best_state_by_nstubs.size() == 0 && new_states.size() == 0) cout<<"Track is lost by end iteration "<<iteration<<" : eta="<<l1track3D.iEtaReg()<<endl;
-
-      if (nStubs == settings_->kalmanMaxNumStubs()) {
-        // We're done.
-        prev_states.clear();
-        new_states.clear();
-
-      } else {
-        // Continue iterating.
-        prev_states = new_states;
-        new_states.clear();
-      }
-    }
-
-    if (best_state_by_nstubs.size()) {
-      // Select state with largest number of stubs.
-      const KalmanState *stateFinal =
-          best_state_by_nstubs.begin()->second;  // First element has largest number of stubs.
-      finished_states.push_back(stateFinal);
-      if (settings_->kalmanDebugLevel() >= 1) {
-        cout << "Track found! final state selection: nLay=" << stateFinal->nStubLayers() << " hitPattern=" << std::hex
-             << stateFinal->hitPattern() << std::dec << " phiSec=" << l1track3D.iPhiSec()
-             << " etaReg=" << l1track3D.iEtaReg() << " HT(m,c)=(" << l1track3D.cellLocationHT().first << ","
-             << l1track3D.cellLocationHT().second << ")";
-        TVectorD y = trackParams(stateFinal);
-        cout << " q/pt=" << y[QOVERPT] << " tanL=" << y[T] << " z0=" << y[Z0] << " phi0=" << y[PHI0];
-        if (nPar_ == 5)
-          cout << " d0=" << y[D0];
-        cout << " chosen from states:";
-        for (const auto &p : best_state_by_nstubs)
-          cout << " " << p.second->chi2() << "/" << p.second->nStubLayers();
-        cout << endl;
-      }
-    } else {
-      if (settings_->kalmanDebugLevel() >= 1) {
-        cout << "Track lost" << endl;
-      }
-    }
-
-    return finished_states;
-  }
-
-/*--- Update a helix state by adding a stub. */
-
-  const KalmanState *KFbase::kalmanUpdate(
-					  unsigned nSkipped, unsigned int layer, const Stub *stub, const KalmanState &state, const TP *tpa) {
-    if (settings_->kalmanDebugLevel() >= 4) {
-      cout << "---------------" << endl;
-      cout << "kalmanUpdate" << endl;
-      cout << "---------------" << endl;
-      printStub(cout, stub);
-    }
-
-    numUpdateCalls_++;  // For monitoring, count calls to updator per track.
-
-    // Helix params & their covariance.
-    TVectorD vecX = state.vectorX();
-    TMatrixD matC = state.matrixC();
-    if (state.barrel() && !stub->barrel()) {
-      if (settings_->kalmanDebugLevel() >= 4) {
-        cout << "STATE BARREL TO ENDCAP BEFORE " << endl;
-        cout << "state : " << vecX[0] << " " << vecX[1] << " " << vecX[2] << " " << vecX[3] << endl;
-        cout << "cov(x): " << endl;
-        matC.Print();
-      }
-      if (settings_->kalmanDebugLevel() >= 4) {
-        cout << "STATE BARREL TO ENDCAP AFTER " << endl;
-        cout << "state : " << vecX[0] << " " << vecX[1] << " " << vecX[2] << " " << vecX[3] << endl;
-        cout << "cov(x): " << endl;
-        matC.Print();
-      }
-    }
-    // Matrix to propagate helix reference point from one layer to next.
-    TMatrixD f = matrixF(stub, &state);
-    TMatrixD fTrans(TMatrixD::kTransposed, f);
-    if (settings_->kalmanDebugLevel() >= 4) {
-      cout << "f" << endl;
-      f.Print();
-    }
-
-    // Multiply matrices to get helix params at next layer.
-    TVectorD fx = f*vecX;  
-    if (settings_->kalmanDebugLevel() >= 4) {
-      cout << "fx = [";
-      for (unsigned i = 0; i < nPar_; i++)
-        cout << fx(i) << ", ";
-      cout << "]" << endl;
-    }
-
-    // Get stub residuals.
-    TVectorD delta = residual(stub, fx, state.candidate().qOverPt());
-    if (settings_->kalmanDebugLevel() >= 4) {
-      cout << "delta = " << delta[0] << ", " << delta[1] << endl;
-    }
-
-    // Derivative of predicted (phi,z) intercept with layer w.r.t. helix params.
-    TMatrixD h = matrixH(stub);
-    if (settings_->kalmanDebugLevel() >= 4) {
-      cout << "h" << endl;
-      h.Print();
-    }
-
-    if (settings_->kalmanDebugLevel() >= 4) {
-      cout << "previous state covariance" << endl;
-      matC.Print();
-    }
-    // Get scattering contribution to helix parameter covariance (currently zero).
-    TMatrixD pxxm(nPar_, nPar_);
-    if (settings_->kalmanDebugLevel() >= 4) {
-      cout << "model xcov" << endl;
-      pxxm.Print();
-    }
-    // Get covariance on helix parameters at new reference point including scattering..
-    TMatrixD pxcov = f * matC * fTrans + pxxm;
-    if (settings_->kalmanDebugLevel() >= 4) {
-      cout << "forecast xcov + model xcov" << endl;
-      pxcov.Print();
-    }
-    // Get hit position covariance matrix.
-    TMatrixD dcov = matrixV(stub, &state);
-    if (settings_->kalmanDebugLevel() >= 4) {
-      cout << "dcov" << endl;
-      dcov.Print();
-    }
-    // Calculate Kalman Gain matrix.
-    TMatrixD k = GetKalmanMatrix(h, pxcov, dcov);
-    if (settings_->kalmanDebugLevel() >= 4) {
-      cout << "k" << endl;
-      k.Print();
-    }
-
-    // Update helix state & its covariance matrix.
-    TVectorD new_vecX(nPar_);
-    TMatrixD new_matrixC(nPar_,nPar_);
-    GetAdjustedState(k, pxcov, fx, h, delta, new_vecX, new_matrixC);
-    if (settings_->kalmanDebugLevel() >= 4) {
-      if (nPar_ == 4)
-        cout << "adjusted x = " << new_vecX[0] << ", " << new_vecX[1] << ", " << new_vecX[2] << ", " << new_vecX[3] << endl;
-      else if (nPar_ == 5)
-        cout << "adjusted x = " << new_vecX[0] << ", " << new_vecX[1] << ", " << new_vecX[2] << ", " << new_vecX[3] << ", "
-             << new_vecX[4] << endl;
-      cout << "adjusted covx " << endl;
-      new_matrixC.Print();
-    }
-
-    const KalmanState *new_state = mkState(
-					   state.candidate(), nSkipped, layer, &state, new_vecX, new_matrixC, k, dcov, stub);
-
-    return new_state;
-  }
-
-/* Calculate track fit chi2 */
-
-  void KFbase::calcChi2(const KalmanState &state, double &chi2rphi, double &chi2rz) const {
-    if (settings_->kalmanDebugLevel() >= 4) {
-      cout << "calcChi2 " << endl;
-    }
-    double delChi2rphi(0), delChi2rz(0);
-
-    if (state.last_state() != nullptr) {
-      const Stub *stub = state.stub();
-
-      if (stub) {
-        TVectorD delta =
-            residual(stub, state.last_state()->vectorX(), state.last_state()->candidate().qOverPt());
-        TMatrixD dcov = matrixV(stub, &state);
-
-        if (settings_->kalmanDebugLevel() >= 4) {
-          cout << "dcov" << endl;
-          dcov.Print();
-          cout << "xcov" << endl;
-          state.last_state()->matrixC().Print();
-        }
-        TMatrixD h = matrixH(stub);
-        TMatrixD hxxh = matrixHCHt(h, state.last_state()->matrixC());
-        if (settings_->kalmanDebugLevel() >= 4) {
-          cout << "h" << endl;
-          h.Print();
-          cout << "hxcovh" << endl;
-          hxxh.Print();
-        }
-        TMatrixD covR = dcov + hxxh;
-        if (settings_->kalmanDebugLevel() >= 4) {
-          cout << "covR" << endl;
-          covR.Print();
-          cout << "---" << endl;
-          cout << scientific << "delta = " << delta[0] << ", " << delta[1] << endl;
-        }
-        this->deltaChi2(covR, delta, false, delChi2rphi, delChi2rz);
-      }
-      chi2rphi = state.last_state()->chi2rphi() + delChi2rphi;
-      chi2rz = state.last_state()->chi2rz() + delChi2rz;
-    }
-    return;
-  }
-
-/* Calculate change in track fit chi2 */
-
-  void KFbase::deltaChi2(const TMatrixD &dcov,
-                                  const TVectorD &delta,
-                                  bool debug,
-                                  double &delChi2rphi,
-                                  double &delChi2rz) const {
-    if (settings_->kalmanDebugLevel() >= 4) {
-      cout << "dcov" << endl;
-      dcov.Print();
-    }
-
-    if (dcov.Determinant() == 0) {
-      delChi2rphi = 999;
-      delChi2rz = 999;
-      return;
-    };
-
-    TMatrixD dcovi(dcov);
-    dcovi.Invert();
-
-    // Change in chi2 (with r-phi/r-z correlation term included in r-phi component)
-    delChi2rphi = delta[PHI] * delta[PHI] * dcovi[PHI][PHI] 
-      + 2 * delta[PHI] * delta[Z] * dcovi[PHI][Z];
-    delChi2rz = delta[Z] * delta[Z] * dcovi[Z][Z];
-
-    if (debug) {
-      cout << "CHI SQUARE OUTPUT" << endl;
-      cout << "cov" << endl;
-      dcov.Print();
-      cout << "cov inv" << endl;
-      dcovi.Print();
-      for (int i = 0; i < delta.GetNrows(); i++)
-        cout << delta(i) << " ";
-      cout << endl;
-    }
-    return;
-  }
-
-  TMatrixD KFbase::matrixHCHt(const TMatrixD &h, const TMatrixD &c) const {
-    TMatrixD hTrans(TMatrixD::kTransposed, h);
-    return h*c*hTrans;
-  }
-
-/* Determine Kalman gain matrix K */
-
-  TMatrixD KFbase::GetKalmanMatrix(const TMatrixD &h, const TMatrixD &pxcov, const TMatrixD &dcov) const {
-    TMatrixD hTrans(TMatrixD::kTransposed, h);
-    TMatrixD pxcovht = pxcov*hTrans;
-    TMatrixD tmp(TMatrixD::kInverted, dcov + matrixHCHt(h, pxcov));
-    TMatrixD K = pxcovht * tmp;
-    return K;
-  }
-
-  void KFbase::GetAdjustedState(const TMatrixD &K,
-                                      const TMatrixD &pxcov,
-                                      const TVectorD &x,
-                                      const TMatrixD &h,
-                                      const TVectorD &delta,
-                                      TVectorD &new_x,
-                                      TMatrixD &new_xcov) const {
-    new_x = x + K*delta;
-    const TMatrixD unitMatrix(TMatrixD::kUnit, TMatrixD(nPar_, nPar_));
-    TMatrixD tmp = unitMatrix - K*h;
-    new_xcov =  tmp*pxcov;
-  }
-
-  void KFbase::resetStates() {
-    for (unsigned int i = 0; i < state_list_.size(); i++) {
-      delete state_list_.at(i);
-    }
-    state_list_.clear();
-  }
-
-  const KalmanState *KFbase::mkState(const L1track3D &candidate,
-                                           unsigned nSkipped,
-				           unsigned layer,
-                                           const KalmanState *last_state,
-                                           const TVectorD &x,
-                                           const TMatrixD &pxx,
-                                           const TMatrixD &K,
-                                           const TMatrixD &dcov,
-				     const Stub *stub) {
-    KalmanState *new_state = new KalmanState(settings_,
-					     candidate,
-                                             nSkipped,
-					     layer,
-                                             last_state,
-                                             x,
-                                             pxx,
-                                             K,
-                                             dcov,
-                                             stub,
-                                             0,
-                                             0);
-
-    double new_state_chi2rphi = 0., new_state_chi2rz = 0.;
-    this->calcChi2(*new_state, new_state_chi2rphi, new_state_chi2rz);
-    new_state->setChi2(new_state_chi2rphi, new_state_chi2rz);
-
-    state_list_.push_back(new_state);
-    return new_state;
-  }
-
-/* Calculate stub residual w.r.t. helix */
-
-  TVectorD KFbase::residual(const Stub *stub,
-                                             const TVectorD &x,
-                                             double candQoverPt) const {
-    TVectorD vd = vectorM(stub);  // Get (phi relative to sector, z) of hit.
-    TMatrixD h = matrixH(stub);
-    TVectorD hx = h*x;  // Get intercept of helix with layer (linear approx).
-    TVectorD delta = vd - hx;
-
-    // Calculate higher order corrections to residuals.
-
-    if (not settings_->kalmanHOdodgy()) {
-      TVectorD correction(2);
-
-      float inv2R = (settings_->invPtToInvR()) * 0.5 * candQoverPt; 
-      float tanL = x[T];
-      float z0 = x[Z0];
-
-      float deltaS = 0.;
-      if (settings_->kalmanHOhelixExp()) {
-        // Higher order correction correction to circle expansion for improved accuracy at low Pt.
-        double corr = stub->r() * inv2R;
-
-        // N.B. In endcap 2S, this correction to correction[0] is exactly cancelled by the deltaS-dependent correction to it below.
-        correction[0] += (1. / 6.) * pow(corr, 3);
-
-        deltaS = (1. / 6.) * (stub->r()) * pow(corr, 2);
-        correction[1] -= deltaS * tanL;
-      }
-
-      if ((not stub->barrel()) && not(stub->psModule())) {
-        // These corrections rely on inside --> outside tracking, so r-z track params in 2S modules known.
-        float rShift = (stub->z() - z0) / tanL - stub->r();
-
-        // The above calc of rShift is approximate, so optionally check it with MC truth.
-        // if (tpa_ != nullptr) rShift = (stub->z() - tpa_->z0())/tpa_->tanLambda() - stub->r();
-
-        if (settings_->kalmanHOhelixExp())
-          rShift -= deltaS;
-
-        if (settings_->kalmanHOprojZcorr() == 1) {
-          // Add correlation term related to conversion of stub residuals from (r,phi) to (z,phi).
-          correction[0] += inv2R * rShift;
-        }
-
-        if (settings_->kalmanHOalpha() == 1) {
-          // Add alpha correction for non-radial 2S endcap strips..
-          correction[0] += stub->alpha() * rShift;
-        }
-
-        //cout<<"ENDCAP 2S STUB: (r,z)=("<<stub->r()<<","<<stub->z()<<") r*delta="<<stub->r() * correction[0]<<" r*alphaCorr="<<stub->r() * stub->alpha() * rShift<<" rShift="<<rShift<<endl;
-      }
-
-      // Apply correction to residuals.
-      delta += correction;
-    }
-
-    delta[0] = reco::deltaPhi(delta[0], 0.);
-
-    return delta;
-  }
-
 /* Adjust KF algorithm to allow for any dead tracker layers */
 
   set<unsigned> KFbase::kalmanDeadLayers(bool &remove2PSCut) const {
@@ -1029,31 +912,31 @@ namespace tmtt {
     if (killRecover) {
       if (killScenario == 1) {  // barrel layer 5
         deadLayers.insert(pair<unsigned, bool>(4, true));
-        if (iCurrentEtaReg_ < 5 || iCurrentEtaReg_ > 8 || iCurrentPhiSec_ < 8 || iCurrentPhiSec_ > 11) {
+        if (iEtaReg_ < 5 || iEtaReg_ > 8 || iPhiSec_ < 8 || iPhiSec_ > 11) {
           deadLayers.clear();
         }
 
       } else if (killScenario == 2) {  // barrel layer 1
         deadLayers.insert(pair<unsigned, bool>(1, true));
-        if (iCurrentEtaReg_ > 8 || iCurrentPhiSec_ < 8 || iCurrentPhiSec_ > 11) {
+        if (iEtaReg_ > 8 || iPhiSec_ < 8 || iPhiSec_ > 11) {
           deadLayers.clear();
         }
         remove2PSCut = true;
       } else if (killScenario == 3) {  // barrel layers 1 & 2
         deadLayers.insert(pair<unsigned, bool>(1, true));
         deadLayers.insert(pair<unsigned, bool>(2, true));
-        if (iCurrentEtaReg_ > 8 || iCurrentPhiSec_ < 8 || iCurrentPhiSec_ > 11) {
+        if (iEtaReg_ > 8 || iPhiSec_ < 8 || iPhiSec_ > 11) {
           deadLayers.clear();
-        } else if (iCurrentEtaReg_ < 1) {
+        } else if (iEtaReg_ < 1) {
           deadLayers.insert(pair<unsigned, bool>(0, true));  // What is this doing?
         }
         remove2PSCut = true;
       } else if (killScenario == 4) {  // barrel layer 1 & disk 1
         deadLayers.insert(pair<unsigned, bool>(1, true));
         deadLayers.insert(pair<unsigned, bool>(3, false));
-        if (iCurrentEtaReg_ > 8 || iCurrentPhiSec_ < 8 || iCurrentPhiSec_ > 11) {
+        if (iEtaReg_ > 8 || iPhiSec_ < 8 || iPhiSec_ > 11) {
           deadLayers.clear();
-        } else if (iCurrentEtaReg_ > 3) {
+        } else if (iEtaReg_ > 3) {
           deadLayers.insert(pair<unsigned, bool>(0, true));
         }
         remove2PSCut = true;
@@ -1066,7 +949,7 @@ namespace tmtt {
       bool barrel = p.second;
       float r = 0.;  // This fails for r-dependent parts of kalmanLayer(). FIX
       float z = 999.;
-      unsigned int kalmanLay = this->kalmanLayer(iCurrentEtaReg_, layer, barrel, r, z);
+      unsigned int kalmanLay = this->kalmanLayer(iEtaReg_, layer, barrel, r, z);
       kfDeadLayers.insert(kalmanLay);
     }
 
@@ -1077,6 +960,88 @@ namespace tmtt {
 
   float KFbase::approxB(float z, float r) const {
     return settings_->bApprox_gradient() * std::abs(z) / r + settings_->bApprox_intercept();
+  }
+
+/* Print truth particle */
+
+  void KFbase::printTP(std::ostream &os, const TP *tp) const {
+    TVectorD tpParams(5);
+    bool useForAlgEff(false);
+    if (tp) {
+      useForAlgEff = tp->useForAlgEff();
+      tpParams[QOVERPT] = tp->qOverPt();
+      tpParams[PHI0] = tp->phi0();
+      tpParams[Z0] = tp->z0();
+      tpParams[T] = tp->tanLambda();
+      tpParams[D0] = tp->d0();
+    }
+    if (tp) {
+      os << "  TP index = " << tp->index() << " useForAlgEff = " << useForAlgEff << " ";
+      const string helixNames[5] = {"qOverPt", "phi0", "z0", "tanL", "d0"};
+      for (int i = 0; i < tpParams.GetNrows(); i++) {
+        os << helixNames[i] << ":" << tpParams[i] << ", ";
+      }
+      os << "  inv2R = " << tp->qOverPt() * settings_->invPtToInvR() * 0.5;
+    } else {
+      os << "  Fake";
+    }
+    os << endl;
+  }
+
+/* Print tracker layers with stubs */
+
+  void KFbase::printStubLayers(std::ostream &os, const vector<const Stub *> &stubs, unsigned int iEtaReg) const {
+    if (stubs.size() == 0)
+      os << "stub layers = []" << endl;
+    else {
+      os << "stub layers = [ ";
+      for (unsigned i = 0; i < stubs.size(); i++) {
+        os << stubs[i]->layerId();
+        if (i != stubs.size() - 1)
+          os << ", ";
+      }
+      os << " ]   ";
+      os << "KF stub layers = [ ";
+      for (unsigned j = 0; j < stubs.size(); j++) {
+        unsigned int kalmanLay =
+            this->kalmanLayer(iEtaReg, stubs[j]->layerIdReduced(), stubs[j]->barrel(), stubs[j]->r(), stubs[j]->z());
+        os << kalmanLay;
+        if (j != stubs.size() - 1)
+          os << ", ";
+      }
+      os << " ]" << endl;
+    }
+  }
+
+/* Print a stub */
+
+  void KFbase::printStub(std::ostream &os, const Stub *stub, bool addReturn) const {
+    os << "stub ";
+    //   os << "addr=" << stub << " ";
+    os << "index=" << stub->index() << " ";
+    os << "layerId=" << stub->layerId() << " ";
+    os << "endcapRing=" << stub->endcapRing() << " ";
+    os << "r=" << stub->r() << " ";
+    os << "phi=" << stub->phi() << " ";
+    os << "z=" << stub->z() << " ";
+    os << "sigmaX=" << stub->sigmaX() << " ";
+    os << "sigmaZ=" << stub->sigmaZ() << " ";
+    os << "TPids=";
+    std::set<const TP *> tps = stub->assocTPs();
+    for (auto tp : tps)
+      os << tp->index() << ",";
+    if (addReturn)
+      os << endl;
+    else
+      os << " | ";
+  }
+
+/* Print all stubs */
+
+  void KFbase::printStubs(std::ostream &os, const vector<const Stub *> &stubs) const {
+    for (auto &stub : stubs) {
+      printStub(os, stub);
+    }
   }
 
 }  // namespace tmtt

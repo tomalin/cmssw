@@ -52,13 +52,13 @@ namespace tmtt {
   protected:
 
     // Do KF fit (internal)
-    std::vector<const KalmanState *> doKF(const L1track3D &l1track3D,
+    const KalmanState * doKF(const L1track3D &l1track3D,
                                           const std::vector<const Stub *> &stubs,
                                           const TP *tpa);
 
     // Add one stub to a helix state
     virtual const KalmanState *kalmanUpdate(
-					    unsigned nSkipped, unsigned layer, const Stub *stub, const KalmanState &state, const TP *);
+					    unsigned nSkipped, unsigned layer, const Stub *stub, const KalmanState *state, const TP *tp);
 
     // Create a KalmanState, containing a helix state & next stub it is to be updated with.
     const KalmanState *mkState(const L1track3D &candidate,
@@ -69,24 +69,9 @@ namespace tmtt {
                                const TMatrixD &pxx,
                                const TMatrixD &K,
                                const TMatrixD &dcov,
-                               const Stub *stub);
-
-    //--- Small utilities
-
-    // Reset internal data ready for next track.
-    void resetStates();
-
-    // Convert to physical helix params instead of local ones used by KF
-    virtual TVectorD trackParams(const KalmanState *state) const = 0;
-    // Ditto after applying beam-spot constraint.
-    virtual TVectorD trackParams_BeamConstr(const KalmanState *state, double &chi2rphi_bcon) const = 0;
-
-    // Get phi of centre of sector containing track.
-    double sectorPhi() const {
-      float phiCentreSec0 =
-          -M_PI / float(settings_->numPhiNonants()) + M_PI / float(settings_->numPhiSectors());
-      return 2. * M_PI * float(iCurrentPhiSec_) / float(settings_->numPhiSectors()) + phiCentreSec0;
-    }
+                               const Stub *stub,
+			       double chi2rphi,
+			       double chi2rz);
 
     //--- Input data
 
@@ -106,47 +91,50 @@ namespace tmtt {
     virtual TMatrixD matrixF(const Stub *stub = 0, const KalmanState *state = 0) const = 0;
     // Product of H*C*H(transpose) (where C = helix covariance matrix)
     TMatrixD matrixHCHt(const TMatrixD &h, const TMatrixD &c) const;
-    // Change in chi2 with this update.
-    void deltaChi2(const TMatrixD &dcov,
-                      const TVectorD &delta,
-                      bool debug,
-                      double &delChi2rphi,
-                      double &delChi2rz) const;
+    // Get inverted Kalman R matrix: inverse(V + HCHt)
+    TMatrixD matrixRinv(const TMatrixD &matH, const TMatrixD &matCref, const TMatrixD &matV) const;
     // Kalman gain matrix
-    TMatrixD GetKalmanMatrix(const TMatrixD &h, const TMatrixD &pxcov, const TMatrixD &dcov) const;
-    // Update helix state & its covariance matrix.
-    void GetAdjustedState(const TMatrixD &K,
-                          const TMatrixD &pxcov,
-                          const TVectorD &x,
-                          const TMatrixD &h,
-                          const TVectorD &delta,
-                          TVectorD &new_x,
-                          TMatrixD &new_xcov) const;
+    TMatrixD getKalmanGainMatrix(const TMatrixD &h, const TMatrixD &pxcov, const TMatrixD &covRinv) const;
 
     // Residuals of stub with respect to helix.
     virtual TVectorD residual(const Stub *stub,
                                          const TVectorD &x,
                                          double candQoverPt) const;
 
-    // Helix state pases cuts.
-    virtual bool isGoodState(const KalmanState &state) const = 0;
+    // Update helix state & its covariance matrix with new stub
+    void adjustState(const TMatrixD &K,
+                          const TMatrixD &pxcov,
+                          const TVectorD &x,
+                          const TMatrixD &h,
+                          const TVectorD &delta,
+                          TVectorD &new_x,
+                          TMatrixD &new_xcov) const;
+    // Update track fit chi2 with new stub
+    virtual void adjustChi2(const KalmanState *state, const TMatrixD &covRinv, const TVectorD &delta, double &chi2rphi, double &chi2rz) const;
 
-    // Get chi2 of fit
-    virtual void calcChi2(const KalmanState &state, double &chi2rphi, double &chi2rz) const;
+    //--- Utilities
+
+    // Reset internal data ready for next track.
+    void resetStates();
+
+    // Convert to physical helix params instead of local ones used by KF
+    virtual TVectorD trackParams(const KalmanState *state) const = 0;
+    // Ditto after applying beam-spot constraint.
+    virtual TVectorD trackParams_BeamConstr(const KalmanState *state, double &chi2rphi_bcon) const = 0;
+
+    // Get phi of centre of sector containing track.
+    double sectorPhi() const {
+      float phiCentreSec0 =
+          -M_PI / float(settings_->numPhiNonants()) + M_PI / float(settings_->numPhiSectors());
+      return 2. * M_PI * float(iPhiSec_) / float(settings_->numPhiSectors()) + phiCentreSec0;
+    }
 
     // Get KF layer (which is integer representing order layers cross)
     virtual unsigned int kalmanLayer(
         unsigned int iEtaReg, unsigned int layerIDreduced, bool barrel, float r, float z) const;
     // Check if it is unclear whether a particle is expect to cross this layer.
     virtual bool kalmanAmbiguousLayer(unsigned int iEtaReg, unsigned int kfLayer);
-
-    // Debug printout
-    void printTP(std::ostream &os, const TP *tp) const;
-    void printStubLayers(std::ostream &os, const std::vector<const Stub *> &stubs, unsigned int iEtaReg) const;
-    void printStubs(std::ostream &os, const std::vector<const Stub *> &stubs) const;
-    void printStub(std::ostream &os, const Stub *stub, bool addReturn = true) const;
-
-    // Does KF algo mods to cope with dead tracker layers.
+    // KF algo mods to cope with dead tracker layers.
     std::set<unsigned> kalmanDeadLayers(bool &remove2PSCut) const;
 
     // Function to calculate approximation for tilted barrel modules (aka B) copied from Stub class.
@@ -155,6 +143,15 @@ namespace tmtt {
     // Is this HLS code?
     virtual bool isHLS() { return false; };
 
+    // Helix state pases cuts.
+    virtual bool isGoodState(const KalmanState &state) const = 0;
+
+    //--- Debug printout
+    void printTP(std::ostream &os, const TP *tp) const;
+    void printStubLayers(std::ostream &os, const std::vector<const Stub *> &stubs, unsigned int iEtaReg) const;
+    void printStub(std::ostream &os, const Stub *stub, bool addReturn = true) const;
+    void printStubs(std::ostream &os, const std::vector<const Stub *> &stubs) const;
+
   protected:
     unsigned nPar_;
     unsigned nMeas_;
@@ -162,10 +159,8 @@ namespace tmtt {
 
     std::vector<KalmanState *> state_list_;
 
-    unsigned int iCurrentPhiSec_;
-    unsigned int iCurrentEtaReg_;
-    unsigned int iLastPhiSec_;
-    unsigned int iLastEtaReg_;
+    unsigned int iPhiSec_;
+    unsigned int iEtaReg_;
 
     unsigned int numUpdateCalls_;
 
