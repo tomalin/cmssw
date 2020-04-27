@@ -12,6 +12,7 @@
 #include <map>
 #include <vector>
 #include <fstream>
+#include <memory>
 #include <TString.h>
 
 class TH1F;
@@ -54,14 +55,14 @@ namespace tmtt {
     // Do KF fit (internal)
     const KalmanState * doKF(const L1track3D &l1track3D,
                                           const std::vector<const Stub *> &stubs,
-                                          const TP *tpa);
+			     const TP *tpa);
 
     // Add one stub to a helix state
     virtual const KalmanState *kalmanUpdate(
 					    unsigned nSkipped, unsigned layer, const Stub *stub, const KalmanState *state, const TP *tp);
 
     // Create a KalmanState, containing a helix state & next stub it is to be updated with.
-    const KalmanState *mkState(const L1track3D &candidate,
+const KalmanState* mkState(const L1track3D &candidate,
                                unsigned nSkipped,
                                unsigned layer,
                                const KalmanState *last_state,
@@ -157,14 +158,15 @@ namespace tmtt {
     unsigned nMeas_;
     unsigned numEtaRegions_;
 
-    std::vector<KalmanState *> state_list_;
-
     unsigned int iPhiSec_;
     unsigned int iEtaReg_;
 
     unsigned int numUpdateCalls_;
 
     const TP *tpa_;
+
+    // All helix states KF produces for current track.
+    std::vector<std::unique_ptr<const KalmanState>> listAllStates_; 
   };
 
 }  // namespace tmtt

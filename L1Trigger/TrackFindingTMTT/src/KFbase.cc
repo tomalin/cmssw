@@ -584,7 +584,7 @@ namespace tmtt {
 
 /* Create a KalmanState, containing a helix state & next stub it is to be updated with. */
 
-  const KalmanState *KFbase::mkState(const L1track3D &candidate,
+const KalmanState* KFbase::mkState(const L1track3D &candidate,
                                            unsigned nSkipped,
 				           unsigned layer,
                                            const KalmanState *last_state,
@@ -596,7 +596,7 @@ namespace tmtt {
 				     double chi2rphi,
 				     double chi2rz) {
 
-    KalmanState *new_state = new KalmanState(settings_,
+    auto new_state = std::make_unique<const KalmanState>(settings_,
 					     candidate,
                                              nSkipped,
 					     layer,
@@ -609,8 +609,9 @@ namespace tmtt {
                                              chi2rphi,
                                              chi2rz);
 
-    state_list_.push_back(new_state);
-    return new_state;
+    const KalmanState* p_new_state = new_state.get();
+    listAllStates_.push_back(std::move(new_state)); // Vector keeps ownership of all states.
+    return p_new_state;
   }
 
 /* Product of H*C*H(transpose) (where C = helix covariance matrix) */
@@ -751,10 +752,7 @@ void KFbase::adjustChi2(const KalmanState* state, const TMatrixD &matRinv, const
 /* Reset internal data ready for next track. */
 
   void KFbase::resetStates() {
-    for (unsigned int i = 0; i < state_list_.size(); i++) {
-      delete state_list_.at(i);
-    }
-    state_list_.clear();
+    listAllStates_.clear();
   }
 
 /* Get Kalman layer mapping (i.e. layer order in which stubs should be processed) */
