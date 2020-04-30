@@ -1,4 +1,3 @@
-
 #include "L1Trigger/TrackFindingTMTT/interface/StubKiller.h"
 #include "DataFormats/Math/interface/deltaPhi.h"
 #include "FWCore/Utilities/interface/Exception.h"
