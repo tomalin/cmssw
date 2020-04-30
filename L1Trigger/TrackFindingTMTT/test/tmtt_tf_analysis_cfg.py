@@ -90,6 +90,13 @@ process.source = cms.Source ("PoolSource",
 
 process.Timing = cms.Service("Timing", summaryOnly = cms.untracked.bool(True))
 
+# Random number generator for Stub Killer (dead module emulation)
+process.RandomNumberGeneratorService = cms.Service("RandomNumberGeneratorService",
+    TMTrackProducer = cms.PSet(
+        initialSeed = cms.untracked.uint32(12345)
+    )
+)
+
 #--- Load code that produces our L1 tracks and makes corresponding histograms.
 #process.load('L1Trigger.TrackFindingTMTT.TMTrackProducer_cff')
 
