@@ -21,8 +21,6 @@ namespace tmtt {
   // Static variables
 
   std::atomic<unsigned int> Stub::trackerGeometryVersion_ = 0;
-  std::atomic<bool> Stub::stubKillerInit_ = false;
-  thread_local StubKiller Stub::stubKiller_;
 
   //=== Store useful info about the stub (for use with HYBRID code), with hard-wired constants to allow use outside CMSSW.
 
@@ -77,7 +75,8 @@ namespace tmtt {
              unsigned int index_in_vStubs,
              const Settings* settings,
              const TrackerGeometry* trackerGeometry,
-             const TrackerTopology* trackerTopology)
+             const TrackerTopology* trackerTopology,
+	     const StubKiller* stubKiller)
       : ttStubRef_(ttStubRef),
         settings_(settings),
         index_in_vStubs_(index_in_vStubs),
@@ -93,13 +92,6 @@ namespace tmtt {
   {
     // Determine tracker geometry version (T3, T4, T5 ...)
     this->setTrackerGeometryVersion(trackerGeometry, trackerTopology);
-
-    // Initialize tool to optionally emulate dead modules.
-
-    if (not stubKillerInit_) {
-      stubKillerInit_ = true;
-      stubKiller_.initialise(settings->killScenario(), trackerTopology, trackerGeometry);
-    }
 
     // Get coordinates of stub.
     const TTStub<Ref_Phase2TrackerDigi_>* ttStubP = ttStubRef_.get();
@@ -237,7 +229,7 @@ namespace tmtt {
     }
 
     // Fill frontendPass_ flag, indicating if frontend readout electronics will output this stub.
-    this->setFrontend(rejectStub);
+    this->setFrontend(rejectStub, stubKiller);
 
     // Calculate bin range along q/Pt axis of r-phi Hough transform array consistent with bend of this stub.
     this->calcQoverPtrange();
@@ -469,7 +461,7 @@ namespace tmtt {
   //=== Note that this should run on quantities as available inside front-end chip, which are not
   //=== degraded by loss of bits or digitisation.
 
-  void Stub::setFrontend(bool rejectStub) {
+  void Stub::setFrontend(bool rejectStub, const StubKiller* stubKiller) {
     frontendPass_ = true;              // Did stub pass cuts applied in front-end chip
     stubFailedDegradeWindow_ = false;  // Did it only fail cuts corresponding to windows encoded in DegradeBend.h?
     // Don't use stubs at large eta, since it is impossible to form L1 tracks from them, so they only contribute to combinatorics.
@@ -504,8 +496,8 @@ namespace tmtt {
     }
 
     // Or emulate stubs in dead tracker regions using communal emulation shared with Tracklet.
-    if (settings_->killScenario() > 0) {
-      bool kill = stubKiller_.killStub(ttStubRef_.get());
+    if (settings_->killScenario() != StubKiller::KillOptions::none) {
+      bool kill = stubKiller->killStub(ttStubRef_.get());
       if (kill)
         frontendPass_ = false;
     }

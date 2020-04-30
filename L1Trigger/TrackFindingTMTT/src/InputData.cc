@@ -22,8 +22,10 @@
 
 #include "L1Trigger/TrackFindingTMTT/interface/InputData.h"
 #include "L1Trigger/TrackFindingTMTT/interface/Settings.h"
+#include "L1Trigger/TrackFindingTMTT/interface/StubKiller.h"
 
 #include <map>
+#include <memory>
 
 using namespace std;
 
@@ -88,6 +90,13 @@ namespace tmtt {
       }
     }
 
+    // Initialize code for killing some stubs to model detector problems.
+    const StubKiller::KillOptions killOpt = static_cast<StubKiller::KillOptions>(settings->killScenario());
+    std::unique_ptr<const StubKiller> stubKiller;
+    if (killOpt != StubKiller::KillOptions::none) {
+      stubKiller = std::make_unique<StubKiller>(killOpt, trackerTopology, trackerGeometry, iEvent);
+    }
+
     // Get stub info, by looping over modules and then stubs inside each module.
     // Also get the association map from stubs to tracking particles.
 
@@ -108,7 +117,7 @@ namespace tmtt {
         TTStubRef ttStubRef = edmNew::makeRefTo(ttStubHandle, p_ttstub);
 
         // Store the Stub info, using class Stub to provide easy access to the most useful info.
-        Stub stub(ttStubRef, stubCount, settings, trackerGeometry, trackerTopology);
+        Stub stub(ttStubRef, stubCount, settings, trackerGeometry, trackerTopology, stubKiller.get());
         // Also fill truth associating stubs to tracking particles.
         if (enableMCtruth_)
           stub.fillTruth(translateTP, mcTruthTTStubHandle, mcTruthTTClusterHandle);

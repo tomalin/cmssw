@@ -25,7 +25,6 @@
 #include <set>
 #include <array>
 #include <map>
-#include <atomic>
 
 class TrackerGeometry;
 class TrackerTopology;
@@ -66,7 +65,8 @@ namespace tmtt {
          unsigned int index_in_vStubs,
          const Settings* settings,
          const TrackerGeometry* trackerGeometry,
-         const TrackerTopology* trackerTopology);
+         const TrackerTopology* trackerTopology,
+	 const StubKiller* stubKiller);
 
     ~Stub() {}
 
@@ -289,7 +289,7 @@ namespace tmtt {
 
     // Set the frontendPass_ flag, indicating if frontend readout electronics will output this stub.
     // Argument indicates if stub bend was outside window size encoded in DegradeBend.h
-    void setFrontend(bool rejectStub);
+    void setFrontend(bool rejectStub, const StubKiller* stubKiller);
 
     // Set info about the module that this stub is in.
     void setModuleInfo(const TrackerGeometry* trackerGeometry,
@@ -393,10 +393,6 @@ namespace tmtt {
 
     // Used to degrade stub bend information.
     DegradeBend degradeBend_;
-
-    //--- Utility to emulate dead modules.
-    static std::atomic<bool> stubKillerInit_;
-    static thread_local StubKiller stubKiller_;
   };
 
 }  // namespace tmtt
