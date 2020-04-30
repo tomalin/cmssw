@@ -17,8 +17,8 @@ namespace tmtt {
         nSkipped_(0),
         hitPattern_(0) {}
 
-  KalmanState::KalmanState(const Settings* settings,
-			   const L1track3D &candidate,
+  KalmanState::KalmanState(const Settings *settings,
+                           const L1track3D &candidate,
                            unsigned nSkipped,
                            int kLayer,
                            const KalmanState *last_state,
@@ -148,7 +148,7 @@ namespace tmtt {
     const KalmanState *state = this;
     while (state) {
       const Stub *stub = state->stub();
-      if (stub != nullptr) 
+      if (stub != nullptr)
         all_stubs.push_back(stub);
       state = state->last_state();
     }

@@ -3,8 +3,8 @@ import FWCore.ParameterSet.Config as cms
 #---------------------------------------------------------------------------------------------------------
 # This describes the full TMTT track reconstruction chain with 2 GeV threshold, where:
 # the GP divides the tracker into 18 eta sectors (each sub-divided into 2 virtual eta subsectors);  
-# the HT uses a  32x18 array followed by 2x2 Mini-HT array, with transverese HT readout & multiplexing, 
-# followed by the KF (or optionally SF+SLR) track fit; duplicate track removal (Algo50) is run.
+# the HT uses a  32x24 array followed by 2x2 Mini-HT array, with transverese HT readout & multiplexing, 
+# followed by the track fit (KF); duplicate track removal (Algo1) is run.
 #
 # It represents the tracking as planned for 2026. It is a good basis for L1 trigger studies etc.
 #---------------------------------------------------------------------------------------------------------

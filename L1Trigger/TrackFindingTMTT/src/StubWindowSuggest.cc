@@ -49,9 +49,6 @@ namespace tmtt {
 
     DetId stDetId(stub->idDet());
 
-    // Modified by TMTT group, so we can update the numbers in the window size arrays.
-    //int window = 0;
-
     if (stDetId.subdetId() == StripSubdetector::TOB) {
       unsigned int layer = theTrackerTopo_->layer(stDetId);
       unsigned int ladder = theTrackerTopo_->tobRod(stDetId);

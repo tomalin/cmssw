@@ -74,7 +74,7 @@ namespace tmtt {
           vector<L1track2D> tracks = htRphi.trackCands2D();
 
           for (L1track2D& trk : tracks) {
-            unsigned int nStubs = trk.numStubs();            // #stubs on this track.
+            unsigned int nStubs = trk.numStubs();               // #stubs on this track.
             unsigned int mBinRange = htRphi.getMbinRange(trk);  // Which m bin range is this track in?
             // Get the output optical link corresponding to this sector & m-bin range.
             unsigned int link = this->linkID(iSecInNon, iEtaReg, mBinRange);
@@ -101,11 +101,9 @@ namespace tmtt {
 
   unsigned int MuxHToutputs::muxFactor() const {
     if (muxOutputsHT_ == 1) {
-      return 6;
-    } else if (muxOutputsHT_ == 2) {
-      return numEtaRegions_;
-    } else {
       return numEtaRegions_ * numPhiSecPerNon_;
+    } else {
+      throw cms::Exception("BadConfig") << "MuxHToutputs: Unknown MuxOutputsHT configuration option!";
     }
   }
 
@@ -115,50 +113,10 @@ namespace tmtt {
   unsigned int MuxHToutputs::linkID(unsigned int iSecInNon, unsigned int iEtaReg, unsigned int mBinRange) const {
     unsigned int link;
 
-    // This algorithm multiplexes tracks from different eta sectors onto the a single optical link.
-
     if (muxOutputsHT_ == 1) {
-      //--- This is Mux used for the Dec. 2016 demonstrator.
-
-      // Link 0 contains eta sectors 0, 3, 6, 9, 12 & 15, whilst Link 1 contains eta sectors 1, 4, 7, 10, 13 & 16 etc.
-      // The multiplexing is independent of the phi sector or m-bin range, except in that two tracks that
-      // differ in either of these quantities will always be sent to different Links.
-
-      if (numEtaRegions_ == 18) {
-        link = iEtaReg % 3;                        // In range 0 to 2
-        link += 3 * iSecInNon;                     // In range 0 to (3*numPhiSecPerNon - 1)
-        link += 3 * numPhiSecPerNon_ * mBinRange;  // In range 0 to (3*numPhiSecsPerNon*numMbinRanges - 1)
-      } else {
-        throw cms::Exception("BadConfig") << "MuxHToutputs: MUX algorithm only implemented for 18 eta sectors!";
-      }
-
-    } else if (muxOutputsHT_ == 2) {
-      //--- This is the Mar. 2018 Mux for the transverse HT readout organised by m-bin. (Each phi sector & m bin range go to a different link).
-
-      link = 0;
-      //link += iSecInNon;
-      //link += numPhiSecPerNon_ * mBinRange;
-
-      // IRT - match firmware, taking into account that fw uses mBin = -mBin relative to sw.
-      // NOT NEEDED ANYMORE, AS NOW FW USES MBIN SAME SIGN AS Q/PT.
-      // unsigned int iCorr = (settings_->miniHTstage()) ? 1 : 0;
-      // Sign flip for FW using opposite
-      //link += (busySectorMbinRanges_.size() - iCorr) - mBinRange - 1;
-      link += mBinRange;
-      link += iSecInNon * (busySectorMbinRanges_.size() - 1);
-
-    } else if (muxOutputsHT_ == 3) {
       //--- This is the Sept. 2019 Mux for the transverse HT readout organised by m-bin. (Each m bin in entire nonant goes to a different link).
 
       link = 0;
-      //link += iSecInNon;
-      //link += numPhiSecPerNon_ * mBinRange;
-
-      // IRT - match firmware, taking into account that fw uses mBin = -mBin relative to sw.
-      // NOT NEEDED ANYMORE, AS NOW FW USES MBIN SAME SIGN AS Q/PT.
-      // unsigned int iCorr = (settings_->miniHTstage()) ? 1 : 0;
-      // Sign flip for FW using opposite
-      //link += (busySectorMbinRanges_.size() - iCorr) - mBinRange - 1;
       link += mBinRange;
 
     } else {
@@ -181,7 +139,6 @@ namespace tmtt {
     vector<unsigned int> nObsElementsPerLink(this->numLinksPerNonant(), 0);
     for (unsigned int iSecInNon = 0; iSecInNon < numPhiSecPerNon_; iSecInNon++) {
       for (unsigned int iEtaReg = 0; iEtaReg < numEtaRegions_; iEtaReg++) {
-        // IRT
         unsigned int iCorr = (settings_->miniHTstage()) ? 1 : 0;
         for (unsigned int mBinRange = 0; mBinRange < busySectorMbinRanges_.size() - iCorr; mBinRange++) {
           unsigned int link = this->linkID(iSecInNon, iEtaReg, mBinRange);

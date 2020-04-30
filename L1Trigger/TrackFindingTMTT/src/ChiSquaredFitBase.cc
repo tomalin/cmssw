@@ -14,12 +14,12 @@
 
 namespace tmtt {
 
-  ChiSquaredFitBase::ChiSquaredFitBase(const Settings* settings, const uint nPar) : TrackFitGeneric(settings), chiSq_(0.0) {
+  ChiSquaredFitBase::ChiSquaredFitBase(const Settings* settings, const uint nPar)
+      : TrackFitGeneric(settings), chiSq_(0.0) {
     // Bad stub killing settings
     numFittingIterations_ = settings_->numTrackFitIterations();
     killTrackFitWorstHit_ = settings_->killTrackFitWorstHit();
-    generalResidualCut_ =
-        settings_->generalResidualCut();  // The cut used to remove bad stubs (if nStubs > minLayers)
+    generalResidualCut_ = settings_->generalResidualCut();  // The cut used to remove bad stubs (if nStubs > minLayers)
     killingResidualCut_ = settings_->killingResidualCut();  // The cut used to kill off tracks entirely
 
     //--- These two parameters are used to check if after the fit, there are still enough stubs on the track
@@ -93,8 +93,6 @@ namespace tmtt {
 
         if (killWorstStub) {
           stubs_.erase(stubs_.begin() + ilargestresid_);
-          if (settings_->debug() == 6)
-            std::cout << __FILE__ " : Killed stub " << ilargestresid_ << "." << std::endl;
 
           // Reject tracks with too many killed stubs & stop iterating.
           unsigned int nLayers = Utility::countLayers(settings_, stubs_);  // Count tracker layers with stubs

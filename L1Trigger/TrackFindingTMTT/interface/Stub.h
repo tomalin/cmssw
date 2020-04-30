@@ -29,14 +29,13 @@
 
 class TrackerGeometry;
 class TrackerTopology;
-// class DetId;
 
 namespace tmtt {
 
   class TP;
 
   typedef edmNew::DetSetVector<TTStub<Ref_Phase2TrackerDigi_> > TTStubDetSetVec;
-  typedef edmNew::DetSet<TTStub<Ref_Phase2TrackerDigi_> > DetSet;
+  typedef edmNew::DetSet<TTStub<Ref_Phase2TrackerDigi_> > TTStubDetSet;
   typedef edm::Ref<TTStubDetSetVec, TTStub<Ref_Phase2TrackerDigi_> > TTStubRef;
   typedef edm::Ref<edmNew::DetSetVector<TTCluster<Ref_Phase2TrackerDigi_> >, TTCluster<Ref_Phase2TrackerDigi_> >
       TTClusterRef;

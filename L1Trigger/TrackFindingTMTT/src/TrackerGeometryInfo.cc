@@ -19,15 +19,13 @@ namespace tmtt {
       DetId detId = gd->geographicalId();
 
       bool barrel = detId.subdetId() == StripSubdetector::TOB || detId.subdetId() == StripSubdetector::TIB;
-      bool tiltedBarrel = barrel && (theTrackerTopo->tobSide(detId) != 3);
+      enum BarrelModuleType { tiltedMinusZ = 1, tiltedPlusZ = 2, flat = 3 };
+      bool tiltedBarrel = barrel && (theTrackerTopo->tobSide(detId) != BarrelModuleType::flat);
       bool isLower = theTrackerTopo->isLower(detId);
 
       // Calculate and store r, z, B at centre of titled modules
       // Only do this for the "lower" sensor
       if (tiltedBarrel && isLower) {
-        // int type   = 2*theTrackerTopo->tobSide(detId)-3; // -1 for tilted-, 1 for tilted+, 3 for flat
-        // double corr   = (barrelNTiltedModules_+1)/2.;
-
         double minZOfThisModule = std::abs(gd->surface().zSpan().first);
         double maxZOfThisModule = std::abs(gd->surface().zSpan().second);
         double minROfThisModule = gd->surface().rSpan().first;

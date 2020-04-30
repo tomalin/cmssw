@@ -87,9 +87,10 @@ namespace tmtt {
     magneticField_ = 3.81120228767395;
 
     // Stub digitization params for hybrid (copied from TrackFindingTMTT/interface/HLS/KFconstants.h
-    double rMult_hybrid = 1. / 0.02929688;
-    double phiSMult_hybrid = 1. / (7.828293e-6 * 8);
-    double zMult_hybrid = rMult_hybrid / 2;  // In KF VHDL, z/r mult = 1/2, whereas in HLS, they are identical.
+    constexpr double rMult_hybrid = 1. / 0.02929688;
+    constexpr double phiSMult_hybrid = 1. / (7.828293e-6 * 8);
+    constexpr double zMult_hybrid =
+        rMult_hybrid / 2;  // In KF VHDL, z/r mult = 1/2, whereas in HLS, they are identical.
     // Number of bits copied from TrackFindingTMTT/interface/HLS/KFstub.h (BR1, BPHI, BZ)
     rtBits_ = 12;
     phiSBits_ = 14;
@@ -100,8 +101,8 @@ namespace tmtt {
 
     if (hybrid_) {
       if (not useApproxB_) {
-        std::cout << "TMTT Settings Error: module tilt angle unknown, so must set useApproxB = true" << std::endl;
-        exit(1);
+        throw cms::Exception("BadConfig")
+            << "TMTT Settings Error: module tilt angle unknown, so must set useApproxB = true";
       }
     }
   }
@@ -257,10 +258,7 @@ namespace tmtt {
 
         //=== Specification of algorithm to eliminate duplicate tracks.
 
-        dupTrkAlgRphi_(dupTrkRemoval_.getParameter<unsigned int>("DupTrkAlgRphi")),
-        dupTrkAlg3D_(dupTrkRemoval_.getParameter<unsigned int>("DupTrkAlg3D")),
         dupTrkAlgFit_(dupTrkRemoval_.getParameter<unsigned int>("DupTrkAlgFit")),
-        dupTrkMinCommonHitsLayers_(dupTrkRemoval_.getParameter<unsigned int>("DupTrkMinCommonHitsLayers")),
 
         //=== Rules for deciding when a reconstructed L1 track matches a MC truth particle (i.e. tracking particle).
 
@@ -364,11 +362,8 @@ namespace tmtt {
         //
         other_skipTrackDigi_(trackDigi_.getParameter<bool>("Other_skipTrackDigi")),
 
-        // Debug printout
-        debug_(iConfig.getParameter<unsigned int>("Debug")),
+        // Plot options
         resPlotOpt_(iConfig.getParameter<bool>("ResPlotOpt")),
-        iPhiPlot_(iConfig.getParameter<unsigned int>("iPhiPlot")),
-        iEtaPlot_(iConfig.getParameter<unsigned int>("iEtaPlot")),
 
         // Name of output EDM file if any.
         // N.B. This parameter does not appear inside TMTrackProducer_Defaults_cfi.py . It is created inside
@@ -440,13 +435,6 @@ namespace tmtt {
         throw cms::Exception("BadConfig") << "Settings: You specified an eta sector number in EtaSecsReduceLayers "
                                              "which exceeds the total number of eta sectors! "
                                           << iEtaReg << " " << etaRegions_.size();
-    }
-
-    // Duplicate track removal algorithm 50 must not be run in parallel with any other.
-    if (dupTrkAlgFit_ == 50) {
-      if (dupTrkAlgRphi_ != 0 || dupTrkAlg3D_ != 0)
-        throw cms::Exception("BadConfig") << "Settings: Invalid cfg parameters -- If using DupTrkAlgFit = 50, you "
-                                             "must disable all other duplicate track removal algorithms.";
     }
 
     // Chains of m bin ranges for output of HT.

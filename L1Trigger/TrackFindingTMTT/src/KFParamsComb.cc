@@ -176,8 +176,8 @@ namespace tmtt {
     return matV;
   }
 
-/* The Kalman measurement matrix = derivative of helix intercept w.r.t. helix params */
-/* Here I always measure phi(r), and z(r) */
+  /* The Kalman measurement matrix = derivative of helix intercept w.r.t. helix params */
+  /* Here I always measure phi(r), and z(r) */
 
   TMatrixD KFParamsComb::matrixH(const Stub* stub) const {
     TMatrixD matH(2, nPar_);
@@ -192,14 +192,14 @@ namespace tmtt {
     return matH;
   }
 
-/* Kalman helix ref point extrapolation matrix */
+  /* Kalman helix ref point extrapolation matrix */
 
   TMatrixD KFParamsComb::matrixF(const Stub* stub, const KalmanState* state) const {
     const TMatrixD unitMatrix(TMatrixD::kUnit, TMatrixD(nPar_, nPar_));
     return unitMatrix;
   }
 
-/* Get physical helix params */
+  /* Get physical helix params */
 
   TVectorD KFParamsComb::trackParams(const KalmanState* state) const {
     TVectorD vecX = state->vectorX();
@@ -239,7 +239,7 @@ namespace tmtt {
     }
   }
 
-/* Check if helix state passes cuts */
+  /* Check if helix state passes cuts */
 
   bool KFParamsComb::isGoodState(const KalmanState& state) const {
     // Cut values. (Layer 0 entry here is dummy). -- todo : make configurable
@@ -328,7 +328,8 @@ namespace tmtt {
       cout << " nlay=" << nStubLayers << " nskip=" << state.nSkippedLayers() << " chi2_scaled=" << chi2scaled;
       if (tpa_ != nullptr)
         cout << " pt(mc)=" << tpa_->pt();
-      cout << " pt=" << pt << " q/pt=" << qOverPt << " tanL=" << vecY[T] << " z0=" << vecY[Z0] << " phi0=" << vecY[PHI0];
+      cout << " pt=" << pt << " q/pt=" << qOverPt << " tanL=" << vecY[T] << " z0=" << vecY[Z0]
+           << " phi0=" << vecY[PHI0];
       if (nPar_ == 5)
         cout << " d0=" << vecY[D0];
       cout << " fake" << (tpa_ == nullptr);

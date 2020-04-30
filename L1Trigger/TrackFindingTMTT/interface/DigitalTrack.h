@@ -24,7 +24,6 @@ namespace tmtt {
     DigitalTrack(const Settings* settings);
     // Dummy constructor
     DigitalTrack() {}
-    // DigitalTrack();
 
     ~DigitalTrack() {}
 

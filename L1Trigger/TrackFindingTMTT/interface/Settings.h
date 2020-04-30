@@ -236,15 +236,8 @@ namespace tmtt {
 
     //=== Specification of algorithm to eliminate duplicate tracks
 
-    // --- Which algorithms are enabled.
-    // Algorithm used for duplicate removal of 2D tracks produced by r-phi HT.
-    unsigned int dupTrkAlgRphi() const { return dupTrkAlgRphi_; }
-    // Algorithm run on all 3D tracks within each sector after r-z track filter. (Ignored if r-z track filter not run).
-    unsigned int dupTrkAlg3D() const { return dupTrkAlg3D_; }
     // Algorithm run on tracks after the track helix fit has been done.
     unsigned int dupTrkAlgFit() const { return dupTrkAlgFit_; }
-    //--- Options used by individual algorithms.
-    unsigned int dupTrkMinCommonHitsLayers() const { return dupTrkMinCommonHitsLayers_; }
 
     //=== Rules for deciding when a reconstructed L1 track matches a MC truth particle (i.e. tracking particle).
 
@@ -335,7 +328,7 @@ namespace tmtt {
     unsigned int kalmanMinNumStubs() const { return kalmanMinNumStubs_; }
     // Fit will attempt to add up to this nummber of stubs to each fitted tracks, but won't bother adding more.
     unsigned int kalmanMaxNumStubs() const { return kalmanMaxNumStubs_; }
-    // For 5-param helix fits, calculate also beam-constrained helix params after fit is complete, & use them for duplicate removal if DupTrkAlgFit=50.
+    // For 5-param helix fits, calculate also beam-constrained helix params after fit is complete, & use them for duplicate removal if DupTrkAlgFit=1.
     bool kalmanAddBeamConstr() const { return kalmanAddBeamConstr_; }
     // Remove requirement of at least 2 PS layers per track.
     bool kalmanRemove2PScut() const { return kalmanRemove2PScut_; }
@@ -375,7 +368,7 @@ namespace tmtt {
     //
     //--- Or this use communal way developed with Tracklet of studying dead modules
     // Emulate dead/inefficient modules using the StubKiller code, with stubs killed according to the scenarios of the Stress Test group.
-    // (0=Don't kill any stubs; 1-5 = Scenarios from https://github.com/EmyrClement/StubKiller/blob/master/README.md).
+    // (0=Don't kill any stubs; 1-5 = Scenarios described in StubKiller.cc). 
     unsigned int killScenario() const { return killScenario_; }
     // Modify TMTT tracking to try to recover tracking efficiency in presence of dead modules. (Does nothing if KillScenario = 0).
     bool killRecover() const { return killRecover_; }
@@ -416,14 +409,9 @@ namespace tmtt {
 
     //=== Debug printout & plots
 
-    // Printout level.
-    unsigned int debug() const { return debug_; }
     // When making helix parameter resolution plots, only use particles from the physics event (True)
     // or also use particles from pileup (False) ?
     bool resPlotOpt() const { return resPlotOpt_; }
-    // Specify sector for which debug histos for hexagonal HT will be made.
-    unsigned int iPhiPlot() const { return iPhiPlot_; }
-    unsigned int iEtaPlot() const { return iEtaPlot_; }
 
     // Booleain indicating if an output EDM file will be written.
     // N.B. This parameter does not appear inside TMTrackProducer_Defaults_cfi.py . It is created inside tmtt_tf_analysis_cfg.py .
@@ -611,10 +599,7 @@ namespace tmtt {
     bool reduceLayerID_;
 
     // Specification of algorithm to eliminate duplicate tracks
-    unsigned int dupTrkAlgRphi_;
-    unsigned int dupTrkAlg3D_;
     unsigned int dupTrkAlgFit_;
-    unsigned int dupTrkMinCommonHitsLayers_;
 
     // Rules for deciding when a reconstructed L1 track matches a MC truth particle (i.e. tracking particle).
     double minFracMatchStubsOnReco_;
@@ -720,10 +705,7 @@ namespace tmtt {
     bool other_skipTrackDigi_;
 
     // Debug printout
-    unsigned int debug_;
     bool resPlotOpt_;
-    unsigned int iPhiPlot_;
-    unsigned int iEtaPlot_;
 
     // Boolean indicating an an EDM output file will be written.
     bool writeOutEdmFile_;

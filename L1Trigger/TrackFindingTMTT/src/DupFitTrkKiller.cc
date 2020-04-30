@@ -1,4 +1,4 @@
-#include "L1Trigger/TrackFindingTMTT/interface/KillDupFitTrks.h"
+#include "L1Trigger/TrackFindingTMTT/interface/DupFitTrkKiller.h"
 #include "L1Trigger/TrackFindingTMTT/interface/Settings.h"
 #include "FWCore/Utilities/interface/Exception.h"
 #include <map>
@@ -9,15 +9,14 @@ namespace tmtt {
 
   //=== Make available cfg parameters & specify which algorithm is to be used for duplicate track removal.
 
-  void KillDupFitTrks::init(const Settings* settings, unsigned int dupTrkAlg) {
+  void DupFitTrkKiller::init(const Settings* settings, unsigned int dupTrkAlg) {
     settings_ = settings;
     dupTrkAlg_ = dupTrkAlg;
-    killDupTrks_.init(settings, dupTrkAlg);  // Initialise duplicate removal algorithms that are common to all tracks.
   }
 
   //=== Eliminate duplicate tracks from the input collection, and so return a reduced list of tracks.
 
-  vector<L1fittedTrack> KillDupFitTrks::filter(const vector<L1fittedTrack>& vecTracks) const {
+  vector<L1fittedTrack> DupFitTrkKiller::filter(const vector<L1fittedTrack>& vecTracks) const {
     if (dupTrkAlg_ == 0) {
       // We are not running duplicate removal, so return original fitted track collection.
       return vecTracks;
@@ -26,18 +25,15 @@ namespace tmtt {
       // Choose which algorithm to run, based on parameter dupTrkAlg_.
       switch (dupTrkAlg_) {
         // Run filters that only work on fitted tracks.
-        case 50:
-          return filterAlg50(vecTracks);
+        case 1:
+          return filterAlg1(vecTracks);
           break;
-        case 51:
-          return filterAlg51(vecTracks);
+        case 2:
+          return filterAlg2(vecTracks);
           break;
-        // Run filters that work on any type of track (l1track2d, l1track3d, l1fittedtrack).
         default:
-          return killDupTrks_.filter(vecTracks);
+          throw cms::Exception("BadConfig") << "KillDupTrks: Cfg option DupFitTrkAlg has invalid value.";
       }
-
-      // Should never get here ...
     }
   }
 
@@ -47,7 +43,7 @@ namespace tmtt {
   //=== N.B. This code runs on tracks in a single sector. It could be extended to run on tracks in entire
   //=== tracker by adding the track's sector number to memory "htCellUsed" below.
 
-  vector<L1fittedTrack> KillDupFitTrks::filterAlg50(const vector<L1fittedTrack>& tracks) const {
+  vector<L1fittedTrack> DupFitTrkKiller::filterAlg1(const vector<L1fittedTrack>& tracks) const {
     // Hard-wired options to play with.
     constexpr bool debug = false;
     constexpr bool doRecoveryStep = true;  // Do 2nd pass through rejected tracks to see if any should be rescued.
@@ -60,7 +56,7 @@ namespace tmtt {
     constexpr bool limitDiff = true;       // Limit allowed diff. between HT & Fit cell to <= 1.
 
     if (debug && tracks.size() > 0)
-      cout << "Start KillDupFitTrks" << tracks.size() << endl;
+      cout << "Start DupFitTrkKiller" << tracks.size() << endl;
 
     vector<L1fittedTrack> tracksFiltered;
 
@@ -105,13 +101,12 @@ namespace tmtt {
 
             if (debug && tp != nullptr) {
               cout << "FIRST PASS: m=" << trk.cellLocationHT().first << "/" << trk.cellLocationFit().first
-                   << " c=" << trk.cellLocationHT().second << "/" << trk.cellLocationFit().second
-                   << " Delta(m,c)=(" << int(trk.cellLocationHT().first) - int(trk.cellLocationFit().first) << ","
-                   << int(trk.cellLocationHT().second) - int(trk.cellLocationFit().second)
-                   << ") pure=" << trk.purity() << " merged=" << trk.l1track3D()->mergedHTcell()
-                   << " #layers=" << trk.l1track3D()->numLayers() << " tp=" << tp->index() << " dupCell=("
-                   << tpFound[tp->index()].first << "," << tpFound[tp->index()].second
-                   << ") dup=" << tpFoundAtPass[tp->index()] << endl;
+                   << " c=" << trk.cellLocationHT().second << "/" << trk.cellLocationFit().second << " Delta(m,c)=("
+                   << int(trk.cellLocationHT().first) - int(trk.cellLocationFit().first) << ","
+                   << int(trk.cellLocationHT().second) - int(trk.cellLocationFit().second) << ") pure=" << trk.purity()
+                   << " merged=" << trk.l1track3D()->mergedHTcell() << " #layers=" << trk.l1track3D()->numLayers()
+                   << " tp=" << tp->index() << " dupCell=(" << tpFound[tp->index()].first << ","
+                   << tpFound[tp->index()].second << ") dup=" << tpFoundAtPass[tp->index()] << endl;
               // If the following two variables are non-zero in printout, then track has already been found,
               // so we have mistakenly kept a duplicate.
               if (tpFound.find(tp->index()) != tpFound.end())
@@ -131,13 +126,12 @@ namespace tmtt {
 
             if (debug && tp != nullptr) {
               cout << "FIRST REJECT: m=" << trk.cellLocationHT().first << "/" << trk.cellLocationFit().first
-                   << " c=" << trk.cellLocationHT().second << "/" << trk.cellLocationFit().second
-                   << " Delta(m,c)=(" << int(trk.cellLocationHT().first) - int(trk.cellLocationFit().first) << ","
-                   << int(trk.cellLocationHT().second) - int(trk.cellLocationFit().second)
-                   << ") pure=" << trk.purity() << " merged=" << trk.l1track3D()->mergedHTcell()
-                   << " #layers=" << trk.l1track3D()->numLayers() << " tp=" << tp->index() << " dupCell=("
-                   << tpFound[tp->index()].first << "," << tpFound[tp->index()].second
-                   << ") dup=" << tpFoundAtPass[tp->index()] << endl;
+                   << " c=" << trk.cellLocationHT().second << "/" << trk.cellLocationFit().second << " Delta(m,c)=("
+                   << int(trk.cellLocationHT().first) - int(trk.cellLocationFit().first) << ","
+                   << int(trk.cellLocationHT().second) - int(trk.cellLocationFit().second) << ") pure=" << trk.purity()
+                   << " merged=" << trk.l1track3D()->mergedHTcell() << " #layers=" << trk.l1track3D()->numLayers()
+                   << " tp=" << tp->index() << " dupCell=(" << tpFound[tp->index()].first << ","
+                   << tpFound[tp->index()].second << ") dup=" << tpFoundAtPass[tp->index()] << endl;
             }
           }
           // Memorize HT cell location corresponding to this track, even if it was not accepted by first pass..
@@ -180,13 +174,12 @@ namespace tmtt {
 
           if (debug && tp != nullptr) {
             cout << "SECOND PASS: m=" << trk->cellLocationHT().first << "/" << trk->cellLocationFit().first
-                 << " c=" << trk->cellLocationHT().second << "/" << trk->cellLocationFit().second
-                 << " Delta(m,c)=(" << int(trk->cellLocationHT().first) - int(trk->cellLocationFit().first) << ","
-                 << int(trk->cellLocationHT().second) - int(trk->cellLocationFit().second)
-                 << ") pure=" << trk->purity() << " merged=" << trk->l1track3D()->mergedHTcell()
-                 << " #layers=" << trk->l1track3D()->numLayers() << " tp=" << tp->index() << " dupCell=("
-                 << tpFound[tp->index()].first << "," << tpFound[tp->index()].second
-                 << ") dup=" << tpFoundAtPass[tp->index()] << endl;
+                 << " c=" << trk->cellLocationHT().second << "/" << trk->cellLocationFit().second << " Delta(m,c)=("
+                 << int(trk->cellLocationHT().first) - int(trk->cellLocationFit().first) << ","
+                 << int(trk->cellLocationHT().second) - int(trk->cellLocationFit().second) << ") pure=" << trk->purity()
+                 << " merged=" << trk->l1track3D()->mergedHTcell() << " #layers=" << trk->l1track3D()->numLayers()
+                 << " tp=" << tp->index() << " dupCell=(" << tpFound[tp->index()].first << ","
+                 << tpFound[tp->index()].second << ") dup=" << tpFoundAtPass[tp->index()] << endl;
             if (tpFound.find(tp->index()) != tpFound.end())
               tpFound[tp->index()] = htCell;
             tpFoundAtPass[tp->index()] = 2;
@@ -201,13 +194,14 @@ namespace tmtt {
 
     return tracksFiltered;
   }
+
   //=== Duplicate removal algorithm designed to run after the track helix fit, which eliminates duplicates
   //=== simply by requiring that no two tracks should have fitted (q/Pt, phi0) that correspond to the same HT
   //=== cell. If they do, then only the first to arrive is kept.
   //=== N.B. This code runs on tracks in a single sector. It could be extended to run on tracks in entire
   //=== tracker by adding the track's sector number to memory "htCellUsed" below.
 
-  vector<L1fittedTrack> KillDupFitTrks::filterAlg51(const vector<L1fittedTrack>& tracks) const {
+  vector<L1fittedTrack> DupFitTrkKiller::filterAlg2(const vector<L1fittedTrack>& tracks) const {
     // Hard-wired options to play with.
     const bool debug = false;
 
@@ -244,7 +238,7 @@ namespace tmtt {
   }
 
   // Debug printout of which tracks are duplicates.
-  void KillDupFitTrks::printDuplicateTracks(const vector<L1fittedTrack>& tracks) const {
+  void DupFitTrkKiller::printDuplicateTracks(const vector<L1fittedTrack>& tracks) const {
     map<const TP*, vector<const L1fittedTrack*>> tpMap;
     for (const L1fittedTrack& trk : tracks) {
       const TP* tp = trk.matchedTP();
@@ -258,9 +252,8 @@ namespace tmtt {
       if (vecTrk.size() > 1) {
         for (const L1fittedTrack* trk : vecTrk) {
           cout << "  MESS UP : m=" << trk->cellLocationHT().first << "/" << trk->cellLocationFit().first
-               << " c=" << trk->cellLocationHT().second << "/" << trk->cellLocationFit().second
-               << " tp=" << tp->index() << " tp_pt=" << tp->pt() << " fit_pt=" << trk->pt()
-               << " pure=" << trk->purity() << endl;
+               << " c=" << trk->cellLocationHT().second << "/" << trk->cellLocationFit().second << " tp=" << tp->index()
+               << " tp_pt=" << tp->pt() << " fit_pt=" << trk->pt() << " pure=" << trk->purity() << endl;
           cout << "     stubs = ";
           for (const Stub* s : trk->stubs())
             cout << s->index() << " ";

@@ -646,10 +646,8 @@ namespace tmtt {
     idDet_ = detId;
 
     // Note if module is PS or 2S, and whether in barrel or endcap.
-    psModule_ =
-        trackerGeometry->getDetectorType(detId) ==
-        TrackerGeometry::ModuleType::
-            Ph2PSP;  // From https://github.com/cms-sw/cmssw/blob/CMSSW_8_1_X/Geometry/TrackerGeometryBuilder/README.md
+    // From https://github.com/cms-sw/cmssw/blob/CMSSW_8_1_X/Geometry/TrackerGeometryBuilder/README.md
+    psModule_ = (trackerGeometry->getDetectorType(detId) == TrackerGeometry::ModuleType::Ph2PSP);
     barrel_ = detId.subdetId() == StripSubdetector::TOB || detId.subdetId() == StripSubdetector::TIB;
 
     // Get min & max (r,phi,z) coordinates of the centre of the two sensors containing this stub.

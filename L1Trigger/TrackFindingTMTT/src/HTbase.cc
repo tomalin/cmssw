@@ -25,9 +25,6 @@ namespace tmtt {
     // and the track helix parameters, plus the associated truth particle (if any).
     trackCands2D_ = this->calcTrackCands2D();
 
-    // Run algorithm to kill duplicate tracks (e.g. those sharing many hits in common).
-    trackCands2D_ = killDupTrks_.filter(trackCands2D_);
-
     // If requested, kill those tracks in this sector that can't be read out during the time-multiplexed period, because
     // the HT has associated too many stubs to tracks.
     if (settings_->busySectorKill()) {
@@ -128,8 +125,7 @@ namespace tmtt {
                                                                        unsigned int nBinsAxis,
                                                                        float coordAxisMin,
                                                                        float coordAxisBinSize,
-                                                                       unsigned int killSomeHTcells,
-                                                                       bool debug) const {
+                                                                       unsigned int killSomeHTcells) const {
     float coordMin = coordRange.first;
     float coordMax = coordRange.second;
     float coordAvg = (coordRange.first + coordRange.second) / 2.;
@@ -173,20 +169,9 @@ namespace tmtt {
       throw cms::Exception("BadConfig") << "HT: invalid KillSomeHTCells option in cfg";
     }
 
-    if (debug)
-      cout << "Initial Coord range: " << coordMin << " " << coordMax << " " << iCoordBinMin << " " << iCoordBinMax
-           << endl;
-
     // Limit range to dimensions of HT array.
     iCoordBinMin = max(iCoordBinMin, 0);
     iCoordBinMax = min(iCoordBinMax, int(nBinsAxis) - 1);
-
-    if (debug) {
-      float downPhiLim = coordAxisMin + iCoordBinMin * coordAxisBinSize;
-      float upPhiLim = coordAxisMin + (iCoordBinMax + 1) * coordAxisBinSize;
-      cout << "Final Coord range: " << downPhiLim << " " << upPhiLim << " " << iCoordBinMin << " " << iCoordBinMax
-           << endl;
-    }
 
     // If whole range is outside HT array, flag this by setting range to specific values with min > max.
     if (iCoordBinMin > int(nBinsAxis) - 1 || iCoordBinMax < 0) {
@@ -202,9 +187,6 @@ namespace tmtt {
 
   vector<L1track2D> HTbase::calcTrackCands2D() const {
     vector<L1track2D> trackCands2D;
-
-    if (settings_->debug() == 3)
-      cout << "Printing track candidates in an HT array" << endl;
 
     const unsigned int numRows = htArray_.size1();
     const unsigned int numCols = htArray_.size2();
@@ -237,14 +219,8 @@ namespace tmtt {
           // Create track and store it.
           trackCands2D.emplace_back(
               settings_, stubs, cellLocation, helixParams2D, iPhiSec_, iEtaReg_, optoLinkID_, merged);
-
-        } else {
-          if (settings_->debug() == 3)
-            cout << " .";  // Indicate no track in this cell.
         }
       }
-      if (settings_->debug() == 3)
-        cout << endl;
     }
 
     return trackCands2D;

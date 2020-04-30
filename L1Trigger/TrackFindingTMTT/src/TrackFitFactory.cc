@@ -16,19 +16,19 @@ namespace tmtt {
 
   namespace trackFitFactory {
 
-    std::unique_ptr<TrackFitGeneric> create(std::string fitterName, const Settings* settings) {
-      if (fitterName.compare("ChiSquaredFit4") == 0) {
+    std::unique_ptr<TrackFitGeneric> create(const std::string& fitterName, const Settings* settings) {
+      if (fitterName == "ChiSquaredFit4") {
         return std::make_unique<ChiSquaredFit4>(settings, 4);
-      } else if (fitterName.compare("KF4ParamsComb") == 0) {
+      } else if (fitterName == "KF4ParamsComb") {
         return std::make_unique<KFParamsComb>(settings, 4, fitterName);
-      } else if (fitterName.compare("KF5ParamsComb") == 0) {
+      } else if (fitterName == "KF5ParamsComb") {
         return std::make_unique<KFParamsComb>(settings, 5, fitterName);
-      } else if (fitterName.compare("SimpleLR4") == 0) {
+      } else if (fitterName == "SimpleLR4") {
         return std::make_unique<SimpleLR4>(settings);
 #ifdef USE_HLS
-      } else if (fitterName.compare("KF4ParamsCombHLS") == 0) {
+      } else if (fitterName == "KF4ParamsCombHLS") {
         return std::make_unique<KFParamsCombCallHLS>(settings, 4, fitterName);
-      } else if (fitterName.compare("KF5ParamsCombHLS") == 0) {
+      } else if (fitterName == "KF5ParamsCombHLS") {
         return std::make_unique<KFParamsCombCallHLS>(settings, 5, fitterName);
 #endif
       } else {

@@ -4,7 +4,6 @@
 #include "L1Trigger/TrackFindingTMTT/interface/L1track2D.h"
 #include "L1Trigger/TrackFindingTMTT/interface/L1track3D.h"
 #include "L1Trigger/TrackFindingTMTT/interface/HTrphi.h"
-#include "L1Trigger/TrackFindingTMTT/interface/KillDupTrks.h"
 
 #include <vector>
 
@@ -124,9 +123,6 @@ namespace tmtt {
 
     // For debugging
     unsigned int minNumMatchLayers_;
-
-    //=== Contains algorithm used for optional duplicate track removal.
-    KillDupTrks<L1track3D> killDupTrks_;
   };
 
 }  // namespace tmtt

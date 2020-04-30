@@ -19,7 +19,6 @@ namespace tmtt {
     virtual ~KFParamsComb() {}
 
   protected:
-
     //--- Input data
 
     // Seed track helix params & covariance matrix
@@ -35,7 +34,7 @@ namespace tmtt {
     // Derivate of helix intercept point w.r.t. helix params.
     virtual TMatrixD matrixH(const Stub* stub) const;
     // Kalman helix ref point extrapolation matrix
-    virtual TMatrixD matrixF(const Stub* stub = 0, const KalmanState* state = 0) const;
+    virtual TMatrixD matrixF(const Stub* stub, const KalmanState* state) const;
 
     // Convert to physical helix params instead of local ones used by KF
     virtual TVectorD trackParams(const KalmanState* state) const;

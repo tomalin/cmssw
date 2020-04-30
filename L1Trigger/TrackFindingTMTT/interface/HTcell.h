@@ -85,12 +85,13 @@ namespace tmtt {
     // Check if a specific stub was stored to this cell (without checking if it survived filtering).
     bool stubStoredInCell(const Stub* stub) const { return (std::count(vStubs_.begin(), vStubs_.end(), stub) > 0); }
 
-    // Return info useful for deciding if there is a track candidate in this cell.
-    unsigned int numStubs() const { return vFilteredStubs_.size(); }     // Number of filtered stubs
-    unsigned int numLayers() const { return numFilteredLayersInCell_; }  // Number of tracker layers with filtered stubs
-    unsigned int numLayersSubSec() const {
-      return numFilteredLayersInCellBestSubSec_;
-    }  // Number of tracker layers with filtered stubs,  requiring all stubs to be in same subsector to be counted. The number returned is the highest layer count found in any of the subsectors in this sector. If subsectors are not used, it is equal to numLayers().
+    //-- Return info useful for deciding if there is a track candidate in this cell.
+    // Number of filtered stubs
+    unsigned int numStubs() const { return vFilteredStubs_.size(); }
+    // Number of tracker layers with filtered stubs
+    unsigned int numLayers() const { return numFilteredLayersInCell_; }
+    // Number of tracker layers with filtered stubs,  requiring all stubs to be in same subsector to be counted. The number returned is the highest layer count found in any of the subsectors in this sector. If subsectors are not used, it is equal to numLayers().
+    unsigned int numLayersSubSec() const { return numFilteredLayersInCellBestSubSec_; }
 
     // Useful for debugging.
     unsigned int numUnfilteredStubs() const { return vStubs_.size(); }  // Number of unfiltered stubs
@@ -163,10 +164,9 @@ namespace tmtt {
     std::vector<const Stub*> vStubs_;          // Stubs in this cell
     std::vector<const Stub*> vFilteredStubs_;  // Ditto after all requested stub filters (e.g. bend filter)
 
-    unsigned int numFilteredLayersInCell_;  // How many tracker layers these filtered stubs are in
-    // Ditto, but requiring all stubs to be in same subsector to be counted. This number is the highest layer count found in any of the subsectors in this sector.
+    unsigned int numFilteredLayersInCell_;
     unsigned int numFilteredLayersInCellBestSubSec_;
-    std::map<const Stub*, std::vector<bool>> subSectors_;  // Subsectors in sector this stub is consistent with.
+    std::map<const Stub*, std::vector<bool>> subSectors_;  // Subsectors in sector stub consistent with.
   };
 
 }  // namespace tmtt

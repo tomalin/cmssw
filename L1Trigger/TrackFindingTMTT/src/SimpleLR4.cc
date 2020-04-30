@@ -18,6 +18,8 @@ using namespace std;
 namespace tmtt {
 
   SimpleLR4::SimpleLR4(const Settings* settings) : TrackFitGeneric(settings) {
+    debug_ = false;  // Enable debug printout.
+
     // Initialize digitization parameters
     phiMult_ = pow(2., settings_->phiSBits()) / settings_->phiSRange();
     rTMult_ = pow(2., settings_->rtBits()) / settings_->rtRange();
@@ -61,8 +63,8 @@ namespace tmtt {
   }
 
   L1fittedTrack SimpleLR4::fit(const L1track3D& l1track3D) {
-    if (settings_->debug() == 6)
-      cout << "=============== FITTING TRACK ====================" << endl;
+    if (debug_)
+      cout << "=============== FITTING SimpleLR TRACK ====================" << endl;
 
     minStubLayersRed_ = Utility::numLayerCut(Utility::AlgoStep::FIT,
                                              settings_,
@@ -99,39 +101,36 @@ namespace tmtt {
     // Calc helix parameters on Rphi Plane (STEP 1)
     // This loop calculates the sums needed to calculate the numerators and the denominator to compute the helix parameters in the R-Phi plane (q/pT, phiT)
     for (const Stub* stub : l1track3D.stubs()) {
-      // if((const_cast<Stub*>(stub))->psModule()){
       numStubs++;
 
       if (digitize_) {
         (const_cast<Stub*>(stub))->digitizeForHTinput(l1track3D.iPhiSec());
         (const_cast<Stub*>(stub))->digitizeForSFinput();
-        const DigitalStub digiStub = (const_cast<Stub*>(stub))->digitalStub();
+        const DigitalStub digiStub = stub->digitalStub();
 
         SumRPhi = SumRPhi + digiStub.rt() * digiStub.phiS();
         SumR = SumR + digiStub.rt();
         SumPhi = SumPhi + digiStub.phiS();
         SumR2 = SumR2 + digiStub.rt() * digiStub.rt();
-        if (settings_->debug() == 6)
-          cout << "phiS " << digiStub.iDigi_PhiS() << " rT " << digiStub.iDigi_Rt() << " z " << digiStub.iDigi_Z()
-               << endl;
+        if (debug_)
+          cout << "Input stub (digi): phiS " << digiStub.iDigi_PhiS() << " rT " << digiStub.iDigi_Rt() << " z "
+               << digiStub.iDigi_Z() << endl;
       } else {
         float phi = 0;
-        if (l1track3D.iPhiSec() == 0 and (const_cast<Stub*>(stub))->phi() > 0) {
-          phi = (const_cast<Stub*>(stub))->phi() - 2 * M_PI;
-        } else if (l1track3D.iPhiSec() == settings_->numPhiSectors() and (const_cast<Stub*>(stub))->phi() < 0) {
-          phi = (const_cast<Stub*>(stub))->phi() + 2 * M_PI;
+        if (l1track3D.iPhiSec() == 0 and stub->phi() > 0) {
+          phi = stub->phi() - 2 * M_PI;
+        } else if (l1track3D.iPhiSec() == settings_->numPhiSectors() and stub->phi() < 0) {
+          phi = stub->phi() + 2 * M_PI;
         } else {
-          phi = (const_cast<Stub*>(stub))->phi();
+          phi = stub->phi();
         }
-        SumRPhi = SumRPhi + (const_cast<Stub*>(stub))->r() * phi;
-        SumR = SumR + (const_cast<Stub*>(stub))->r();
+        SumRPhi = SumRPhi + stub->r() * phi;
+        SumR = SumR + stub->r();
         SumPhi = SumPhi + phi;
-        SumR2 = SumR2 + (const_cast<Stub*>(stub))->r() * (const_cast<Stub*>(stub))->r();
-        if (settings_->debug() == 6)
-          cout << "phi " << phi << " r " << (const_cast<Stub*>(stub))->r() << " z " << (const_cast<Stub*>(stub))->z()
-               << endl;
+        SumR2 = SumR2 + stub->r() * stub->r();
+        if (debug_)
+          cout << "InputStub (float): phi " << phi << " r " << stub->r() << " z " << stub->z() << endl;
       }
-      // }
     }
 
     double numeratorPt, digiNumeratorPt;
@@ -171,81 +170,77 @@ namespace tmtt {
       phiT = floor(phiT * phiTMult_) / phiTMult_;
     }
 
-    if (settings_->debug() == 6 and digitize_)
-      cout << setw(10) << "First Helix parameters: qOverPt = " << qOverPt << " (" << floor(qOverPt * qOverPtMult_)
-           << "), phiT = " << phiT << " (" << floor(phiT * phiTMult_) << ") " << endl;
-
-    if (settings_->debug() == 6 and !digitize_)
-      cout << "First Helix Parameters: qOverPt = " << qOverPt << " phi0 " << phi0 << endl;
+    if (debug_) {
+      if (digitize_) {
+        cout << setw(10) << "Input helix (digi): qOverPt = " << qOverPt << " (" << floor(qOverPt * qOverPtMult_)
+             << "), phiT = " << phiT << " (" << floor(phiT * phiTMult_) << ") " << endl;
+      } else {
+        cout << "Input Helix (float): qOverPt = " << qOverPt << " phi0 " << phi0 << endl;
+      }
+    }
 
     // ================== RESIDUAL CALCULATION ON RPHI ========================
     std::vector<std::pair<const Stub*, double> > vRes;
     unsigned int psStubs = 0;
     for (const Stub* stub : l1track3D.stubs()) {
-      if ((const_cast<Stub*>(stub))->psModule())
+      if (stub->psModule())
         psStubs++;
       double ResPhi;
 
       if (digitize_) {
         (const_cast<Stub*>(stub))->digitizeForHTinput(l1track3D.iPhiSec());
         (const_cast<Stub*>(stub))->digitizeForSFinput();
-        const DigitalStub digiStub = (const_cast<Stub*>(stub))->digitalStub();
+        const DigitalStub digiStub = stub->digitalStub();
 
-        ResPhi = digiStub.iDigi_PhiS() * pow(2., shiftingBitsDenRPhi_ - shiftingBitsPt_) -
-                 floor(phiT * phiTMult_) * pow(2.,
-                                               shiftingBitsDenRPhi_ - shiftingBitsPt_ - settings_->slr_phi0Bits() +
-                                                   settings_->phiSBits()) -
-                 floor(qOverPt * qOverPtMult_) * digiStub.iDigi_Rt();
+        ResPhi =
+            digiStub.iDigi_PhiS() * pow(2., shiftingBitsDenRPhi_ - shiftingBitsPt_) -
+            floor(phiT * phiTMult_) *
+                pow(2., shiftingBitsDenRPhi_ - shiftingBitsPt_ - settings_->slr_phi0Bits() + settings_->phiSBits()) -
+            floor(qOverPt * qOverPtMult_) * digiStub.iDigi_Rt();
 
-        if (settings_->debug() == 6) {
-          // cout << "floor(phiT*phiTMult_) " << floor(phiT*phiTMult_) << endl;
-          // cout << "dsp_PhiSPhiT "<< digiStub.iDigi_PhiS() - floor(phiT*phiTMult_) << " shift_right(dsp_QoverPt_Rt,divider_shift- divider_pt) "<< floor(qOverPt*qOverPtMult_)*digiStub.iDigi_Rt()/(pow(2., ShiftingBits_- shiftingBitsPt_ ) )<< " settings_->rtRange() "<< settings_->rtRange() << endl;
-          cout << "DIGI RESIDUAL " << ResPhi << endl;
-        }
         ResPhi = floor(ResPhi) / resMult_;
       }
 
       else {
-        ResPhi = reco::deltaPhi((const_cast<Stub*>(stub))->phi(), phi0 + qOverPt * (const_cast<Stub*>(stub))->r());
+        ResPhi = reco::deltaPhi(stub->phi(), phi0 + qOverPt * stub->r());
       }
 
       double Res = std::abs(ResPhi);
-      // if(digitize_) Res = floor(Res*phiMult_)/phiMult_;
 
       std::pair<const Stub*, double> ResStubPair(stub, Res);
       vRes.push_back(ResStubPair);
-      if (settings_->debug() == 6) {
+      if (debug_) {
         if (const_cast<Stub*>(stub)->assocTP() != nullptr)
-          cout << " Stub Residual " << Res << " TP " << const_cast<Stub*>(stub)->assocTP()->index() << endl;
+          cout << " Stub rphi residual " << Res << " TP " << const_cast<Stub*>(stub)->assocTP()->index() << endl;
         else
-          cout << " Stub Residual " << Res << " TP nullptr" << endl;
+          cout << " Stub rphi residual " << Res << " TP nullptr" << endl;
       }
     }
 
-    double LargResidual = 9999.;
+    double largestResidual = 9999.;
     // Find largest residuals
-    while (vRes.size() > minStubLayersRed_ and LargResidual > settings_->ResidualCut()) {
+    while (vRes.size() > minStubLayersRed_ and largestResidual > settings_->ResidualCut()) {
       std::vector<std::pair<const Stub*, double> >::iterator maxResIt =
           max_element(vRes.begin(), vRes.end(), pair_compare);
-      LargResidual = (*maxResIt).second;
-      if (settings_->debug() == 6)
-        cout << "Largest Residual " << LargResidual << endl;
+      largestResidual = (*maxResIt).second;
+      if (debug_)
+        cout << "Largest Residual " << largestResidual << endl;
 
-      if (LargResidual > settings_->ResidualCut()) {
+      if (largestResidual > settings_->ResidualCut()) {
         if ((*maxResIt).first->psModule()) {
           if (psStubs > 2) {
-            if (settings_->debug() == 6)
+            if (debug_)
               cout << "removing PS residual " << (*maxResIt).second << endl;
             vRes.erase(maxResIt);
             psStubs--;
           } else {
-            if (settings_->debug() == 6)
+            if (debug_)
               cout << "residual " << (*maxResIt).second << " set to -1. " << endl;
             (*maxResIt).second = -1.;
           }
         } else {
           vRes.erase(maxResIt);
-          if (settings_->debug() == 6)
+          if (debug_)
             cout << "removing residual " << (*maxResIt).second << endl;
         }
       }
@@ -272,54 +267,50 @@ namespace tmtt {
     psStubs = 0;
 
     for (const Stub* stub : fitStubs) {
-      if ((const_cast<Stub*>(stub))->psModule())
+      if (stub->psModule())
         psStubs++;
 
       numStubs++;
       if (digitize_) {
         (const_cast<Stub*>(stub))->digitizeForHTinput(l1track3D.iPhiSec());
-        // (const_cast<Stub*>(stub))->digitizeForSFinput();
-        const DigitalStub digiStub = (const_cast<Stub*>(stub))->digitalStub();
+        const DigitalStub digiStub = stub->digitalStub();
         SumRPhi += digiStub.rt() * digiStub.phiS();
         SumR += digiStub.rt();
         SumPhi += digiStub.phiS();
         SumR2 += digiStub.rt() * digiStub.rt();
-        if ((const_cast<Stub*>(stub))->psModule()) {
+        if (stub->psModule()) {
           SumRZ += digiStub.rt() * digiStub.z();
           SumZ += digiStub.z();
           SumR_ps += digiStub.rt();
           SumR2_ps += digiStub.rt() * digiStub.rt();
         }
-        if (settings_->debug() == 6) {
+        if (debug_) {
           cout << "phiS " << digiStub.iDigi_PhiS() << " rT " << digiStub.iDigi_Rt() << " z " << digiStub.iDigi_Z()
                << endl;
         }
       } else {
         float phi = 0;
-        if (l1track3D.iPhiSec() == 0 and (const_cast<Stub*>(stub))->phi() > 0) {
-          phi = (const_cast<Stub*>(stub))->phi() - 2 * M_PI;
-        } else if (l1track3D.iPhiSec() == settings_->numPhiSectors() and (const_cast<Stub*>(stub))->phi() < 0) {
-          phi = (const_cast<Stub*>(stub))->phi() + 2 * M_PI;
+        if (l1track3D.iPhiSec() == 0 and stub->phi() > 0) {
+          phi = stub->phi() - 2 * M_PI;
+        } else if (l1track3D.iPhiSec() == settings_->numPhiSectors() and stub->phi() < 0) {
+          phi = stub->phi() + 2 * M_PI;
         } else {
-          phi = (const_cast<Stub*>(stub))->phi();
+          phi = stub->phi();
         }
 
-        SumRPhi += (const_cast<Stub*>(stub))->r() * phi;
-        SumR += (const_cast<Stub*>(stub))->r();
+        SumRPhi += stub->r() * phi;
+        SumR += stub->r();
         SumPhi += phi;
-        SumR2 += (const_cast<Stub*>(stub))->r() * (const_cast<Stub*>(stub))->r();
-        if ((const_cast<Stub*>(stub))->psModule()) {
-          SumRZ += (const_cast<Stub*>(stub))->r() * (const_cast<Stub*>(stub))->z();
-          SumZ += (const_cast<Stub*>(stub))->z();
-          SumR_ps += (const_cast<Stub*>(stub))->r();
-          SumR2_ps += (const_cast<Stub*>(stub))->r() * (const_cast<Stub*>(stub))->r();
+        SumR2 += stub->r() * stub->r();
+        if (stub->psModule()) {
+          SumRZ += stub->r() * stub->z();
+          SumZ += stub->z();
+          SumR_ps += stub->r();
+          SumR2_ps += stub->r() * stub->r();
         }
-        if (settings_->debug() == 6)
-          cout << "phi " << phi << " r " << (const_cast<Stub*>(stub))->r() << " z " << (const_cast<Stub*>(stub))->z()
-               << endl;
+        if (debug_)
+          cout << "phi " << phi << " r " << stub->r() << " z " << stub->z() << endl;
       }
-
-      // }
     }
 
     numeratorZ0 = (SumR2_ps * SumZ - SumR_ps * SumRZ);
@@ -371,11 +362,7 @@ namespace tmtt {
       phiT = floor(phiT * phiTMult_) / phiTMult_;
     }
 
-    // cout << "z0"
-
-    // qOverPt /= -invPtToDPhi_;
-
-    if (settings_->debug() == 6 and digitize_) {
+    if (debug_ and digitize_) {
       cout << "HT mbin " << int(l1track3D.cellLocationHT().first) - 16 << " cbin "
            << int(l1track3D.cellLocationHT().second) - 32 << " iPhi " << l1track3D.iPhiSec() << " iEta "
            << l1track3D.iEtaReg() << endl;
@@ -387,7 +374,7 @@ namespace tmtt {
            << "), phiT = " << phiT << " (" << floor(phiT * phiTMult_) << "), zT = " << zT << " (" << floor(zT * z0Mult_)
            << "), tanLambda = " << tanLambda << " (" << floor(tanLambda * tanLambdaMult_) << ")"
            << " z0 " << z0 << endl;
-    } else if (settings_->debug() == 6) {
+    } else if (debug_) {
       cout << setw(10) << "Final Helix parameters: qOverPt = " << qOverPt << ", phi0 = " << phi0 << ", z0 = " << z0
            << ", tanLambda = " << tanLambda << endl;
     }
@@ -401,34 +388,30 @@ namespace tmtt {
       if (digitize_) {
         (const_cast<Stub*>(stub))->digitizeForHTinput(l1track3D.iPhiSec());
         (const_cast<Stub*>(stub))->digitizeForSFinput();
-        const DigitalStub digiStub = (const_cast<Stub*>(stub))->digitalStub();
+        const DigitalStub digiStub = stub->digitalStub();
         ResPhi = digiStub.phiS() - phiT - qOverPt * digiStub.rt();
         ResZ = digiStub.z() - zT - tanLambda * digiStub.rt();
-        // ResZ = digiStub.z() - z0 - tanLambda*digiStub.r();
       } else {
-        ResPhi = reco::deltaPhi((const_cast<Stub*>(stub))->phi(), phi0 + qOverPt * (const_cast<Stub*>(stub))->r());
-        ResZ = (const_cast<Stub*>(stub))->z() - z0 - tanLambda * (const_cast<Stub*>(stub))->r();
+        ResPhi = reco::deltaPhi(stub->phi(), phi0 + qOverPt * stub->r());
+        ResZ = stub->z() - z0 - tanLambda * stub->r();
       }
 
       double RPhiSigma = 0.0002;
-      float RZSigma = (const_cast<Stub*>(stub))->zErr() + std::abs(tanLambda) * (const_cast<Stub*>(stub))->rErr();
+      float RZSigma = stub->zErr() + std::abs(tanLambda) * stub->rErr();
 
-      if (not(const_cast<Stub*>(stub))->barrel())
+      if (not stub->barrel())
         RPhiSigma = 0.0004;
 
       if (digitize_) {
         RPhiSigma = floor(RPhiSigma * phiMult_) / phiMult_;
       }
 
-      // if(!(const_cast<Stub*>(stub))->psModule()) RZSigma = 5;
-
       ResPhi /= RPhiSigma;
-      // cout << "zT "<< zT << " tanLambda "<< t<< RZSigma << endl;
       ResZ /= RZSigma;
 
       chi2_phi += std::abs(ResPhi * ResPhi);
       chi2_z += std::abs(ResZ * ResZ);
-      if (settings_->debug() == 6) {
+      if (debug_) {
         cout << "Stub ResPhi " << ResPhi * RPhiSigma << " ResSigma " << RPhiSigma << " Res " << ResPhi << " chi2 "
              << chi2_phi << endl;
         cout << "Stub ResZ " << ResZ * RZSigma << " ResSigma " << RZSigma << " Res " << ResZ << " chi2 " << chi2_z
@@ -444,14 +427,13 @@ namespace tmtt {
     if (digitize_)
       chi2 = floor(chi2 * chi2Mult_) / chi2Mult_;
 
-    // cout << "chi2 "<< chi2 << " phi "<< chi2_phi << " z "<< chi2_z << endl;
     constexpr unsigned int nHelixPar = 4;
     float dof = 2 * fitStubs.size() - nHelixPar;
     float chi2dof = chi2 / dof;
     if (chi2 < chi2cut_)
       accepted = true;
 
-    if (settings_->debug() == 6)
+    if (debug_)
       cout << "qOverPt " << qOverPt << " phiT " << phiT << endl;
 
     // This condition can only happen if cfg param TrackFitCheat = True.
@@ -474,7 +456,7 @@ namespace tmtt {
       if (settings_->enableDigitize())
         fitTrk.digitizeTrack("SimpleLR4");
 
-      if (settings_->debug() == 6 and digitize_) {
+      if (debug_ and digitize_) {
         cout << "Digitized parameters " << endl;
         cout << "HT mbin " << int(l1track3D.cellLocationHT().first) - 16 << " cbin "
              << int(l1track3D.cellLocationHT().second) - 32 << " iPhi " << l1track3D.iPhiSec() << " iEta "
@@ -486,16 +468,14 @@ namespace tmtt {
              << floor(tanLambda * tanLambdaMult_) << ")" << endl;
       }
 
-      if (settings_->debug() == 6) {
+      if (debug_) {
         cout << "FitTrack helix parameters " << int(fitTrk.cellLocationFit().first) - 16 << ", "
              << int(fitTrk.cellLocationFit().second) - 32 << " HT parameters "
-             << int(fitTrk.cellLocationHT().first) - 16 << ", " << int(fitTrk.cellLocationHT().second) - 32
-             << endl;
+             << int(fitTrk.cellLocationHT().first) - 16 << ", " << int(fitTrk.cellLocationHT().second) - 32 << endl;
 
         if (fitTrk.matchedTP() != nullptr) {
           cout << "VERY GOOD! " << chi2dof << endl;
-          cout << "TP qOverPt " << fitTrk.matchedTP()->qOverPt() << " phi0 " << fitTrk.matchedTP()->phi0()
-               << endl;
+          cout << "TP qOverPt " << fitTrk.matchedTP()->qOverPt() << " phi0 " << fitTrk.matchedTP()->phi0() << endl;
           if (!accepted)
             cout << "BAD CHI2 " << chi2 << " chi2/ndof " << chi2dof << endl;
         } else {

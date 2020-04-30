@@ -57,17 +57,13 @@ namespace tmtt {
   //=== (i.e. If there is the slightest chance of reconstructing it, so as to measure fake rate).
 
   void TP::fillUse() {
-    const bool useOnlyInTimeParticles = false;
-    const bool useOnlyTPfromPhysicsCollisionFalse = false;
+    constexpr bool useOnlyInTimeParticles = false;
+    constexpr bool useOnlyTPfromPhysicsCollisionFalse = false;
     // Use looser cuts here those those used for tracking efficiency measurement.
     // Keep only those TP that have a chance (allowing for finite track resolution) of being reconstructed as L1 tracks. L1 tracks not matching these TP will be defined as fake.
 
-    const vector<int> genPdgIdsAllUnsigned = {
-        11,
-        13,
-        211,
-        321,
-        2212};  // Include all possible particle types here, as if some are left out, L1 tracks matching one of missing types will be declared fake.
+    // Include all possible particle types here, as if some are left out, L1 tracks matching one of missing types will be declared fake.
+    static const vector<int> genPdgIdsAllUnsigned = {11, 13, 211, 321, 2212};
     vector<int> genPdgIdsAll;
     for (unsigned int i = 0; i < genPdgIdsAllUnsigned.size(); i++) {
       genPdgIdsAll.push_back(genPdgIdsAllUnsigned[i]);
@@ -77,20 +73,23 @@ namespace tmtt {
     // Range big enough to include all TP needed to measure tracking efficiency
     // and big enough to include any TP that might be reconstructed for fake rate measurement.
     const float ptMin = min(settings_->genMinPt(), 0.7 * settings_->houghMinPt());
+    constexpr double ptMax = 9.9e9;
     const float etaMax = max(settings_->genMaxAbsEta(), 0.2 + std::abs(settings_->etaRegions()[0]));
+    constexpr double fixedVertRcut = 10.;
+    constexpr double fixedVertZcut = 35.;
 
-    static thread_local TrackingParticleSelector trackingParticleSelector(ptMin,
-                                                                          9999999999,
-                                                                          -etaMax,
-                                                                          etaMax,
-                                                                          max(10.0, settings_->genMaxVertR()),
-                                                                          max(35.0, settings_->genMaxVertZ()),
-                                                                          0,
-                                                                          useOnlyTPfromPhysicsCollisionFalse,
-                                                                          useOnlyInTimeParticles,
-                                                                          true,
-                                                                          false,
-                                                                          genPdgIdsAll);
+    static const TrackingParticleSelector trackingParticleSelector(ptMin,
+                                                                   ptMax,
+                                                                   -etaMax,
+                                                                   etaMax,
+                                                                   max(fixedVertRcut, settings_->genMaxVertR()),
+                                                                   max(fixedVertZcut, settings_->genMaxVertZ()),
+                                                                   0,
+                                                                   useOnlyTPfromPhysicsCollisionFalse,
+                                                                   useOnlyInTimeParticles,
+                                                                   true,
+                                                                   false,
+                                                                   genPdgIdsAll);
 
     use_ = trackingParticleSelector(*trackingParticlePtr_);
   }
@@ -100,20 +99,21 @@ namespace tmtt {
   void TP::fillUseForEff() {
     useForEff_ = false;
     if (use_) {
-      const bool useOnlyInTimeParticles = true;
-      const bool useOnlyTPfromPhysicsCollision = true;
-      static thread_local TrackingParticleSelector trackingParticleSelector(settings_->genMinPt(),
-                                                                            9999999999,
-                                                                            -settings_->genMaxAbsEta(),
-                                                                            settings_->genMaxAbsEta(),
-                                                                            settings_->genMaxVertR(),
-                                                                            settings_->genMaxVertZ(),
-                                                                            0,
-                                                                            useOnlyTPfromPhysicsCollision,
-                                                                            useOnlyInTimeParticles,
-                                                                            true,
-                                                                            false,
-                                                                            settings_->genPdgIds());
+      constexpr bool useOnlyInTimeParticles = true;
+      constexpr bool useOnlyTPfromPhysicsCollision = true;
+      constexpr double ptMax = 9.9e9;
+      static const TrackingParticleSelector trackingParticleSelector(settings_->genMinPt(),
+                                                                     ptMax,
+                                                                     -settings_->genMaxAbsEta(),
+                                                                     settings_->genMaxAbsEta(),
+                                                                     settings_->genMaxVertR(),
+                                                                     settings_->genMaxVertZ(),
+                                                                     0,
+                                                                     useOnlyTPfromPhysicsCollision,
+                                                                     useOnlyInTimeParticles,
+                                                                     true,
+                                                                     false,
+                                                                     settings_->genPdgIds());
 
       useForEff_ = trackingParticleSelector(*trackingParticlePtr_);
 
@@ -160,28 +160,31 @@ namespace tmtt {
   }
 
   void TP::fillNearestJetInfo(const reco::GenJetCollection* genJets) {
-    double minDR = 999;
+    double minDR = 999.;
     double ptOfNearestJet = -1;
 
     reco::GenJetCollection::const_iterator iterGenJet;
     for (iterGenJet = genJets->begin(); iterGenJet != genJets->end(); ++iterGenJet) {
       reco::GenJet myJet = reco::GenJet(*iterGenJet);
 
-      if (myJet.pt() < 30.0)
-        continue;
-      if (std::abs(myJet.eta()) > 2.5)
-        continue;
+      // Don't consider GenJets failing these cuts.
+      constexpr float minPt = 30.0;
+      constexpr float maxEta = 2.5;
 
-      double deltaR = reco::deltaR(this->eta(), this->phi0(), myJet.eta(), myJet.phi());
+      if (myJet.pt() > minPt && std::abs(myJet.eta()) > maxEta) {
+        double deltaR = reco::deltaR(this->eta(), this->phi0(), myJet.eta(), myJet.phi());
 
-      if (deltaR < 0.4 && deltaR < minDR) {
-        minDR = deltaR;
-        ptOfNearestJet = myJet.pt();
+        if (deltaR < minDR) {
+          minDR = deltaR;
+          ptOfNearestJet = myJet.pt();
+        }
       }
     }
 
-    tpInJet_ = (minDR < 0.4) ? true : false;
-    nearestJetPt_ = ptOfNearestJet;
+    // Only consider GenJets within this distance of TP.
+    constexpr float cutDR = 0.4;
+    tpInJet_ = (minDR < cutDR);
+    nearestJetPt_ = tpInJet_ ? ptOfNearestJet : -1.;
   }
 
 }  // namespace tmtt

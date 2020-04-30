@@ -93,7 +93,7 @@ namespace tmtt {
     bool insideEtaRange(const Stub* stub, float zRangeMin, float zRangeMax) const;
 
     // Digitize a floating point number to 2s complement integer, dropping anything after the decimal point. (Kristian Harder)
-    Long64_t forceBitWidth(const float value, const UInt_t nBits) const;
+    int64_t forceBitWidth(const float value, const UInt_t nBits) const;
 
     // Check if stub is within subsectors in eta that sector may be divided into. Uses digitized calculation corresponding to GP firmware. (Kristian Harder)
     std::vector<bool> subEtaFwCalc(const int rT, const int z) const;

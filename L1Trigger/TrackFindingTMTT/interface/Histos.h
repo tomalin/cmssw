@@ -29,7 +29,7 @@ namespace tmtt {
   class TP;
   class Sector;
   class HTrphi;
-  class Get3Dtracks;
+  class Make3Dtracks;
   class L1fittedTrack;
   class L1fittedTrk4and5;
 
@@ -45,7 +45,7 @@ namespace tmtt {
     virtual void fill(const InputData& inputData,
                       const matrix<Sector>& mSectors,
                       const matrix<HTrphi>& mHtPhis,
-                      const matrix<Get3Dtracks> mGet3Dtrks,
+                      const matrix<Make3Dtracks> mGet3Dtrks,
                       const std::map<std::string, std::vector<L1fittedTrack>>& fittedTracks);
 
     // Print tracking performance summary & make tracking efficiency histograms.
@@ -73,7 +73,7 @@ namespace tmtt {
     virtual void fillInputData(const InputData& inputData);
     virtual void fillEtaPhiSectors(const InputData& inputData, const matrix<Sector>& mSectors);
     virtual void fillRphiHT(const matrix<HTrphi>& mHtRphis);
-    virtual void fillRZfilters(const matrix<Get3Dtracks>& mGet3Dtrks);
+    virtual void fillRZfilters(const matrix<Make3Dtracks>& mGet3Dtrks);
     virtual void fillTrackCands(const InputData& inputData, const std::vector<L1track3D>& tracks, std::string tName);
     virtual void fillTrackFitting(const InputData& inputData,
                                   const std::map<std::string, std::vector<L1fittedTrack>>& fittedTracks);

@@ -39,8 +39,6 @@ namespace tmtt {
     const std::vector<Stub>& getAllStubs() const { return vAllStubs_; }
 
   private:
-    // const edm::EDGetTokenT<TrackingParticleCollection> inputTag;
-
     // Can optionally be used to sort stubs by bend.
     struct SortStubsInBend {
       inline bool operator()(const Stub* stub1, const Stub* stub2) {
@@ -54,10 +52,10 @@ namespace tmtt {
     std::vector<TP> vTPs_;             // tracking particles
     std::vector<const Stub*> vStubs_;  // stubs that would be output by the front-end readout electronics.
 
-    //--- of minor importance ...
+    //--- Used for a few minor studies ...
 
-    std::vector<Stub>
-        vAllStubs_;  // all stubs, even those that would fail any tightened front-end readout electronic cuts specified in section StubCuts of Analyze_Defaults_cfi.py. (Only used to measure the efficiency of these cuts).
+    // all stubs, even those that would fail any tightened front-end readout electronic cuts specified in section StubCuts of Analyze_Defaults_cfi.py. (Only used to measure the efficiency of these cuts).
+    std::vector<Stub> vAllStubs_;
   };
 
 }  // namespace tmtt

@@ -162,10 +162,6 @@ namespace tmtt {
       }
     }
 
-    //--- Options for duplicate track removal after running HT.
-    unsigned int dupTrkAlgRphi = settings->dupTrkAlgRphi();
-    HTbase::killDupTrks_.init(settings, dupTrkAlgRphi);
-
     // Resize HT array to suit these specifications, and initialise each cell with configuration parameters.
     HTbase::htArray_.resize(nBinsQoverPtAxis_, nBinsPhiTrkAxis_, false);
     //

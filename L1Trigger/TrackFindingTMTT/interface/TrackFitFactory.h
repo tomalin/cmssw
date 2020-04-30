@@ -18,7 +18,7 @@ namespace tmtt {
   namespace trackFitFactory {
 
     // Function to produce a fitter based on a std::string
-    std::unique_ptr<TrackFitGeneric> create(std::string fitterName, const Settings* settings);
+    std::unique_ptr<TrackFitGeneric> create(const std::string& fitterName, const Settings* settings);
 
   }  // namespace trackFitFactory
 

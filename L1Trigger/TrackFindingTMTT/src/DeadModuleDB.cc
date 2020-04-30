@@ -50,7 +50,8 @@ namespace tmtt {
     const float phiMax = 2.5;
     const float zMin = -100.0;
     const float zMax = 0.0;
-    deadBarrelRegions_[iLayer].push_back(DeadModuleDB::DeadBarrelRegion(phiMin, phiMax, zMin, zMax));
+    DeadModuleDB::DeadBarrelRegion d = {phiMin, phiMax, zMin, zMax};
+    deadBarrelRegions_[iLayer].push_back(d);
   }
 
   //=== Define sectors in which the cut on number of layer numbers on tracks should be reduced by 1, because

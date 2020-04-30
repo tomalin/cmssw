@@ -1,5 +1,5 @@
-#ifndef L1Trigger_TrackFindingTMTT_Get3Dtracks_h
-#define L1Trigger_TrackFindingTMTT_Get3Dtracks_h
+#ifndef L1Trigger_TrackFindingTMTT_Make3Dtracks_h
+#define L1Trigger_TrackFindingTMTT_Make3Dtracks_h
 
 #include "L1Trigger/TrackFindingTMTT/interface/TrkRZfilter.h"
 #include "L1Trigger/TrackFindingTMTT/interface/L1track3D.h"
@@ -23,9 +23,9 @@ namespace tmtt {
   class Stub;
   class TP;
 
-  class Get3Dtracks {
+  class Make3Dtracks {
   public:
-    Get3Dtracks()
+    Make3Dtracks()
         : settings_(nullptr),
           iPhiSec_(0),
           iEtaReg_(0),
@@ -33,7 +33,7 @@ namespace tmtt {
           etaMaxSector_(0),
           phiCentreSector_(0),
           runRZfilter_(false) {}
-    ~Get3Dtracks() {}
+    ~Make3Dtracks() {}
 
     //=== Main routines to make 3D tracks.
 

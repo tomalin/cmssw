@@ -183,9 +183,8 @@ TMTrackProducer_params = cms.PSet(
      BusyInputSectorKill  = cms.bool(True),
      BusyInputSectorNumStubs  = cms.uint32(162),  #  Or 144 if only 320 MHz FW
      # Multiplex the outputs from several HTs onto a single pair of output optical links?
-     # Options: 0 = disable Mux; 1 = Dec. 2016 Mux; 2 = Mar 2018 Mux (for transverse HT readout by m-bin). 
-     # (The mux algorithm is hard-wired in class MuxHToutputs, and currently only works if option BusySectorMbinRanges is being used); 3 = Sept 2019 Mux (transerse HT readout by m-bin), with single m bin in entire nonant going to each link.
-     MuxOutputsHT = cms.uint32(3),
+     # Options: 0 = disable Mux; 1 = Sept 2019 Mux (transerse HT readout by m-bin), with single m bin in entire nonant going to each link.
+     MuxOutputsHT = cms.uint32(1),
      # If this is non-empty, then only the specified eta sectors are enabled, to study them individually.
      EtaRegWhitelist = cms.vuint32()
   ),
@@ -236,21 +235,9 @@ TMTrackProducer_params = cms.PSet(
   #=== Specification of algorithm to eliminate duplicate tracks.
 
   DupTrkRemoval = cms.PSet(
-    #--- Specify which duplicate removal algorithm(s) to run:  option 0 means disable duplicate track removal, whilst > 0 runs a specific algorithm (options 8 & 25 are only ones implemented).
-    # Algorithm used for duplicate removal of 2D tracks produced by r-phi HT. Assumed to run before tracks are output from HT board.
-    DupTrkAlgRphi = cms.uint32(0),
-    #DupTrkAlgRphi = cms.uint32(25),
-    # Algorithm run on all 3D tracks within each sector after r-z track filter.
-    # (Ignored if no r-z track filter is run).
-    DupTrkAlg3D = cms.uint32(0),
-    #DupTrkAlg3D = cms.uint32(8),
-    # Algorithm run on tracks after the track helix fit has been done. (Ian's talk in 26/8/2016 meeting)
-    # To use it, you must set DupTrkAlgRphi = DupTrkAlg3D = 0.
-    DupTrkAlgFit   = cms.uint32(50),
-    #--- Options used by individual algorithms.
-    # Parameter for "inverse" OSU duplicate-removal algorithm
-    # Specifies minimum number of common stubs in same number of layers to keep smaller candidate in comparison.
-    DupTrkMinCommonHitsLayers = cms.uint32(5),
+    # Algorithm run on tracks after the track helix fit has been done.
+    # (Disable dup removal = 0; two alternative algos = 1 or 2).
+    DupTrkAlgFit   = cms.uint32(1)
   ),
 
   #=== Rules for deciding when a reconstructed L1 track matches a MC truth particle (i.e. tracking particle).
@@ -367,7 +354,7 @@ TMTrackProducer_params = cms.PSet(
      KalmanMinNumStubs       = cms.uint32(4),
      # Fit will attempt to add up to this nummber of stubs to each fitted tracks, but won't bother adding more.
      KalmanMaxNumStubs       = cms.uint32(4),
-     # For 5-param helix fits, calculate also beam-constrained helix params after fit is complete, & use them for duplicate removal if DupTrkAlgFit=50.
+     # For 5-param helix fits, calculate also beam-constrained helix params after fit is complete, & use them for duplicate removal if DupTrkAlgFit=1.
      KalmanAddBeamConstr     = cms.bool(True),
      # Remove requirement of at least 2 PS layers per track.
      KalmanRemove2PScut      = cms.bool(False),
@@ -410,7 +397,7 @@ TMTrackProducer_params = cms.PSet(
      #
      #--- Or this use communal way developed with Tracklet of studying dead modules
      # Emulate dead/inefficient modules using the StubKiller code, with stubs killed according to the scenarios of the Stress Test group. 
-     # (0=Don't kill any stubs; 1-5 = Scenarios from https://github.com/EmyrClement/StubKiller/blob/master/README.md).
+     # (0=Don't kill any stubs; 1-5 = Scenarios described in StubKiller.cc) 
      KillScenario = cms.uint32(0),
      # Modify TMTT tracking to try to recover tracking efficiency in presence of dead modules. (Does nothing if KillScenario = 0).
      KillRecover = cms.bool (True)
@@ -462,12 +449,8 @@ TMTrackProducer_params = cms.PSet(
   
   Hybrid = cms.bool( False),
 
-  #===== Debug printout & plots
-  Debug  = cms.uint32(1), #(0=none, 1=print #tracks/event, 2+ print more info)
+  #===== Debug plot options
   # When making helix parameter resolution plots, only use particles from the physics event (True)
   # or also use particles from pileup (False) ?
-  ResPlotOpt = cms.bool (True),
-  # Specify sector for which debug histos for hexagonal HT will be made.
-  iPhiPlot = cms.uint32(0),
-  iEtaPlot = cms.uint32(9)
+  ResPlotOpt = cms.bool (True)
 )

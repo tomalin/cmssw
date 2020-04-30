@@ -3,7 +3,6 @@
 
 #include "L1Trigger/TrackFindingTMTT/interface/HTcell.h"
 #include "L1Trigger/TrackFindingTMTT/interface/L1track2D.h"
-#include "L1Trigger/TrackFindingTMTT/interface/KillDupTrks.h"
 
 #include "boost/numeric/ublas/matrix.hpp"
 #include <vector>
@@ -39,10 +38,6 @@ namespace tmtt {
       iEtaReg_ = iEtaReg;
       optoLinkID_ = this->calcOptoLinkID();
     }
-
-    // Add stub to HT array.
-    // N.B. The argument lists for this are different for r-phi & r-z HT, so unfortunately it can't be declared in base class.
-    //virtual void store(const Stub*) = 0;
 
     // Termination. Causes HT array to search for tracks etc.
     virtual void end();
@@ -116,8 +111,7 @@ namespace tmtt {
                                                                               unsigned int nBinsAxis,
                                                                               float coordAxisMin,
                                                                               float coordAxisBinSize,
-                                                                              unsigned int killSomeHTcells,
-                                                                              bool debug = false) const;
+                                                                              unsigned int killSomeHTcells) const;
 
   private:
     // Return a list of all track candidates found in this array, giving access to all the stubs on each one
@@ -148,9 +142,6 @@ namespace tmtt {
     // Hough transform array.
     // This has two dimensions, representing the two track helix parameters being varied.
     matrix<HTcell> htArray_;
-
-    // Contains algorithm used for duplicate track removal.
-    KillDupTrks<L1track2D> killDupTrks_;
 
     // List of all track candidates found by HT & their associated properties.
     // If a duplicate track filter was run inside the HT, this will contain the reduced list of tracks passing this filter.

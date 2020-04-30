@@ -5,8 +5,7 @@ using namespace std;
 
 namespace tmtt {
 
-  ChiSquaredFit4::ChiSquaredFit4(const Settings* settings, const uint nPar)
-      : ChiSquaredFitBase(settings, nPar) {
+  ChiSquaredFit4::ChiSquaredFit4(const Settings* settings, const uint nPar) : ChiSquaredFitBase(settings, nPar) {
     largestresid_ = -1.0;
     ilargestresid_ = -1;
   }

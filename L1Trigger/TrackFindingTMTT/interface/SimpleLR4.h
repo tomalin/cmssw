@@ -26,6 +26,8 @@ namespace tmtt {
     L1fittedTrack fit(const L1track3D& l1track3D);
 
   protected:
+    bool debug_;
+
     float phiSectorWidth_;
     float phiSectorCentre_;
     float phiNonantWidth_;

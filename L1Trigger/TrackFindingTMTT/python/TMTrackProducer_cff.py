@@ -2,9 +2,9 @@ import FWCore.ParameterSet.Config as cms
 
 #---------------------------------------------------------------------------------------------------------
 # This describes the full TMTT track reconstruction chain with 3 GeV threshold, where:
-# the GP divides the tracker into 18 eta sectors (each sub-divided into 2 virtual eta subsectors);  
-# the HT uses a  32x18 array followed by 2x2 Mini-HT array, with transverese HT readout & multiplexing, 
-# followed by the KF (or optionally SF+SLR) track fit; duplicate track removal (Algo50) is run.
+# the GP divides the tracker into 16 eta sectors;  
+# the HT uses a  32x16 array followed by 2x2 Mini-HT array, with transverese HT readout & multiplexing, 
+# followed by the track fit (KF); and duplicate track removal (Algo1) is run.
 #
 # This usually corresponds to the current firmware.
 #---------------------------------------------------------------------------------------------------------
@@ -47,8 +47,6 @@ TMTrackProducer = cms.EDProducer('tmtt::TMTrackProducer',
 
 #--- Switch off parts of the track reconstruction chain.
 
-#TMTrackProducer.DupTrkRemoval.DupTrkAlgRphi   = cms.uint32(0)
-#TMTrackProducer.DupTrkRemoval.DupTrkAlg3D     = cms.uint32(0)
 #TMTrackProducer.DupTrkRemoval.DupTrkAlgFit    = cms.uint32(0)
 #TMTrackProducer.TrackFitSettings.TrackFitters = cms.vstring()
 

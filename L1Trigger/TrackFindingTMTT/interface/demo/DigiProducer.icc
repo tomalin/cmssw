@@ -2,8 +2,8 @@
 #include <L1Trigger/TrackFindingTMTT/interface/InputData.h>
 #include <L1Trigger/TrackFindingTMTT/interface/Sector.h>
 #include <L1Trigger/TrackFindingTMTT/interface/HTrphi.h>
-#include <L1Trigger/TrackFindingTMTT/interface/Get3Dtracks.h>
-#include <L1Trigger/TrackFindingTMTT/interface/KillDupFitTrks.h>
+#include <L1Trigger/TrackFindingTMTT/interface/Make3Dtracks.h>
+#include <L1Trigger/TrackFindingTMTT/interface/DupFitTrkKiller.h>
 #include <L1Trigger/TrackFindingTMTT/interface/TrackFitFactory.h>
 #include <L1Trigger/TrackFindingTMTT/interface/L1fittedTrack.h>
 #include <L1Trigger/TrackFindingTMTT/interface/L1fittedTrk4and5.h>
@@ -34,7 +34,8 @@ using boost::numeric::ublas::matrix;
 namespace demo {
 
   DigiProducer::DigiProducer(const edm::ParameterSet& iConfig)
-      : settings_(iConfig),  // Set configuration parameters
+      : debug_(true),        // Debug printout
+        settings_(iConfig),  // Set configuration parameters
         hists_(&settings_)   // Initialize histograms
   {
     using namespace edm;
@@ -128,8 +129,8 @@ namespace demo {
     matrix<tmtt::Sector> mSectors(settings_.numPhiSectors(), settings_.numEtaRegions());
     // Create matrix of r-phi Hough-Transform arrays, with one-to-one correspondence to sectors.
     matrix<tmtt::HTrphi> mHtRphis(settings_.numPhiSectors(), settings_.numEtaRegions());
-    // Create matrix of Get3Dtracks objects, to run optional r-z track filter, with one-to-one correspondence to sectors.
-    matrix<tmtt::Get3Dtracks> mGet3Dtrks(settings_.numPhiSectors(), settings_.numEtaRegions());
+    // Create matrix of Make3Dtracks objects, to run optional r-z track filter, with one-to-one correspondence to sectors.
+    matrix<tmtt::Make3Dtracks> mMake3Dtrks(settings_.numPhiSectors(), settings_.numEtaRegions());
 
     //=== Initialization
     // Create utility for converting L1 tracks from our private format to official CMSSW EDM format.
@@ -229,15 +230,15 @@ namespace demo {
       for (unsigned int iEtaReg = 0; iEtaReg < settings_.numEtaRegions(); iEtaReg++) {
         const tmtt::Sector& sector = mSectors(iPhiSec, iEtaReg);
 
-        tmtt::Get3Dtracks& get3DtrkCoarse = mGet3Dtrks(iPhiSec, iEtaReg);
+        tmtt::Make3Dtracks& make3DtrkCoarse = mMake3Dtrks(iPhiSec, iEtaReg);
         // Initialize utility for making 3D tracks from 2D ones.
-        get3DtrkCoarse.init(&settings_, iPhiSec, iEtaReg, sector.etaMin(), sector.etaMax(), sector.phiCentre());
+        make3DtrkCoarse.init(&settings_, iPhiSec, iEtaReg, sector.etaMin(), sector.etaMax(), sector.phiCentre());
 
         // Convert 2D tracks found by HT to 3D tracks (optionally by running r-z filters & duplicate track removal)
-        get3DtrkCoarse.run(mHtRphis(iPhiSec, iEtaReg).trackCands2D());
+        make3DtrkCoarse.run(mHtRphis(iPhiSec, iEtaReg).trackCands2D());
 
         // Loop over candidates in this phi/eta sector
-        for (const tmtt::L1track3D& trk : get3DtrkCoarse.trackCands3D(false)) {
+        for (const tmtt::L1track3D& trk : make3DtrkCoarse.trackCands3D(false)) {
           auto lMTrk = const_cast<tmtt::L1track3D&>(trk);
           auto lChiPhi = lMTrk.chiPhiDigi();
           auto lChiZ = lMTrk.chiZDigi();
@@ -276,14 +277,14 @@ namespace demo {
         // Then create the 3D tracks, because only they know about chiZ and chiPhi
         const tmtt::Sector& sector = mSectors(iPhiSec, iEtaReg);
 
-        tmtt::Get3Dtracks& get3Dtrk = mGet3Dtrks(iPhiSec, iEtaReg);
+        tmtt::Make3Dtracks& make3Dtrk = mMake3Dtrks(iPhiSec, iEtaReg);
         // Initialize utility for making 3D tracks from 2D ones.
-        get3Dtrk.init(&settings_, iPhiSec, iEtaReg, sector.etaMin(), sector.etaMax(), sector.phiCentre());
+        make3Dtrk.init(&settings_, iPhiSec, iEtaReg, sector.etaMin(), sector.etaMax(), sector.phiCentre());
 
         // Convert 2D tracks found by HT to 3D tracks (optionally by running r-z filters & duplicate track removal)
-        get3Dtrk.run(htRphi.trackCands2D());
+        make3Dtrk.run(htRphi.trackCands2D());
 
-        const vector<tmtt::L1track3D>& vecTrk3D = get3Dtrk.trackCands3D(false);
+        const vector<tmtt::L1track3D>& vecTrk3D = make3Dtrk.trackCands3D(false);
 
         // Loop over the tracks
         for (const tmtt::L1track3D& trk : vecTrk3D) {
@@ -308,7 +309,7 @@ namespace demo {
     }
 
     // Initialize the duplicate track removal algorithm that can optionally be run after the track fit.
-    tmtt::KillDupFitTrks killDupFitTrks;
+    tmtt::DupFitTrkKiller killDupFitTrks;
     killDupFitTrks.init(&settings_, settings_.dupTrkAlgFit());
 
     //=== Do a helix fit to all the track candidates.
@@ -321,12 +322,12 @@ namespace demo {
 
     for (unsigned int iPhiSec = 0; iPhiSec < settings_.numPhiSectors(); iPhiSec++) {
       for (unsigned int iEtaReg = 0; iEtaReg < settings_.numEtaRegions(); iEtaReg++) {
-        const tmtt::Get3Dtracks& get3Dtrk = mGet3Dtrks(iPhiSec, iEtaReg);
+        const tmtt::Make3Dtracks& make3Dtrk = mMake3Dtrks(iPhiSec, iEtaReg);
 
         // Loop over all the fitting algorithms we are trying.
         for (const string& fitterName : trackFitters_) {
           // Get 3D track candidates found by Hough transform (plus optional r-z filters/duplicate removal) in this sector.
-          const vector<tmtt::L1track3D>& vecTrk3D = get3Dtrk.trackCands3D(false);
+          const vector<tmtt::L1track3D>& vecTrk3D = make3Dtrk.trackCands3D(false);
 
           // Fit all tracks in this sector
           vector<tmtt::L1fittedTrack> fittedTracksInSec;
@@ -391,15 +392,13 @@ namespace demo {
   }
 
   // Debug printout
-  unsigned int static nEvents = 0;
-  nEvents++;
-  if (settings_.debug() >= 1 && nEvents <= 1000) {
+  if (debug_) {
     cout << "INPUT #TPs = " << vTPs.size() << " #STUBs = " << vStubs.size() << endl;
     unsigned int numHTtracks = 0;
     for (unsigned int iPhiSec = 0; iPhiSec < settings_.numPhiSectors(); iPhiSec++) {
       for (unsigned int iEtaReg = 0; iEtaReg < settings_.numEtaRegions(); iEtaReg++) {
-        const tmtt::Get3Dtracks& get3Dtrk = mGet3Dtrks(iPhiSec, iEtaReg);
-        numHTtracks += get3Dtrk.trackCands3D(false).size();
+        const tmtt::Make3Dtracks& make3Dtrk = mMake3Dtrks(iPhiSec, iEtaReg);
+        numHTtracks += make3Dtrk.trackCands3D(false).size();
       }
     }
     cout << "Number of tracks after HT = " << numHTtracks << endl;
@@ -417,7 +416,7 @@ namespace demo {
   }
 
   // Fill histograms to monitor input data & tracking performance.
-  hists_.fill(inputData, mSectors, mHtRphis, mGet3Dtrks, fittedTracks);
+  hists_.fill(inputData, mSectors, mHtRphis, mMake3Dtrks, fittedTracks);
 
   //=== Store output EDM track and hardware stub collections.
   iEvent.put(std::move(allDigiKF4Tracks), "SimDigiKF4Tracks");

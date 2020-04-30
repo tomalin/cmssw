@@ -41,6 +41,8 @@ namespace tmtt {
     virtual void endJob();
 
   private:
+    bool debug_;
+
     // ES tokens
     edm::ESGetToken<MagneticField, IdealMagneticFieldRecord> magneticFieldToken_;
     edm::ESGetToken<TrackerGeometry, TrackerDigiGeometryRecord> trackerGeometryToken_;

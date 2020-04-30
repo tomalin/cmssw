@@ -31,23 +31,6 @@ namespace tmtt {
     zOuterMax_ = chosenRofZ_ / tan(2. * atan(exp(-etaMax_)));
     beamWindowZ_ = settings->beamWindowZ();  // Assumed half-length of beam-spot
 
-    // If rapidity line leaves tracker endcap before reaching r = rChosenOfZ_, try something different.
-    /*
-  trackerOuterRadius_ = settings->trackerOuterRadius();
-  trackerInnerRadius_ = settings->trackerInnerRadius();
-  trackerHalfLength_  = settings->trackerHalfLength();
-  if (std::abs(zOuterMin_) > trackerHalfLength_) {
-    float scale = trackerHalfLength_/std::abs(zOuterMin_);
-    zOuterMin_ *= scale;
-    rOuterMin_ *= scale;
-  }
-  if (std::abs(zOuterMax_) > trackerHalfLength_) {
-    float scale = trackerHalfLength_/std::abs(zOuterMax_);
-    zOuterMax_ *= scale;
-    rOuterMax_ *= scale;
-  }
-  */
-
     //=== Characteristics of this phi region.
     //unsigned int numPhiSecPerNonant = (settings->numPhiSectors()) / (settings->numPhiNonants());
     // Centre of phi (tracking) nonant zero must be along x-axis to be consistent with tracker cabling map.
@@ -65,14 +48,7 @@ namespace tmtt {
 
     //=== Check if subsectors in eta are being used within each sector.
     numSubSecsEta_ = settings->numSubSecsEta();
-    /*
-  // If subsectors have equal width in z50, do this.
-  float subSecWidth = (zOuterMax_ - zOuterMin_)/float(numSubSecsEta_); 
-  for (unsigned int i = 0; i < numSubSecsEta_; i++) {
-    zOuterMinSub_.push_back( zOuterMin_ +  i     *subSecWidth);
-    zOuterMaxSub_.push_back( zOuterMin_ + (i + 1)*subSecWidth);
-  }
-  */
+
     // If subsectors have equal width in rapidity, do this.
     float subSecWidth = (etaMax_ - etaMin_) / float(numSubSecsEta_);
     for (unsigned int i = 0; i < numSubSecsEta_; i++) {
@@ -134,9 +110,6 @@ namespace tmtt {
       zMin = (zRangeMin * stub->r() - beamWindowZ_ * std::abs(stub->r() - chosenRofZ_)) / chosenRofZ_;
       // Calculate z coordinate of upper edge of this eta region, evaluated at radius of stub.
       zMax = (zRangeMax * stub->r() + beamWindowZ_ * std::abs(stub->r() - chosenRofZ_)) / chosenRofZ_;
-
-      // zMin = ( zRangeMin * stub->r() - beamWindowZ_ * std::abs(stub->r() - rOuterMin_) ) / rOuterMin_;
-      // zMax = ( zRangeMax * stub->r() + beamWindowZ_ * std::abs(stub->r() - rOuterMax_) ) / rOuterMax_;
 
       inside = (stub->z() > zMin && stub->z() < zMax);
 
@@ -258,14 +231,14 @@ namespace tmtt {
 
   // Digitize a floating point number to 2s complement integer, dropping anything after the decimal point. (Kristian Harder)
 
-  Long64_t Sector::forceBitWidth(const float value, const UInt_t nBits) const {
+  int64_t Sector::forceBitWidth(const float value, const UInt_t nBits) const {
     // slightly hand-waving treatment of 2s complement
-    Long64_t sign = 1;
+    int64_t sign = 1;
     if (value < 0)
       sign = -1;
-    Long64_t iValue = Long64_t(std::abs(value));
-    Long64_t mask = (Long64_t(1) << nBits) - Long64_t(1);
-    Long64_t result = sign * (iValue & mask);
+    int64_t iValue = int64_t(std::abs(value));
+    int64_t mask = (int64_t(1) << nBits) - int64_t(1);
+    int64_t result = sign * (iValue & mask);
     if (std::abs(result - value) > 1)
       throw cms::Exception("LogicError")
           << "Sector::forceBitWidth is messing up by using too few bits to digitize number"
@@ -287,15 +260,15 @@ namespace tmtt {
     unsigned int zBits = settings_->zBits();
     float rtRange = settings_->rtRange();
     float zRange = settings_->zRange();
-    const float cm_to_mm = 10.;  // firwmare is in mm and CMSSW in cm.
+    constexpr float cm_to_mm = 10.;  // firwmare is in mm and CMSSW in cm.
     float zBase = cm_to_mm / (pow(2, zBits) / zRange);
     float rTBase = cm_to_mm / (pow(2, rtBits) / rtRange);
 
-    // Number of bits used by DSP in Virtex7 FPGA (where DSP does D = A*B + C)
-    const unsigned int nDSPa = 25;
-    const unsigned int nDSPb = 18;
-    const unsigned int nDSPc = 48;
-    const unsigned int nDSPd = 48;
+    // Number of bits used by DSP in UltraScale-Plus FPGA (where DSP does D = A*B + C)
+    constexpr unsigned int nDSPa = 27;
+    constexpr unsigned int nDSPb = 18;
+    constexpr unsigned int nDSPc = 48;
+    constexpr unsigned int nDSPd = 48;
 
     // unit transformations: firmware uses mm, software uses cm
     float BeamWindow = cm_to_mm * beamWindowZ_;
@@ -304,43 +277,35 @@ namespace tmtt {
 
     // actual algorithm as used in firmware, mostly using same variable names
     float Beam_over_T = BeamWindow / T_rz;
-    unsigned int nShiftA =
-        24;  // Chosen by hand so that number digitized below when calculating "bot" uses most of the nDSPa bits, without overflowing them. This is done assuming reference number of bits for rT and z mentioned above.
-    nShiftA +=
-        (rtBits - rtBitsRef) -
-        (zBits -
-         zBitsRef);  // Guess from Ian & Luis to keep "bot" in correct range (nDSPa) if number of digitsation bits are changed.
+    // Value chosen so that number digitized below when calculating "bot" uses most of the nDSPa bits, without overflowing them. This is done assuming reference number of bits for rT and z mentioned above.
+    unsigned int nShiftA = 24;
+    // Guess from to keep "bot" in correct range (nDSPa) if number of digitsation bits are changed.
+    nShiftA += (rtBits - rtBitsRef) - (zBits - zBitsRef);
     float Beam_over_T_base = 1. / (1 << nShiftA);
-    Long64_t bot = forceBitWidth(Beam_over_T * rTBase / zBase / Beam_over_T_base, nDSPa);
-    Long64_t bw = forceBitWidth(BeamWindow / zBase / Beam_over_T_base, nDSPc);
+    int64_t bot = forceBitWidth(Beam_over_T * rTBase / zBase / Beam_over_T_base, nDSPa);
+    int64_t bw = forceBitWidth(BeamWindow / zBase / Beam_over_T_base, nDSPc);
     float etaSecMid = (settings_->etaRegions()[iEtaReg_] + settings_->etaRegions()[iEtaReg_ + 1]) / 2.0;
     float tanlSecMid = 1.0 / tan(2.0 * atan(exp(-etaSecMid)));
-    unsigned int nShiftB =
-        16;  // Chosen by hand so that number digitized below when calculating "tanlSec_Mid" uses most of the nDSPa bits, without overflowing them. This is done assuming reference number of bits for rT and z mentioned above.
-    nShiftB +=
-        (rtBits - rtBitsRef) -
-        (zBits -
-         zBitsRef);  // Guess from Ian & Luis to keep "tanlSec_Mid" in correct range (nDSPa) if number of digitsation bits are changed.
+    // Value chosen so that number digitized below when calculating "tanlSec_Mid" uses most of the nDSPa bits, without overflowing them. This is done assuming reference number of bits for rT and z mentioned above.
+    unsigned int nShiftB = 16;
+    // Guess to keep "tanlSec_Mid" in correct range (nDSPa) if number of digitsation bits are changed.
+    nShiftB += (rtBits - rtBitsRef) - (zBits - zBitsRef);
     float tanlSecBase = 1. / (1 << nShiftB);
-    Long64_t tanlSec_Mid =
-        forceBitWidth(int(tanlSecMid * rTBase / zBase / tanlSecBase), nDSPa);  // 25 is a constant due to DSP
-
-    const unsigned int nExtraBitsR =
-        2;  // Number of extra bits used to digitise r instead of rT within GP code, if both encoded as signed int.
-    const unsigned int rBits = rtBits + nExtraBitsR;
-    Long64_t r = forceBitWidth(rT + T_rphi / rTBase, rBits);
-    Long64_t g = forceBitWidth(bot * r - bw, nDSPd);
-    Long64_t absg = abs(g);
-    const unsigned nBitsRemainingA =
-        nDSPd -
-        nShiftA;  // Number of useful bits left of the nDSPd assigned to "absg" after right-shifting by nShiftA bits.
-    Long64_t shift_g = forceBitWidth((absg >> nShiftA), nBitsRemainingA);
-    Long64_t tlsr = forceBitWidth(tanlSec_Mid * r,
-                                  nDSPa + rBits);  // Number of bits is sum of those in two numbers being multiplied.
-    const unsigned nBitsRemainingB =
-        (nDSPa + rBits) -
-        nShiftB;  // Number of useful bits left of (nDSPa + rBits) assigned to "tlsr" after right-shifting by nShiftB bits.
-    Long64_t shift_tlsr = forceBitWidth((tlsr >> nShiftB), nBitsRemainingB);
+    int64_t tanlSec_Mid = forceBitWidth(int(tanlSecMid * rTBase / zBase / tanlSecBase), nDSPa);
+    // Number of extra bits used to digitise r instead of rT within GP code, if both encoded as signed int.
+    constexpr unsigned int nExtraBitsR = 2;
+    unsigned int rBits = rtBits + nExtraBitsR;
+    int64_t r = forceBitWidth(rT + T_rphi / rTBase, rBits);
+    int64_t g = forceBitWidth(bot * r - bw, nDSPd);
+    int64_t absg = abs(g);
+    // Number of useful bits left of the nDSPd assigned to "absg" after right-shifting by nShiftA bits.
+    const unsigned nBitsRemainingA = nDSPd - nShiftA;
+    int64_t shift_g = forceBitWidth((absg >> nShiftA), nBitsRemainingA);
+    // Number of bits is sum of those in two numbers being multiplied.
+    int64_t tlsr = forceBitWidth(tanlSec_Mid * r, nDSPa + rBits);
+    // Number of useful bits left of (nDSPa + rBits) assigned to "tlsr" after right-shifting by nShiftB bits.
+    const unsigned nBitsRemainingB = (nDSPa + rBits) - nShiftB;
+    int64_t shift_tlsr = forceBitWidth((tlsr >> nShiftB), nBitsRemainingB);
 
     vector<bool> insideVec;
     insideVec.push_back(z <= (shift_tlsr + shift_g));

@@ -1,4 +1,4 @@
-#include "L1Trigger/TrackFindingTMTT/interface/Get3Dtracks.h"
+#include "L1Trigger/TrackFindingTMTT/interface/Make3Dtracks.h"
 #include "L1Trigger/TrackFindingTMTT/interface/L1track2D.h"
 #include "L1Trigger/TrackFindingTMTT/interface/Settings.h"
 
@@ -13,12 +13,12 @@ namespace tmtt {
 
   //=== Initialization
 
-  void Get3Dtracks::init(const Settings* settings,
-                         unsigned int iPhiSec,
-                         unsigned int iEtaReg,
-                         float etaMinSector,
-                         float etaMaxSector,
-                         float phiCentreSector) {
+  void Make3Dtracks::init(const Settings* settings,
+                          unsigned int iPhiSec,
+                          unsigned int iEtaReg,
+                          float etaMinSector,
+                          float etaMaxSector,
+                          float phiCentreSector) {
     // Store config params & arguments.
     settings_ = settings;
     iPhiSec_ = iPhiSec;  // Sector number
@@ -38,7 +38,7 @@ namespace tmtt {
   //=== Convert 2D tracks found by HT within the current sector to 3D tracks, without running any r-z track filter.
   //=== by adding a rough estimate of their r-z helix parameters.
 
-  void Get3Dtracks::makeUnfilteredTrks(const vector<L1track2D>& vecTracksRphi) {
+  void Make3Dtracks::makeUnfilteredTrks(const vector<L1track2D>& vecTracksRphi) {
     vecTracks3D_unfiltered_.clear();
 
     for (const L1track2D& trkRphi : vecTracksRphi) {
@@ -89,7 +89,7 @@ namespace tmtt {
   //=== Make 3D tracks from the 2D tracks found by the HT within the current sector, by running the r-z track filter.
   //=== The r-z filter also adds an estimate of the r-z helix parameters to each track.
 
-  void Get3Dtracks::makeRZfilteredTrks(const vector<L1track2D>& vecTracksRphi) {
+  void Make3Dtracks::makeRZfilteredTrks(const vector<L1track2D>& vecTracksRphi) {
     vecTracks3D_rzFiltered_ = rzFilter_.filterTracks(vecTracksRphi);
 
     // Optionally use MC truth to eliminate all fake tracks & all incorrect stubs assigned to tracks
@@ -110,7 +110,7 @@ namespace tmtt {
   //=== that are associated to the given tracking particle.
   //=== (If the vector is empty, then the tracking particle was not reconstructed in this sector).
 
-  vector<const L1track3D*> Get3Dtracks::assocTrackCands3D(const TP& tp, bool rzFiltered) const {
+  vector<const L1track3D*> Make3Dtracks::assocTrackCands3D(const TP& tp, bool rzFiltered) const {
     const vector<L1track3D>& allTracks3D = (rzFiltered) ? vecTracks3D_rzFiltered_ : vecTracks3D_unfiltered_;
 
     vector<const L1track3D*> assocRecoTrk;

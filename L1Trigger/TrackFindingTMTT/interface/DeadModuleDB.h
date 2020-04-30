@@ -41,16 +41,12 @@ namespace tmtt {
     // Should the required number of layers that tracks must have be reduced by 1 in the given sector, because of dead modules
     // within it? This function is only invoked if cfg param DeadReduceLayers = True.
     bool reduceLayerCut(unsigned int iPhiSec, unsigned int iEtaReg) const {
-      return reduceLayerCut_.find(std::pair<unsigned int, unsigned int>(iPhiSec, iEtaReg)) != reduceLayerCut_.end();
+      return reduceLayerCut_.find(std::pair(iPhiSec, iEtaReg)) != reduceLayerCut_.end();
     }
 
   public:
-    // Define a class to describe regions of the tracker barrel that are dead.
-    class DeadBarrelRegion {
-    public:
-      DeadBarrelRegion(float phiMin, float phiMax, float zMin, float zMax)
-          : phiMin_(phiMin), phiMax_(phiMax), zMin_(zMin), zMax_(zMax) {}
-
+    // Define a struct to describe regions of the tracker barrel that are dead.
+    struct DeadBarrelRegion {
     public:
       const float phiMin_;
       const float phiMax_;
@@ -58,12 +54,8 @@ namespace tmtt {
       const float zMax_;
     };
 
-    // Define a class to describe regions of the tracker endcap that are dead.
-    class DeadEndcapRegion {
-    public:
-      DeadEndcapRegion(float phiMin, float phiMax, float rMin, float rMax)
-          : phiMin_(phiMin), phiMax_(phiMax), rMin_(rMin), rMax_(rMax) {}
-
+    // Define a struct to describe regions of the tracker endcap that are dead.
+    struct DeadEndcapRegion {
     public:
       const float phiMin_;
       const float phiMax_;

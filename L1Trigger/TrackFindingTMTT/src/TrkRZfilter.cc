@@ -70,10 +70,6 @@ namespace tmtt {
 
     // For debugging
     minNumMatchLayers_ = settings->minNumMatchLayers();
-
-    //--- Option for duplicate track removal on collection of L1track3D produced after running all r-z filter.
-    unsigned int dupTrkAlg3D = settings->dupTrkAlg3D();
-    killDupTrks_.init(settings, dupTrkAlg3D);
   }
 
   //=== Filters track candidates (found by the r-phi Hough transform), removing inconsistent stubs from the tracks,
@@ -103,10 +99,6 @@ namespace tmtt {
 
       // Get debug printout for specific regions.
       bool print = false;
-      // unsigned int mbin = trkIN.cellLocationHT().first;
-      // unsigned int cbin = trkIN.cellLocationHT().second;
-      // if(mbin == 0 && cbin == 45 && trkIN.iEtaReg() == 14 && trkIN.iPhiSec() == 6) print = true;
-      // cout << "track in region "<<trkIN.iEtaReg()<<", "<<trkIN.iPhiSec()<< " bin " << mbin << ", "<< cbin << endl;
 
       vector<const Stub*> filteredStubs = stubs;
       if (rzFilterName_ == "SeedFilter") {
@@ -130,22 +122,17 @@ namespace tmtt {
         pair<float, float> helixRZ(rzHelix_z0_, rzHelix_tanL_);
 
         // Create copy of original track, except now using its filtered stubs, to be added to filteredTrack collection.
-        L1track3D trkOUT(settings_,
-                         filteredStubs,
-                         trkIN.cellLocationHT(),
-                         trkIN.helix2D(),
-                         helixRZ,
-                         trkIN.iPhiSec(),
-                         trkIN.iEtaReg(),
-                         trkIN.optoLinkID(),
-                         trkIN.mergedHTcell());
-
-        filteredTracks.push_back(trkOUT);
+        filteredTracks.emplace_back(settings_,
+                                    filteredStubs,
+                                    trkIN.cellLocationHT(),
+                                    trkIN.helix2D(),
+                                    helixRZ,
+                                    trkIN.iPhiSec(),
+                                    trkIN.iEtaReg(),
+                                    trkIN.optoLinkID(),
+                                    trkIN.mergedHTcell());
       }
     }
-
-    // Optionally run duplicate track removal on all the 3D tracks found in this sector & store final 3D track collection.
-    filteredTracks = killDupTrks_.filter(filteredTracks);
 
     return filteredTracks;
   }
@@ -157,14 +144,14 @@ namespace tmtt {
     unsigned int numLayers;                      //Num of Layers in the cell after that filter has been applied
     std::vector<const Stub*> filtStubs = stubs;  // Copy stubs vector in filtStubs
     bool FirstSeed = true;
-    const int FirstSeedLayers[] = {1, 2, 11, 21, 3, 12, 22, 4};           //Allowed layers for the first seeding stubs
-    const int SecondSeedLayers[] = {1, 2, 11, 3, 21, 22, 12, 23, 13, 4};  //Allowed layers for the second seeding stubs
+    //Allowed layers for the first & second seeding stubs
+    static const std::vector<unsigned int> FirstSeedLayers = {1, 2, 11, 21, 3, 12, 22, 4};
+    static const std::vector<unsigned int> SecondSeedLayers = {1, 2, 11, 3, 21, 22, 12, 23, 13, 4};
     set<const Stub*> uniqueFilteredStubs;
 
-    unsigned int numSeedCombinations = 0;  // Counter for number of seed combinations considered.
-    unsigned int numGoodSeedCombinations =
-        0;  // Counter for number of seed combinations considered with z0 within beam spot length.
-    vector<const Stub*> filteredStubs;  // Filter Stubs vector to be returned
+    unsigned int numSeedCombinations = 0;      // Counter for number of seed combinations considered.
+    unsigned int numGoodSeedCombinations = 0;  // Counter for seed combinations with z0 within beam spot length.
+    vector<const Stub*> filteredStubs;         // Filter Stubs vector to be returned
 
     unsigned int oldNumLay = 0;  //Number of Layers counter, used to keep the seed with more layers
 
@@ -196,15 +183,11 @@ namespace tmtt {
               tempStubs.push_back(s0);        //Store the first seeding stub in the temporary container
               tempStubs.push_back(s1);        //Store the second seeding stub in the temporary container
 
-              double z0 =
-                  s1->z() +
-                  (-s1->z() + s0->z()) * s1->r() /
-                      (s1->r() - s0->r());  // Estimate a value of z at the beam spot using the two seeding stubs
+	      // Estimate a value of z at the beam spot using the two seeding stubs
+              double z0 = s1->z() + (-s1->z() + s0->z()) * s1->r() / (s1->r() - s0->r());  
               //double z0err = s1->zErr() + ( s1->zErr() + s0->zErr() )*s1->r()/std::abs(s1->r()-s0->r()) + std::abs(-s1->z()+s0->z())*(s1->rErr()*std::abs(s1->r()-s0->r()) + s1->r()*(s1->rErr() + s0->rErr()) )/((s1->r()-s0->r())*(s1->r()-s0->r()));
-              float zTrk =
-                  s1->z() +
-                  (-s1->z() + s0->z()) * (s1->r() - chosenRofZ_) /
-                      (s1->r() - s0->r());  // Estimate a value of z at a chosen Radius using the two seeding stubs
+	      // Estimate a value of z at a chosen Radius using the two seeding stubs
+              float zTrk = s1->z() + (-s1->z() + s0->z()) * (s1->r() - chosenRofZ_) / (s1->r() - s0->r());  
               // float zTrkErr = s1->zErr() + ( s1->zErr() + s0->zErr() )*std::abs(s1->r()-chosenRofZ_)/std::abs(s1->r()-s0->r()) + std::abs(-s1->z()+s0->z())*(s1->rErr()*std::abs(s1->r()-s0->r()) + std::abs(s1->r()-chosenRofZ_)*(s1->rErr() + s0->rErr()) )/((s1->r()-s0->r())*(s1->r()-s0->r()));
               float leftZtrk = zTrk * std::abs(s1->r() - s0->r());
               float rightZmin = zTrkMinSector_ * std::abs(s1->r() - s0->r());
@@ -233,36 +216,17 @@ namespace tmtt {
                     seedDistRes += seedResolution_;  // Add extra configurable contribution to assumed resolution.
                     //If seed is lower than the tolerance push back the stub (KEEP JUST ONE STUB PER LAYER, NOT ENABLED BY DEFAULT)
                     if (std::abs(seedDist) <= seedDistRes) {
-                      // if(s->layerId()==LiD){
-                      //if(std::abs(seedDist)<std::abs(oldseed)){
-                      //tempStubs.pop_back();
-                      //tempStubs.push_back(s);
-                      //LiD = s->layerId();
-                      // sumSeedDist = sumSeedDist + std::abs(seedDist) - std::abs(oldseed);
-                      // oldseed = seedDist;
-                      //}
-                      // } else {
                       if (s->layerId() != LiD and s->layerId() != s0->layerId() and s->layerId() != s1->layerId()) {
                         tempStubs.push_back(s);
                         LiD = s->layerId();
-                        //  oldseed = seedDist;
-                        //sumSeedDist = sumSeedDist + std::abs(seedDist);
                       }
                     }
-
-                    //If stub lies on the seeding line, store it in the tempstubs vector
-                    // if(std::abs(seedDist) <= seedDistRes){
-                    //   tempStubs.push_back(s);
-                    //   sumSeedDist = sumSeedDist + std::abs(seedDist); //Increase the seed quality variable
-                    // }
-                    // }
                   }
                 }
               }
 
               numLayers = Utility::countLayers(
                   settings_, tempStubs);  // Count the number of layers in the temporary stubs container
-              //sumSeedDist = sumSeedDist/(tempStubs.size()); //Measure the average seed quality per stub for the current seed
 
               // Check if the current seed has more layers then the previous one (Keep the best seed)
               if (keepAllSeed_ == false) {
@@ -306,50 +270,6 @@ namespace tmtt {
       }
     }
 
-    // EJC Commented out, as nMatchedLayersBest is never set, so CLANG complains
-    // EJC Leave code in case it is useful for whoever is reading this in the future
-    // Print Missing Track information if debug variable is set to 4
-    // if((settings_->debug()==4 or print) and settings_->enableDigitize()){
-    //     std::vector<const Stub* > matchedStubs;
-    //     unsigned int nMatchedLayersBest;
-
-    //     std::vector<const Stub* > matchedFiltStubs;
-    //     unsigned int nMatchedFiltLayersBest;
-
-    //     if(nMatchedLayersBest >= minNumMatchLayers_ && Utility::countLayers(settings_, filteredStubs) < Utility::numLayerCut("Utility::AlgoStep::SEED, settings_, iPhiSec_, iEtaReg_, std::abs(trkQoverPt))) {
-    //         cout << " ******* NOT ENOUGH LAYERS *******" << endl;
-    //         cout << " ====== TP stubs ====== " << endl;
-    //         for(const Stub* st: matchedStubs){
-    //             cout << "z: "<< st->z() << ", r: "<< st->r() << ", id:" << st->layerId() << endl;
-    //         }
-    //         cout << "num layers "<< oldNumLay << endl;
-    //         cout << " ====== Matched TP stubs ====== " << endl;
-    //         for(const Stub* st: filteredStubs){
-    //             cout << "z: "<< st->z() << ", r: "<< st->r() << ", id:" << st->layerId() << endl;
-    //         }
-    //     } else if(nMatchedLayersBest >= minNumMatchLayers_ && nMatchedFiltLayersBest < minNumMatchLayers_){
-    //         cout << " ******* NOT ENOUGH MATCHED LAYERS *******" << endl;
-    //         cout << " ====== TP stubs ====== " << endl;
-    //         for(const Stub* st: matchedStubs){
-    //             cout << "z: "<< st->z() << ", r: "<< st->r() << ", id:" << st->layerId() << endl;
-    //         }
-    //         cout << " ====== Matched TP stubs ====== " << endl;
-    //         for(const Stub* st: filteredStubs){
-    //             cout << "z: "<< st->z() << ", r: "<< st->r() << ", id:" << st->layerId() << endl;
-    //         }
-    //   } else if(nMatchedLayersBest >= minNumMatchLayers_ && nMatchedFiltLayersBest >= minNumMatchLayers_ ){
-    //         cout << " ******* Track Found *******" << endl;
-    //         cout << " ====== Cell Stubs ====== " << endl;
-    //         for(const Stub* st: stubs){
-    //             cout << "z: "<< st->digitalStub().iDigi_Z() << ", rT: "<< st->digitalStub().iDigi_Rt() << ", id:" << st->layerId() << endl;
-    //         }
-    //         cout << " ====== Matched TP stubs ====== " << endl;
-    //         for(const Stub* st: filteredStubs){
-    //             cout << "z: "<< st->digitalStub().iDigi_Z() << ", rT: "<< st->digitalStub().iDigi_Rt() << ", id:" << st->layerId() << endl;
-    //         }
-    //     }
-    // }
-
     // Note number of seed combinations used for this track.
     numSeedCombsPerTrk_.push_back(numSeedCombinations);
     numGoodSeedCombsPerTrk_.push_back(numGoodSeedCombinations);
@@ -361,9 +281,6 @@ namespace tmtt {
 
   void TrkRZfilter::estRZhelix() {
     rzHelix_z0_ = 0.;
-    // float etaCentreSector = 0.5*(etaMinSector_ + etaMaxSector_);
-    // float theta = 2. * atan(exp(-etaCentreSector));
-    // rzHelix_tanL_ = 1./tan(theta);
     rzHelix_tanL_ = 0.5 * (1 / tan(2 * atan(exp(-etaMinSector_))) + 1 / tan(2 * atan(exp(-etaMaxSector_))));
     rzHelix_set_ = true;
   }

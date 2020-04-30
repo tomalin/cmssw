@@ -34,14 +34,11 @@ namespace tmtt {
         nHTlinksPerNonant_(0) {
     nMiniHTcells_ = miniHoughNbinsPt_ * miniHoughNbinsPhi_;
 
-    if (miniHoughLoadBalance_ > 0) {
-      if (muxOutputsHT_ == 3) {
+    if (miniHoughLoadBalance_ != 0) {
+      if (muxOutputsHT_ == 1) {  // Multiplexer at output of HT enabled.
         nHTlinksPerNonant_ = busySectorMbinRanges_.size() - 1;
-      } else if (muxOutputsHT_ == 2) {
-        nHTlinksPerNonant_ = (busySectorMbinRanges_.size() - 1) * numPhiSecPerNon_;
       } else {
-        throw cms::Exception("BadConfig")
-            << "MiniHTState: hard-wired MHT load balancing can't be enabled as assumes HT output MUX scheme >= 2";
+        throw cms::Exception("BadConfig") << "MiniHTstage: Unknown MuxOutputsHT configuration option!";
       }
     }
   }
@@ -123,16 +120,6 @@ namespace tmtt {
                         settings_, htCell.stubs(), cellLocation, helix2D, iPhiSec, iEtaReg, trueLinkID, mergedCell);
                     // Truncation due to output opto-link bandwidth.
                     bool keep(true);
-                    /*
-	          pair<unsigned int, unsigned int> encodedLink;
-		  if (miniHoughLoadBalance_ > 0) {
-		    encodedLink = pair<unsigned int, unsigned int>(newererLink, mhtCell);
-		  } else {
-		    encodedLink = pair<unsigned int, unsigned int>(newererLink, 0);
-		  }
-	          numStubsPerLink[ encodedLink ] += htCell.numStubs();
-	          if ( busySectorKill_ && numStubsPerLink[ encodedLink ] > busySectorNumStubs_ ) keep = false;
-		  */
                     numStubsPerLink[trueLinkID] += htCell.numStubs();
                     if (busySectorKill_ && numStubsPerLink[trueLinkID] > busySectorNumStubs_)
                       keep = false;
@@ -175,16 +162,6 @@ namespace tmtt {
                                                            numStubsPerLinkStage2);
 
               bool keep(true);
-              /*
-	    pair<unsigned int, unsigned int> encodedLink;
-	    if (miniHoughLoadBalance_ > 0) {
-	      encodedLink = pair<unsigned int, unsigned int>(link/nMiniHTcells_, link%nMiniHTcells_);
-	    } else {
-	      encodedLink = pair<unsigned int, unsigned int>(link, 0);
-	    }
-            numStubsPerLink[ encodedLink ] += roughTrk.numStubs();
-            if ( busySectorKill_ && numStubsPerLink[ encodedLink ] > busySectorNumStubs_ ) keep = false;
-	    */
               numStubsPerLink[trueLinkID] += roughTrk.numStubs();
               if (busySectorKill_ && numStubsPerLink[trueLinkID] > busySectorNumStubs_)
                 keep = false;
@@ -221,14 +198,16 @@ namespace tmtt {
 
     unsigned int newLink, newerLink, newererLink;
 
-    if (miniHoughLoadBalance_ >= 1) {
+    enum LoadBalancing { None = 0, Static = 1, Dynamic = 2 };  // Load balancing options
+
+    if (miniHoughLoadBalance_ >= LoadBalancing::Static) {
       // Static load balancing, 4 -> 1, with each MHT cell sent to seperate output link.
       newLink = link % nSep;  // newLink in range 0 to nSep-1.
     } else {
       newLink = link;
     }
 
-    if (miniHoughLoadBalance_ >= 2) {
+    if (miniHoughLoadBalance_ >= LoadBalancing::Dynamic) {
       // 2-stage dynamic load balancing amongst links corresponding to same MHT cell.
 
       // Dynamically mix pairs of neighbouring links.
@@ -249,7 +228,6 @@ namespace tmtt {
 
       // Dynamically mix pairs of next-to-neighbouring links.
       unsigned int balancedLinkY = newerLink;
-      //unsigned int balancedLinkZ = (newerLink%4<=1) ? balancedLinkY + 2 : balancedLinkY - 2;
       unsigned int balancedLinkZ = (newerLink + 2) % nSep;
 
       pair<unsigned int, unsigned int> encodedLinkY(balancedLinkY, mhtCell);
@@ -267,7 +245,8 @@ namespace tmtt {
       newerLink = newLink;
       newererLink = newLink;
     }
-    unsigned int trueLinkID = (miniHoughLoadBalance_ > 0) ? nMiniHTcells_ * newererLink + mhtCell : newererLink;
+    unsigned int trueLinkID =
+        (miniHoughLoadBalance_ != LoadBalancing::None) ? nMiniHTcells_ * newererLink + mhtCell : newererLink;
     return trueLinkID;
   }
 

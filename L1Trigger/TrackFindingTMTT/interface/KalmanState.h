@@ -21,8 +21,8 @@ namespace tmtt {
   class KalmanState {
   public:
     KalmanState();
-    KalmanState(const Settings* settings,
-		const L1track3D &candidate,
+    KalmanState(const Settings *settings,
+                const L1track3D &candidate,
                 unsigned nSkipped,
                 int kLayer,
                 const KalmanState *last_state,
@@ -39,11 +39,11 @@ namespace tmtt {
 
     KalmanState &operator=(const KalmanState &other);
 
-    const Settings* settings() const {return settings_;}
+    const Settings *settings() const { return settings_; }
     // Layer where next stub to extend this state should be sought.
-    unsigned nextLayer() const { return (1 + kLayer_); } 
+    unsigned nextLayer() const { return (1 + kLayer_); }
     // Layer of last added stub. (-1 if no stubs yet).
-    int layer() const { return kLayer_; } 
+    int layer() const { return kLayer_; }
     unsigned endcapRing() const { return endcapRing_; }
     bool barrel() const { return barrel_; }
     unsigned nSkippedLayers() const { return nSkipped_; }
@@ -86,7 +86,7 @@ namespace tmtt {
     //void getHLSselect(unsigned int& mBinHelix, unsigned int& cBinHelix, bool& consistent) const { mBinHelix = mBinHelixHLS_; cBinHelix = cBinHelixHLS_; consistent = consistentHLS_;}
 
   private:
-    const Settings* settings_;
+    const Settings *settings_;
     int kLayer_;
     unsigned endcapRing_;
     double r_;

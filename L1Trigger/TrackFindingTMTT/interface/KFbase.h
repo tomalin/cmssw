@@ -34,13 +34,10 @@ namespace tmtt {
     enum MEAS_IDS { PHI, Z };
 
   public:
-
     // Initialize configuration
     KFbase(const Settings *settings, const uint nPar, const std::string &fitterName = "", const uint nMeas = 2);
 
-    virtual ~KFbase() {
-      this->resetStates();
-    }
+    virtual ~KFbase() { this->resetStates(); }
 
     KFbase(const KFbase &kf) = delete;  // Disable copy & move of this class.
     KFbase(KFbase &&kf) = delete;
@@ -51,18 +48,15 @@ namespace tmtt {
     L1fittedTrack fit(const L1track3D &l1track3D);
 
   protected:
-
     // Do KF fit (internal)
-    const KalmanState * doKF(const L1track3D &l1track3D,
-                                          const std::vector<const Stub *> &stubs,
-			     const TP *tpa);
+    const KalmanState *doKF(const L1track3D &l1track3D, const std::vector<const Stub *> &stubs, const TP *tpa);
 
     // Add one stub to a helix state
     virtual const KalmanState *kalmanUpdate(
-					    unsigned nSkipped, unsigned layer, const Stub *stub, const KalmanState *state, const TP *tp);
+        unsigned nSkipped, unsigned layer, const Stub *stub, const KalmanState *state, const TP *tp);
 
     // Create a KalmanState, containing a helix state & next stub it is to be updated with.
-const KalmanState* mkState(const L1track3D &candidate,
+    const KalmanState *mkState(const L1track3D &candidate,
                                unsigned nSkipped,
                                unsigned layer,
                                const KalmanState *last_state,
@@ -71,8 +65,8 @@ const KalmanState* mkState(const L1track3D &candidate,
                                const TMatrixD &K,
                                const TMatrixD &dcov,
                                const Stub *stub,
-			       double chi2rphi,
-			       double chi2rz);
+                               double chi2rphi,
+                               double chi2rz);
 
     //--- Input data
 
@@ -98,20 +92,22 @@ const KalmanState* mkState(const L1track3D &candidate,
     TMatrixD getKalmanGainMatrix(const TMatrixD &h, const TMatrixD &pxcov, const TMatrixD &covRinv) const;
 
     // Residuals of stub with respect to helix.
-    virtual TVectorD residual(const Stub *stub,
-                                         const TVectorD &x,
-                                         double candQoverPt) const;
+    virtual TVectorD residual(const Stub *stub, const TVectorD &x, double candQoverPt) const;
 
     // Update helix state & its covariance matrix with new stub
     void adjustState(const TMatrixD &K,
-                          const TMatrixD &pxcov,
-                          const TVectorD &x,
-                          const TMatrixD &h,
-                          const TVectorD &delta,
-                          TVectorD &new_x,
-                          TMatrixD &new_xcov) const;
+                     const TMatrixD &pxcov,
+                     const TVectorD &x,
+                     const TMatrixD &h,
+                     const TVectorD &delta,
+                     TVectorD &new_x,
+                     TMatrixD &new_xcov) const;
     // Update track fit chi2 with new stub
-    virtual void adjustChi2(const KalmanState *state, const TMatrixD &covRinv, const TVectorD &delta, double &chi2rphi, double &chi2rz) const;
+    virtual void adjustChi2(const KalmanState *state,
+                            const TMatrixD &covRinv,
+                            const TVectorD &delta,
+                            double &chi2rphi,
+                            double &chi2rz) const;
 
     //--- Utilities
 
@@ -125,8 +121,7 @@ const KalmanState* mkState(const L1track3D &candidate,
 
     // Get phi of centre of sector containing track.
     double sectorPhi() const {
-      float phiCentreSec0 =
-          -M_PI / float(settings_->numPhiNonants()) + M_PI / float(settings_->numPhiSectors());
+      float phiCentreSec0 = -M_PI / float(settings_->numPhiNonants()) + M_PI / float(settings_->numPhiSectors());
       return 2. * M_PI * float(iPhiSec_) / float(settings_->numPhiSectors()) + phiCentreSec0;
     }
 
@@ -166,7 +161,7 @@ const KalmanState* mkState(const L1track3D &candidate,
     const TP *tpa_;
 
     // All helix states KF produces for current track.
-    std::vector<std::unique_ptr<const KalmanState>> listAllStates_; 
+    std::vector<std::unique_ptr<const KalmanState>> listAllStates_;
   };
 
 }  // namespace tmtt

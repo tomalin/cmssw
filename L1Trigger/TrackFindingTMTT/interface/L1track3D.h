@@ -144,8 +144,12 @@ namespace tmtt {
     float qOverPt() const { return helixRphi_.first; }
     float charge() const { return (this->qOverPt() > 0 ? 1 : -1); }
     float invPt() const { return std::abs(this->qOverPt()); }
-    float pt() const { return 1. / (1.0e-6 + this->invPt()); }  // includes protection against 1/pt = 0.
-    float d0() const { return helixD0_; }                       // Hough transform assumes d0 = 0.
+    // Protect pt against 1/pt = 0.
+    float pt() const {
+      constexpr float small = 1.0e-6;
+      return 1. / (small + this->invPt());
+    }
+    float d0() const { return helixD0_; }  // Hough transform assumes d0 = 0.
     float phi0() const { return helixRphi_.second; }
     float z0() const { return helixRz_.first; }
     float tanLambda() const { return helixRz_.second; }

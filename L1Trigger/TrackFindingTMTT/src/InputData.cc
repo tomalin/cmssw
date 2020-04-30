@@ -104,7 +104,7 @@ namespace tmtt {
 
     for (TTStubDetSetVec::const_iterator p_module = ttStubHandle->begin(); p_module != ttStubHandle->end();
          p_module++) {
-      for (DetSet::const_iterator p_ttstub = p_module->begin(); p_ttstub != p_module->end(); p_ttstub++) {
+      for (TTStubDetSet::const_iterator p_ttstub = p_module->begin(); p_ttstub != p_module->end(); p_ttstub++) {
         TTStubRef ttStubRef = edmNew::makeRefTo(ttStubHandle, p_ttstub);
 
         // Store the Stub info, using class Stub to provide easy access to the most useful info.

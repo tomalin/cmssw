@@ -1,9 +1,8 @@
 // Copied from https://raw.githubusercontent.com/EmyrClement/StubKiller/master/StubKiller.cc
-// on 9th May 2018.
+// on 9th May 2018, with code cleanup since.
 
-// Changed to point to location we put it.
-//#include "StubKiller.h"
 #include "L1Trigger/TrackFindingTMTT/interface/StubKiller.h"
+#include "DataFormats/Math/interface/deltaPhi.h"
 
 using namespace std;
 
@@ -30,13 +29,16 @@ namespace tmtt {
     trackerTopology_ = trackerTopology;
     trackerGeometry_ = trackerGeometry;
 
+    enum KillOptions { layer5 = 1, layer1 = 2, layer1layer2 = 3, layer1disk1 = 4, random = 5 };
+
     // These sceanrios correspond to slide 12 of  https://indico.cern.ch/event/719985/contributions/2970687/attachments/1634587/2607365/StressTestTF-Acosta-Apr18.pdf
-    // Sceanrio 1
+    // Scenario 1
+
     // kill layer 5 in one quadrant +5 % random module loss to connect to what was done before
-    if (killScenario_ == 1) {
+    if (killScenario_ == KillOptions::layer5) {
       layersToKill_ = {5};
       minPhiToKill_ = 0;
-      maxPhiToKill_ = TMath::PiOver2();
+      maxPhiToKill_ = 0.5 * M_PI;
       minZToKill_ = -1000;
       maxZToKill_ = 0;
       minRToKill_ = 0;
@@ -45,12 +47,12 @@ namespace tmtt {
       fractionOfStubsToKillEverywhere_ = 0;
       fractionOfModulesToKillEverywhere_ = 0.05;
     }
-    // Sceanrio 2
+    // Scenario 2
     // kill layer 1 in one quadrant +5 % random module loss
-    else if (killScenario_ == 2) {
+    else if (killScenario_ == KillOptions::layer1) {
       layersToKill_ = {1};
       minPhiToKill_ = 0;
-      maxPhiToKill_ = TMath::PiOver2();
+      maxPhiToKill_ = 0.5 * M_PI;
       minZToKill_ = -1000;
       maxZToKill_ = 0;
       minRToKill_ = 0;
@@ -61,10 +63,10 @@ namespace tmtt {
     }
     // Scenario 3
     // kill layer 1 + layer 2, both in same quadrant
-    else if (killScenario_ == 3) {
+    else if (killScenario_ == KillOptions::layer1layer2) {
       layersToKill_ = {1, 2};
       minPhiToKill_ = 0;
-      maxPhiToKill_ = TMath::PiOver2();
+      maxPhiToKill_ = 0.5 * M_PI;
       minZToKill_ = -1000;
       maxZToKill_ = 0;
       minRToKill_ = 0;
@@ -75,10 +77,10 @@ namespace tmtt {
     }
     // Scenario 4
     // kill layer 1 and disk 1, both in same quadrant
-    else if (killScenario_ == 4) {
+    else if (killScenario_ == KillOptions::layer1disk1) {
       layersToKill_ = {1, 11};
       minPhiToKill_ = 0;
-      maxPhiToKill_ = TMath::PiOver2();
+      maxPhiToKill_ = 0.5 * M_PI;
       minZToKill_ = -1000;
       maxZToKill_ = 0;
       minRToKill_ = 0;
@@ -89,7 +91,7 @@ namespace tmtt {
     }
     // An extra scenario not listed in the slides
     // 5% random module loss throughout tracker
-    else if (killScenario_ == 5) {
+    else if (killScenario_ == KillOptions::random) {
       layersToKill_ = {};
       fractionOfStubsToKillInLayers_ = 0;
       fractionOfStubsToKillEverywhere_ = 0.;
@@ -118,7 +120,7 @@ namespace tmtt {
     for (const GeomDetUnit* gd : trackerGeometry_->detUnits()) {
       float moduleR = gd->position().perp();
       float moduleZ = gd->position().z();
-      float modulePhi = gd->position().phi();
+      float modulePhi = reco::deltaPhi(gd->position().phi(), 0.);
       DetId geoDetId = gd->geographicalId();
       bool isInBarrel = geoDetId.subdetId() == StripSubdetector::TOB || geoDetId.subdetId() == StripSubdetector::TIB;
 
@@ -129,11 +131,6 @@ namespace tmtt {
         layerID = 10 * trackerTopology_->side(geoDetId) + trackerTopology_->tidWheel(geoDetId);
       }
       if (find(layersToKill_.begin(), layersToKill_.end(), layerID) != layersToKill_.end()) {
-        if (modulePhi < -1.0 * TMath::Pi())
-          modulePhi += 2.0 * TMath::Pi();
-        else if (modulePhi > TMath::Pi())
-          modulePhi -= 2.0 * TMath::Pi();
-
         if (modulePhi > minPhiToKill_ && modulePhi < maxPhiToKill_ && moduleZ > minZToKill_ && moduleZ < maxZToKill_ &&
             moduleR > minRToKill_ && moduleR < maxRToKill_) {
           if (deadModules_.find(gd->geographicalId()) == deadModules_.end()) {
@@ -203,12 +200,7 @@ namespace tmtt {
         LocalPoint clustlp = topol->localPosition(measurementPoint);
         GlobalPoint pos = theGeomDet->surface().toGlobal(clustlp);
 
-        // Just in case phi is outside of -pi -> pi
-        double stubPhi = pos.phi();
-        if (stubPhi < -1.0 * TMath::Pi())
-          stubPhi += 2.0 * TMath::Pi();
-        else if (stubPhi > TMath::Pi())
-          stubPhi -= 2.0 * TMath::Pi();
+        double stubPhi = reco::deltaPhi(pos.phi(), 0.);
 
         if (stubPhi > minPhiToKill && stubPhi < maxPhiToKill && pos.z() > minZToKill && pos.z() < maxZToKill &&
             pos.perp() > minRToKill && pos.perp() < maxRToKill) {

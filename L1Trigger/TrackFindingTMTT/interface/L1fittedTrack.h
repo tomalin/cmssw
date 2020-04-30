@@ -133,8 +133,8 @@ namespace tmtt {
       numUpdateCalls = numUpdateCalls_;
     }
     void infoLR(int& numIterations,
-                   std::string& lostMatchingState,
-                   std::unordered_map<std::string, int>& stateCalls) const {
+                std::string& lostMatchingState,
+                std::unordered_map<std::string, int>& stateCalls) const {
       numIterations = numIterations_;
       lostMatchingState = lostMatchingState_;
       stateCalls = stateCalls_;
@@ -217,7 +217,11 @@ namespace tmtt {
     float qOverPt() const { return qOverPt_; }
     float charge() const { return (qOverPt_ > 0 ? 1 : -1); }
     float invPt() const { return std::abs(qOverPt_); }
-    float pt() const { return 1. / (1.0e-6 + this->invPt()); }  // includes protection against 1/pt = 0.
+    // Protect pt against 1/pt = 0.
+    float pt() const {
+      constexpr float small = 1.0e-6;
+      return 1. / (small + this->invPt());
+    }
     float d0() const { return d0_; }
     float phi0() const { return phi0_; }
     float z0() const { return z0_; }
@@ -232,7 +236,11 @@ namespace tmtt {
     float qOverPt_bcon() const { return qOverPt_bcon_; }
     float charge_bcon() const { return (qOverPt_bcon_ > 0 ? 1 : -1); }
     float invPt_bcon() const { return std::abs(qOverPt_bcon_); }
-    float pt_bcon() const { return 1. / (1.0e-6 + this->invPt_bcon()); }
+    // Protect pt against 1/pt = 0.
+    float pt_bcon() const {
+      constexpr float small = 1.0e-6;
+      return 1. / (small + this->invPt_bcon());
+    }
     float phi0_bcon() const { return phi0_bcon_; }
 
     // Phi and z coordinates at which track crosses "chosenR" values used by r-phi HT and rapidity sectors respectively.
@@ -282,11 +290,6 @@ namespace tmtt {
     //--- Get whether the track has been rejected or accepted by the fit
 
     bool accepted() const { return accepted_; }
-
-    // Comparitor useful for sorting tracks by q/Pt using std::sort().
-    static bool qOverPtSortPredicate(const L1fittedTrack& t1, const L1fittedTrack t2) {
-      return t1.qOverPt() < t2.qOverPt();
-    }
 
     //--- Functions to help eliminate duplicate tracks.
 

@@ -46,7 +46,11 @@ namespace tmtt {
     int charge() const { return charge_; }
     float mass() const { return mass_; }
     float pt() const { return pt_; }
-    float qOverPt() const { return (pt_ > 0) ? charge_ / pt_ : 9.9e9; }
+    // Protect against pt=0;
+    float qOverPt() const {
+      constexpr float big = 9.9e9;
+      return (pt_ > 0) ? charge_ / pt_ : big;
+    }
     float eta() const { return eta_; }
     float theta() const { return theta_; }
     float tanLambda() const { return tanLambda_; }
