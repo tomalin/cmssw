@@ -65,4 +65,22 @@ process.load( 'L1Trigger.TrackFindingTrackletHLS.IR_cff' )
 
 process.ir = cms.Path( process.IRProducer )
 
-process.schedule = cms.Schedule( process.dtc, process.ir )
+# Write output dataset
+process.load( 'Configuration.EventContent.EventContent_cff' )
+
+process.writeDataset = cms.OutputModule(
+"PoolOutputModule",
+splitLevel = cms.untracked.int32( 0 ),
+eventAutoFlushCompressedSize = cms.untracked.int32( 5242880 ),
+outputCommands = process.RAWSIMEventContent.outputCommands,
+fileName = cms.untracked.string( 'output_dataset.root' ), ## ADAPT IT ##
+dataset  = cms.untracked.PSet(
+filterName = cms.untracked.string(''),
+dataTier   = cms.untracked.string( 'GEN-SIM' )
+)
+)
+process.writeDataset.outputCommands.append( 'keep  *_*_*_*' )
+process.writeDataset.outputCommands.append( 'drop  *_TrackerDTCProducer_StubAccepted_*' )
+process.pd = cms.EndPath( process.writeDataset )
+
+process.schedule = cms.Schedule( process.dtc, process.ir, process.pd )

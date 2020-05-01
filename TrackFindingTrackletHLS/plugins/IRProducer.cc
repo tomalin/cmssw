@@ -28,6 +28,8 @@
 #include "L1Trigger/TrackTrigger/interface/TTStubAlgorithm_official.h"
 #include "L1Trigger/TrackTrigger/interface/TTStubAlgorithmRecord.h"
 
+// Output product
+#include "L1Trigger/DataFormats_TrackFindingTrackletHLS/interface/TTIRMemory.h"
 // HLS arbitrary precision types
 #include "ap_fixed.h"
 
@@ -63,7 +65,12 @@ class IRProducer : public edm::stream::EDProducer<> {
       //virtual void endLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&) override;
 
       // ----------member data ---------------------------
-      edm::EDGetTokenT <TTDTC> tokenDTC_;
+      // Input token
+      edm::EDGetTokenT<TTDTC> tokenDTC_;
+      // Product token
+      edm::EDPutTokenT<TTIRMemory> putTokenTTIRMemory_;
+
+
       // helper DTC class that stores configuration of DTC
       trackerDTC::Settings settings_;
       // These sources are only (95% confidence) required by the DTC Settings class
@@ -97,7 +104,8 @@ class IRProducer : public edm::stream::EDProducer<> {
 // constructors and destructor
 //
 IRProducer::IRProducer(const edm::ParameterSet& iConfig) :
-  tokenDTC_( consumes< TTDTC >( edm::InputTag( "TrackerDTCProducer", "StubAccepted" ) ) ),
+  tokenDTC_( consumes< TTDTC >( edm::InputTag( iConfig.getParameter<edm::InputTag>( "InputTagTTDTC" ) ) ) ),
+  putTokenTTIRMemory_( produces< TTIRMemory >( iConfig.getParameter<std::string>( "ProductLabel" ) ) ),
   settings_(iConfig),
   linkWord_is2sBit_( iConfig.getParameter<unsigned int>( "linkWord_is2sBit" ) ),
   linkWord_hasFirstBarrelLayerBit_( iConfig.getParameter<unsigned int>( "linkWord_hasFirstBarrelLayerBit" ) ),
@@ -128,6 +136,9 @@ IRProducer::~IRProducer()
 void
 IRProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
+
+  TTIRMemory product( settings_.numRegions(), settings_.numOverlappingRegions(), settings_.numDTCsPerRegion() );
+
   const std::vector<std::vector<int>> layerIdEncodings = settings_.hybrid()->layerIdEncodings();
   edm::Handle< TTDTC > handleDTC;
   iEvent.getByToken< TTDTC >( tokenDTC_, handleDTC );
@@ -185,15 +196,27 @@ IRProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
 
       }
 
-      for ( const auto& stub : stubsForIR ) {
-        std::cout << std::bitset<stubWordNBits_>( stub ) << std::endl;
-      }
+      // for ( const auto& stub : stubsForIR ) {
+      //   std::cout << std::bitset<stubWordNBits_>( stub ) << std::endl;
+      // }
       
       // Have stubs in an array, and word describing where the stubs from this DTC are coming from
       // Now just call the HLS IR top level function
       // stubsForIR.data() should give pointer to first element of array of vector
+
+      StubsBarrelPS hBarrelPS;
+      StubsDiskPS hDiskPS;
+
+      // if ( !is2S && stubsForIR.size() > 0 ) {
+      //   std::cout << "Writing this stub : " << std::bitset<stubWordNBits_>(stubsForIR[ 0 ]) << std::endl;
+      //   hBarrelPS.m1[0].write_mem(0, InputStub<BARRELPS>( stubsForIR[ 0 ] ), 0 );
+      // }
+
+      product.setIRMemory( region, channel, hBarrelPS );
     }
   }
+
+  iEvent.emplace( putTokenTTIRMemory_, std::move( product ) );
 }
 
 
