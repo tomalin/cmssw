@@ -13,6 +13,10 @@ build_cmssw:
     - /cvmfs/cms.cern.ch/common/scram project  CMSSW_11_1_0_pre6
     - cd CMSSW_11_1_0_pre6/src/
     - eval `/cvmfs/cms.cern.ch/common/scram runtime -sh`
+    - git config --global user.name "Boris Johnson"
+    - git config --global user.github Boris
+    - git config --global user.email "Boris@John.son"
+    - /cvmfs/cms.cern.ch/common/git-cms-init
 
     - mkdir L1Trigger
     - cd L1Trigger/
