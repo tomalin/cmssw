@@ -25,7 +25,7 @@ build_cmssw:
 
     - /cvmfs/cms.cern.ch/common/git-cms-addpkg L1Trigger/TrackerDTC
     - /cvmfs/cms.cern.ch/common/git-cms-addpkg DataFormats/L1TrackTrigger
-    - git remote add tschuh git@github.com:tschuh/cmssw.git
+    - git remote add tschuh https://gitlab-ci-token:${CI_JOB_TOKEN}@github.com:tschuh/cmssw.git
     - git fetch tschuh emyr
     - git checkout -b tschuh_emyr tschuh/emyr
 
