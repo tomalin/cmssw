@@ -23,8 +23,8 @@ build_cmssw:
     - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.cern.ch/ejclemen/cmssw_trackfinding_hlsframework.git .
     - cd ../
 
-    - git cms-addpkg L1Trigger/TrackerDTC
-    - git cms-addpkg DataFormats/L1TrackTrigger
+    - /cvmfs/cms.cern.ch/common/git-cms-addpkg L1Trigger/TrackerDTC
+    - /cvmfs/cms.cern.ch/common/git-cms-addpkg DataFormats/L1TrackTrigger
     - git remote add tschuh git@github.com:tschuh/cmssw.git
     - git fetch tschuh emyr
     - git checkout -b tschuh_emyr tschuh/emyr
