@@ -28,14 +28,15 @@
 #include "L1Trigger/TrackTrigger/interface/TTStubAlgorithm_official.h"
 #include "L1Trigger/TrackTrigger/interface/TTStubAlgorithmRecord.h"
 
+// HLS arbitrary precision types
 #include "ap_fixed.h"
+
+// Track finding HLS modules
+// #include "Constants.hh"
+#include "InputRouterTop.h"
 
 #include <array>
 #include <iostream>
-
-// // HLS algorithm specific includes
-// #include "VMRouterTop.h"
-// #include "Constants.h"
 
 //
 // class declaration

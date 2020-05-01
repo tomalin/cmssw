@@ -10,6 +10,7 @@
 <use name="DataFormats/L1TrackTrigger"/>
 <use name="L1Trigger/TrackerDTC"/>
 <use name="hls"/>
+<use name="myTrackFindingLib"/>
 <flags ADD_SUBDIR="1"/>                  <!-- Compile HLS/ subdirectories in src/ & interface/ -->
 <flags CXXFLAGS="-Wno-int-in-bool-context -Wno-unknown-pragmas"/> <!-- Suppress warnings from HLS library and HLS pragmas -->
 <flags EDM_PLUGIN="1"/>
