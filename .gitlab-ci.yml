@@ -1,0 +1,33 @@
+image: gitlab-registry.cern.ch/ci-tools/ci-worker:cc7
+
+stages:
+  - build
+
+build_cmssw:
+  stage: build
+  tags:
+    - docker
+    - cvmfs
+  script:
+    - export SCRAM_ARCH=slc7_amd64_gcc820
+    - /cvmfs/cms.cern.ch/common/scram project  CMSSW_11_1_0_pre6
+    - cd CMSSW_11_1_0_pre6/src/
+    - eval `/cvmfs/cms.cern.ch/common/scram runtime -sh`
+    - git-cms-init
+
+    - mkdir L1Trigger
+    - cd L1Trigger/
+    - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.cern.ch/ejclemen/cmssw_trackfinding_hlsframework.git .
+    - cd ../
+
+    - git cms-addpkg L1Trigger/TrackerDTC
+    - git cms-addpkg DataFormats/L1TrackTrigger
+    - git remote add tschuh git@github.com:tschuh/cmssw.git
+    - git fetch tschuh emyr
+    - git checkout -b tschuh_emyr tschuh/emyr
+
+    - /cvmfs/cms.cern.ch/common/scram b -v
+  artifacts:
+    expire_in: 1 day
+    paths:
+      - CMSSW_11_1_0_pre6
