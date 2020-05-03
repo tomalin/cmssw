@@ -1,7 +1,6 @@
 #include "L1Trigger/TrackFindingTMTT/interface/MiniHTstage.h"
 #include "L1Trigger/TrackFindingTMTT/interface/Settings.h"
-
-#include <L1Trigger/TrackFindingTMTT/interface/Sector.h>
+#include "L1Trigger/TrackFindingTMTT/interface/Sector.h"
 
 using namespace std;
 

@@ -70,7 +70,8 @@ namespace tmtt {
 
     // Prevent too many stubs being stored in a single HT cell if requested (to reflect hardware memory limits).
     // N.B. This MUST be the last filter applied.
-    if (maxStubsInCell_ <= 99)
+    constexpr unsigned int disableThreshold = 999;
+    if (maxStubsInCell_ < disableThreshold)
       vFilteredStubs_ = this->maxStubCountFilter(vFilteredStubs_);
 
     // Calculate the number of layers the filtered stubs in this cell are in.

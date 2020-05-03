@@ -9,8 +9,8 @@
 #include "L1Trigger/TrackFindingTMTT/interface/Settings.h"
 #include "L1Trigger/TrackFindingTMTT/interface/L1track3D.h"
 #include "L1Trigger/TrackFindingTMTT/interface/L1fittedTrack.h"
-
 #include "L1Trigger/TrackFindingTMTT/interface/Stub.h"
+
 #include <vector>
 #include <sstream>
 #include <string>

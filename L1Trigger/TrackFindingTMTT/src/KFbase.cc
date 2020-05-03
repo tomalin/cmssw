@@ -4,13 +4,13 @@
 
 #include "L1Trigger/TrackFindingTMTT/interface/KFbase.h"
 #include "L1Trigger/TrackFindingTMTT/interface/Utility.h"
-
-#include <TMatrixD.h>
 #include "L1Trigger/TrackFindingTMTT/interface/TP.h"
 #include "L1Trigger/TrackFindingTMTT/interface/KalmanState.h"
+#include "L1Trigger/TrackFindingTMTT/interface/StubKiller.h"
 #include "FWCore/ServiceRegistry/interface/Service.h"
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
 #include "DataFormats/Math/interface/deltaPhi.h"
+#include "TMatrixD.h"
 
 #include <algorithm>
 #include <functional>
@@ -71,7 +71,6 @@ namespace tmtt {
 
     //return L1fittedTrk for the selected state (if KF produced one it was happy with).
     if (cand != nullptr) {
-      //cout<<"Final KF candidate eta="<<cand->candidate().iEtaReg()<<" ns="<<cand->nSkippedLayers()<<" klid="<<cand->nextLayer()-1<<" n="<<cand->nStubLayers()<<endl;
 
       // Get track helix params.
       TVectorD trackPars = trackParams(cand);
@@ -253,8 +252,8 @@ namespace tmtt {
         vector<const KalmanState *> next_states_skipped;
 
         // find stubs for this layer
-        vector<const Stub *> thislay_stubs =
-            layerStubs[layer];  // If layer > 6, this will return empty vector, so safe.
+        // (If layer > 6, this will return empty vector, so safe).
+        vector<const Stub *> thislay_stubs = layerStubs[layer];  
 
         // find stubs for next layer if we skip a layer, except when we are on the penultimate layer,
         // or we have exceeded the max skipped layers
@@ -288,17 +287,18 @@ namespace tmtt {
         nSkipped += nSkippedDeadLayers;
         nSkipped += nSkippedAmbiguousLayers;
 
-        // check to guarantee no fewer than 2PS hits per state at iteration 1 (r<60cm)
-        // iteration 0 will always include a PS hit, but iteration 1 could use 2S hits unless we include this
+        // check to guarantee no fewer than 2PS hits per state at iteration 1 
+        // (iteration 0 will always include a PS hit, but iteration 1 could use 2S hits 
+	// unless we include this)
         if (iteration == 1 && !remove2PSCut) {
           vector<const Stub *> temp_thislaystubs;
           vector<const Stub *> temp_nextlaystubs;
           for (auto stub : thislay_stubs) {
-            if (stub->r() < 60.0)
+            if (stub->psModule())
               temp_thislaystubs.push_back(stub);
           }
           for (auto stub : nextlay_stubs) {
-            if (stub->r() < 60.0)
+            if (stub->psModule())
               temp_nextlaystubs.push_back(stub);
           }
           thislay_stubs = temp_thislaystubs;
@@ -341,63 +341,21 @@ namespace tmtt {
         sort(next_states.begin(), next_states.end(), orderByChi2);
         sort(next_states_skipped.begin(), next_states_skipped.end(), orderByChi2);
 
-        int i, max_states, max_states_skip;
-
-        // If layer contained several stubs, so several states now exist, select only the best ones.
-        // -- Disable this by setting to large values, as not used in latest KF firmware.
-        // (But not too big as this wastes CPU).
-
-        switch (iteration) {
-          case 0:
-            max_states = 15;
-            max_states_skip = 15;
-            break;
-          case 1:
-            max_states = 15;
-            max_states_skip = 15;
-            break;
-          case 2:
-            max_states = 15;
-            max_states_skip = 15;
-            break;
-          case 3:
-            max_states = 15;
-            max_states_skip = 15;
-            break;
-          case 4:
-            max_states = 15;
-            max_states_skip = 15;
-            break;
-          case 5:
-            max_states = 15;
-            max_states_skip = 15;
-            break;
-          default:
-            max_states = 15;
-            max_states_skip = 15;
-            break;
-        }
-
+	new_states.insert(new_states.end(), next_states.begin(), next_states.end());
+	new_states.insert(new_states.end(), next_states_skipped.begin(), next_states_skipped.end());
+	/*
         i = 0;
         for (auto state : next_states) {
-          if (i < max_states) {
             new_states.push_back(state);
-          } else {
-            break;
-          }
           i++;
         }
 
         i = 0;
         for (auto state : next_states_skipped) {
-          if (i < max_states_skip) {
             new_states.push_back(state);
-          } else {
-            break;
-          }
           i++;
         }
-
+*/
       }  //end of state loop
 
       // copy new_states into prev_states for next iteration or end if we are on
@@ -412,8 +370,6 @@ namespace tmtt {
       // Success. We have at least one state that passes all cuts. Save best state found with this number of stubs.
       if (nStubs >= settings_->kalmanMinNumStubs() && new_states.size() > 0)
         best_state_by_nstubs[nStubs] = new_states[0];
-
-      //if ( settings_->kalmanDebugLevel() >= 1 && best_state_by_nstubs.size() == 0 && new_states.size() == 0) cout<<"Track is lost by end iteration "<<iteration<<" : eta="<<l1track3D.iEtaReg()<<endl;
 
       if (nStubs == settings_->kalmanMaxNumStubs()) {
         // We're done.
@@ -666,9 +622,6 @@ namespace tmtt {
         // These corrections rely on inside --> outside tracking, so r-z track params in 2S modules known.
         float rShift = (stub->z() - z0) / tanL - stub->r();
 
-        // The above calc of rShift is approximate, so optionally check it with MC truth.
-        // if (tpa_ != nullptr) rShift = (stub->z() - tpa_->z0())/tpa_->tanLambda() - stub->r();
-
         if (settings_->kalmanHOhelixExp())
           rShift -= deltaS;
 
@@ -681,8 +634,6 @@ namespace tmtt {
           // Add alpha correction for non-radial 2S endcap strips..
           correction[0] += stub->alpha() * rShift;
         }
-
-        //cout<<"ENDCAP 2S STUB: (r,z)=("<<stub->r()<<","<<stub->z()<<") r*delta="<<stub->r() * correction[0]<<" r*alphaCorr="<<stub->r() * stub->alpha() * rShift<<" rShift="<<rShift<<endl;
       }
 
       // Apply correction to residuals.
@@ -877,30 +828,28 @@ namespace tmtt {
   set<unsigned> KFbase::kalmanDeadLayers(bool &remove2PSCut) const {
 
     // Kill scenarios described StubKiller.cc
-    enum KillOptions { layer5 = 1, layer1 = 2, layer1layer2 = 3, layer1disk1 = 4, random = 5 };
-
 
     // By which Stress Test scenario (if any) are dead modules being emulated?
-    const unsigned int killScenario = settings_->killScenario();
+    const StubKiller::KillOptions killScenario = static_cast<StubKiller::KillOptions>(settings_->killScenario());
     // Should TMTT tracking be modified to reduce efficiency loss due to dead modules?
     const bool killRecover = settings_->killRecover();
 
     set<pair<unsigned, bool>> deadLayers;  // GP layer ID & boolean indicating if in barrel.
 
     if (killRecover) {
-      if (killScenario == KillOptions::layer5) {  // barrel layer 5
+      if (killScenario == StubKiller::KillOptions::layer5) {  // barrel layer 5
         deadLayers.insert(pair<unsigned, bool>(4, true));
         if (iEtaReg_ < 5 || iEtaReg_ > 8 || iPhiSec_ < 8 || iPhiSec_ > 11) {
           deadLayers.clear();
         }
 
-      } else if (killScenario ==  KillOptions::layer1) {  // barrel layer 1
+      } else if (killScenario ==  StubKiller::KillOptions::layer1) {  // barrel layer 1
         deadLayers.insert(pair<unsigned, bool>(1, true));
         if (iEtaReg_ > 8 || iPhiSec_ < 8 || iPhiSec_ > 11) {
           deadLayers.clear();
         }
         remove2PSCut = true;
-      } else if (killScenario ==  KillOptions::layer1layer2) {  // barrel layers 1 & 2
+      } else if (killScenario ==  StubKiller::KillOptions::layer1layer2) {  // barrel layers 1 & 2
         deadLayers.insert(pair<unsigned, bool>(1, true));
         deadLayers.insert(pair<unsigned, bool>(2, true));
         if (iEtaReg_ > 8 || iPhiSec_ < 8 || iPhiSec_ > 11) {
@@ -909,7 +858,7 @@ namespace tmtt {
           deadLayers.insert(pair<unsigned, bool>(0, true));  // What is this doing?
         }
         remove2PSCut = true;
-      } else if (killScenario ==  KillOptions::layer1disk1) {  // barrel layer 1 & disk 1
+      } else if (killScenario ==  StubKiller::KillOptions::layer1disk1) {  // barrel layer 1 & disk 1
         deadLayers.insert(pair<unsigned, bool>(1, true));
         deadLayers.insert(pair<unsigned, bool>(3, false));
         if (iEtaReg_ > 8 || iPhiSec_ < 8 || iPhiSec_ > 11) {

@@ -12,21 +12,17 @@
 #include "L1Trigger/TrackFindingTMTT/interface/MuxHToutputs.h"
 #include "L1Trigger/TrackFindingTMTT/interface/MiniHTstage.h"
 #include "L1Trigger/TrackFindingTMTT/interface/StubWindowSuggest.h"
+#include "L1Trigger/TrackFindingTMTT/interface/demo/DigiConverter.h"
 
 #include "FWCore/MessageService/interface/MessageLogger.h"
 #include "FWCore/Framework/interface/ESHandle.h"
-
-#include "L1Trigger/TrackFindingTMTT/interface/demo/DigiConverter.h"
 
 #include "boost/numeric/ublas/matrix.hpp"
 #include <iostream>
 #include <sstream>
 #include <vector>
 #include <set>
-#include <assert.h>
-
-// If this is defined, then TTTrack collections will be output using tracks after HT (and optionally r-z filter) too.
-//#define OutputHT_TTracks
+#include <assert>
 
 using namespace std;
 using boost::numeric::ublas::matrix;
@@ -78,10 +74,6 @@ namespace demo {
     }
 
     //--- Define EDM output to be written to file (if required)
-
-    // L1 tracks found by Hough Transform
-    //  produces< TTTrackCollection >( "TML1TracksHT" ).setBranchAlias("TML1TracksHT");
-    // L1 tracks found by r-z track filter.
 
     produces<DigiKF4TrackCollection>("SimDigiKF4Tracks").setBranchAlias("SimDigiKF4Tracks");
     produces<DigiKF4TrackCollection>("SimDigiKF4TracksWithDups").setBranchAlias("SimDigiKF4TracksWithDups");
@@ -137,21 +129,12 @@ namespace demo {
     const tmtt::ConverterToTTTrack converter(&settings_);
     const DigiConverter digiConverter(&settings_);
 
+    // Pointers to collections for ED output output.
     auto allDigiKF4Tracks = std::make_unique<DigiKF4TrackCollection>();
     auto allDigiKF4TracksWithDups = std::make_unique<DigiKF4TrackCollection>();
     auto allDigiHTMiniStubs = std::make_unique<DigiHTMiniStubCollection>();
     auto allDigiHTStubs = std::make_unique<DigiHTStubCollection>();
     auto allDigiDTCStubs = std::make_unique<DigiDTCStubCollection>();
-
-    const unsigned int nFitAlgs = trackFitters_.size();
-    std::unique_ptr<TTTrackCollection> allFitTTTracksForOutput[nFitAlgs];
-    map<string, unsigned int> locationInsideArray;
-    unsigned int ialg = 0;
-    for (const string& fitterName : trackFitters_) {
-      auto fitTTTracksForOutput = std::make_unique<TTTrackCollection>();
-      allFitTTTracksForOutput[ialg] = std::move(fitTTTracksForOutput);
-      locationInsideArray[fitterName] = ialg++;
-    }
 
     //=== Do tracking in the r-phi Hough transform within each sector.
 
@@ -159,6 +142,7 @@ namespace demo {
     uint numPhiSecPerNon = settings_.numPhiSectors() / settings_.numPhiNonants();
 
     // Fill Hough-Transform arrays with stubs.
+    unsigned int linkDTC = 0;
     for (unsigned int iPhiSec = 0; iPhiSec < settings_.numPhiSectors(); iPhiSec++) {
       for (unsigned int iEtaReg = 0; iEtaReg < settings_.numEtaRegions(); iEtaReg++) {
         tmtt::Sector& sector = mSectors(iPhiSec, iEtaReg);
@@ -198,11 +182,10 @@ namespace demo {
 
                 DigiDTCStub digiDTCStub = digiConverter.makeDigiDTCStub(*stub, digiPhiSec);
 
-                std::srand(stub->digitalStub()
-                               .iDigi_PhiO());  // Distribute stubs randomly across DTC outputs, as no DTC emulation.
-                short unsigned int link_init = rand() % 48;
-
-                digiDTCStub.setRouteId({(uint16_t)(iPhiNonant), (uint16_t)link_init, DigiRouteId::kNullTimeIndex});
+                digiDTCStub.setRouteId({(uint16_t)(iPhiNonant), (uint16_t) linkDTC, DigiRouteId::kNullTimeIndex});
+		constexpr unsigned int numDTCoutputs = 48;
+		// Distribute stubs equally between DTC output links, as no DTC emulation.
+		linkDTC = (linkDTC + 1)%numDTCoutputs;
                 allDigiDTCStubs->push_back(digiDTCStub);
               }
             }
@@ -375,7 +358,7 @@ namespace demo {
           fittedTracks[fitterName].push_back(fitTrk);
           // Convert these fitted tracks to EDM format for output (used for collaborative work outside TMTT group).
           TTTrack<Ref_Phase2TrackerDigi_> fitTTTrack = converter.makeTTTrack(&fitTrk, iPhiSec, iEtaReg);
-          allFitTTTracksForOutput[locationInsideArray[fitterName]]->push_back(fitTTTrack);
+ 
           if (!settings_.enableDigitize() && "Digitization must be enabled to run the digi producer") {
             assert(0);
           }

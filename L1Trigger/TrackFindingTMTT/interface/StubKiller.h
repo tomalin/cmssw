@@ -19,7 +19,7 @@ namespace tmtt {
   class StubKiller {
   public:
 
-    enum KillOptions { none = 0, layer5 = 1, layer1 = 2, layer1layer2 = 3, layer1disk1 = 4, random = 5 };
+    enum class KillOptions { none = 0, layer5 = 1, layer1 = 2, layer1layer2 = 3, layer1disk1 = 4, random = 5 };
 
     StubKiller(KillOptions killScenario,
                const TrackerTopology* trackerTopology,
@@ -57,7 +57,7 @@ namespace tmtt {
     //  Identify modules to be killed, chosen based on location in tracker.
     void addDeadLayerModulesToDeadModuleList();
 
-    unsigned int killScenario_;
+    KillOptions killScenario_;
     const TrackerTopology* trackerTopology_;
     const TrackerGeometry* trackerGeometry_;
 

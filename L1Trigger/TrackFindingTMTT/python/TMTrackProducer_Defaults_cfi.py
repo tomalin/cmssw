@@ -21,6 +21,9 @@ TMTrackProducer_params = cms.PSet(
   clusterTruthInputTag = cms.InputTag("TTClusterAssociatorFromPixelDigis", "ClusterAccepted"),
   genJetInputTag = cms.InputTag("ak4GenJets", ""),
 
+  # Enable output of TTTracks from part-way through tracking chain (after HT & RZ).
+    EnableOutputIntermediateTTTracks = cms.bool(False),
+
   # Enable all use of MC truth info (disable to save CPU)
     EnableMCtruth = cms.bool(False),
   # Enable output histograms & job tracking performance summary (disable to save CPU)
@@ -160,7 +163,7 @@ TMTrackProducer_params = cms.PSet(
      UseBendFilter        = cms.bool(True),
      # Use filter in each HT cell, preventing more than the specified number of stubs being stored in the cell. (Reflecting memory limit of hardware). N.B. Results depend on assumed order of stubs.
      # N.B. If mini-HT is in use, then this cut applies to coarse-HT.
-     #MaxStubsInCell       = cms.uint32(99999), # Setting this to anything more than 99 disables this option
+     #MaxStubsInCell       = cms.uint32(99999), # Setting this to anything more than 999 disables this option
      MaxStubsInCell          = cms.uint32(32),    # set it equal to value used in hardware.
      MaxStubsInCellMiniHough = cms.uint32(16),    # Same type of cut for mini-HT (if in use)
      # If BusySectorKill = True, and more than BusySectorNumStubs stubs are assigned to tracks by an r-phi HT array, then the excess tracks are killed, with lowest Pt ones killed first. This is because HT hardware has finite readout time.
@@ -386,16 +389,6 @@ TMTrackProducer_params = cms.PSet(
   #=== Treatment of dead modules.
 
   DeadModuleOpts = cms.PSet( 
-     #--- Either use this private TMTT way of studying dead modules
-     # In (eta,phi) sectors containing dead modules, reduce the min. number of layers cut on tracks to (MinStubLayers - 1)?
-     # The sectors affected are hard-wired in DeadModuleDB::defineDeadTrackerRegions().
-     DeadReduceLayers  = cms.bool( False ),
-     # Emulate dead modules by killing fraction of stubs given by DeadSimulateFrac in certain layers & angular regions of 
-     # the tracker that are hard-wired in DeadModuleDB::defineDeadSectors(). Disable by setting <= 0. Fully enable by setting to 1.
-     # Do not use if KillScenario > 0.
-     DeadSimulateFrac = cms.double(-999.),
-     #
-     #--- Or this use communal way developed with Tracklet of studying dead modules
      # Emulate dead/inefficient modules using the StubKiller code, with stubs killed according to the scenarios of the Stress Test group. 
      # (0=Don't kill any stubs; 1-5 = Scenarios described in StubKiller.cc) 
      KillScenario = cms.uint32(0),

@@ -11,15 +11,15 @@
 #include "DataFormats/Math/interface/deltaR.h"
 #include "FWCore/Utilities/interface/Exception.h"
 
-#include <TH1F.h>
-#include <TH2F.h>
-#include <TH2Poly.h>
-#include <TF1.h>
-#include <TPad.h>
-#include <TProfile.h>
-#include <TGraphAsymmErrors.h>
-#include <TGraph.h>
-#include <TEfficiency.h>
+#include "TH1F.h"
+#include "TH2F.h"
+#include "TH2Poly.h"
+#include "TF1.h"
+#include "TPad.h"
+#include "TProfile.h"
+#include "TGraphAsymmErrors.h"
+#include "TGraph.h"
+#include "TEfficiency.h"
 
 #include <algorithm>
 #include <array>
@@ -471,14 +471,12 @@ namespace tmtt {
         unsigned int numPSstubs = 0;
         unsigned int num2Sstubs = 0;
 
-        //cout<<"=== TP === : index="<<tp.index()<<" pt="<<tp.pt()<<" q="<<tp.charge()<<" phi="<<tp.phi0()<<" eta="<<tp.eta()<<" z0="<<tp.z0()<<endl;
         for (const Stub* stub : assStubs) {
           if (stub->psModule())
             ++numPSstubs;
           else
             ++num2Sstubs;
 
-          //cout<<"    stub : index="<<stub->index()<<" barrel="<<stub->barrel()<<" r="<<stub->r()<<" phi="<<stub->phi()<<" z="<<stub->z()<<" bend="<<stub->bend()<<" assocTP="<<stub->assocTP()->index()<<endl;
           hisPtResStub_->Fill(stub->qOverPt() - tp.charge() / tp.pt());
           hisDelPhiResStub_->Fill(stub->dphi() - tp.dphi(stub->r()));
 
@@ -580,11 +578,9 @@ namespace tmtt {
         }
       }
       unsigned int nShare = 0;
-      for (map<ClusterLocation, unsigned int>::const_iterator it = commonClusterMap.begin();
-           it != commonClusterMap.end();
-           it++) {
-        if (it->second != 1)
-          nShare += it->second;  // 2 or more stubs share a cluster at this detid*strip.
+      for (const auto& p : commonClusterMap) {
+        if (p.second != 1)
+          nShare += p.second;  // 2 or more stubs share a cluster at this detid*strip.
       }
       if (iClus == 0) {
         hisFracStubsSharingClus0_->Fill(float(nShare) / float(vStubs.size()));
@@ -1056,8 +1052,6 @@ namespace tmtt {
   TFileDirectory Histos::bookTrackCands(const string& tName) {
     // Now book histograms for studying tracking in general.
 
-    // Define lambda function to facilitate adding "tName" to directory & histogram names.
-    //auto addn = [tName](const string& s){ return TString::Format("%s_%s", s.c_str(), tName.c_str()).Data(); };
     auto addn = [tName](const string& s) { return TString::Format("%s_%s", s.c_str(), tName.c_str()); };
 
     TFileDirectory inputDir = fs_->mkdir(addn("TrackCands").Data());
@@ -1878,7 +1872,6 @@ namespace tmtt {
       // Define lambda function to facilitate adding "fitName" histogram names.
       auto addn = [fitName](const string& s) { return TString::Format("%s_%s", s.c_str(), fitName.c_str()); };
 
-      //std::cout << "Booking histograms for " << fitName << std::endl;
       TFileDirectory inputDir = fs_->mkdir(fitName);
       inputDirMap[fitName] = inputDir;
 
@@ -2560,10 +2553,8 @@ namespace tmtt {
               tanL_proj = tp->tanLambda();
               z0_proj = tp->z0();
               // Distance of stub from true trajectory in z, evalulated at nominal radius of stub.
-              //deltaZ_proj =  s->z() - tp->trkZAtR(s->r());
               deltaZ_proj = s->z() - (tp->z0() + tp->tanLambda() * s->r());
               // Distance of stub from true trajectory in r*phi, evaluated at nominal radius of stub.
-              //deltaPhi_proj  = reco::deltaPhi(s->phi(), tp->trkPhiAtR(s->r()));
               deltaPhi_proj = reco::deltaPhi(s->phi(), tp->phi0() - (s->r() * inv2R_proj));
             } else {
               inv2R_proj = fitTrk.qOverPt() * (0.5 * settings_->invPtToInvR());

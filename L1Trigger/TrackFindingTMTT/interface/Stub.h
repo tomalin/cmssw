@@ -4,22 +4,17 @@
 #include "DataFormats/L1TrackTrigger/interface/TTTypes.h"
 #include "DataFormats/L1TrackTrigger/interface/TTStub.h"
 #include "DataFormats/Phase2TrackerDigi/interface/Phase2TrackerDigi.h"
-
-// TTStubAssociationMap.h forgets to two needed files, so must include them here ...
-#include "SimDataFormats/TrackingAnalysis/interface/TrackingParticle.h"
-#include "SimTracker/TrackTriggerAssociation/interface/TTClusterAssociationMap.h"
 #include "SimTracker/TrackTriggerAssociation/interface/TTStubAssociationMap.h"
 #include "DataFormats/DetId/interface/DetId.h"
+#include "DataFormats/Common/interface/Ref.h"
+#include "DataFormats/Common/interface/DetSetVector.h"
+#include "FWCore/Framework/interface/Frameworkfwd.h"
 
 #include "L1Trigger/TrackFindingTMTT/interface/Settings.h"
 #include "L1Trigger/TrackFindingTMTT/interface/DigitalStub.h"
 #include "L1Trigger/TrackFindingTMTT/interface/StubWindowSuggest.h"
 #include "L1Trigger/TrackFindingTMTT/interface/DegradeBend.h"
 #include "L1Trigger/TrackFindingTMTT/interface/StubKiller.h"
-
-#include "DataFormats/Common/interface/Ref.h"
-#include "DataFormats/Common/interface/DetSetVector.h"
-#include "FWCore/Framework/interface/Frameworkfwd.h"
 
 #include <vector>
 #include <set>
@@ -137,7 +132,7 @@ namespace tmtt {
 
     // Get stub bend (i.e. displacement between two hits in stub in units of strip pitch) and its estimated resolution.
     float bend() const {
-      this->check1();
+      this->check();
       return bend_;
     }
     // The bend resolution has a contribution from the sensor and a contribution from encoding the bend into
@@ -149,7 +144,7 @@ namespace tmtt {
     float numMergedBend() const { return numMergedBend_; }
     // Bend angle of track measured by stub and its estimated resolution.
     float dphi() const {
-      this->check2();
+      this->check();
       return (bend_ * dphiOverBend());
     }
     float dphiRes() const { return (dphiOverBend() * this->bendRes()); }
@@ -171,7 +166,7 @@ namespace tmtt {
     // -- conversion factors
     // Ratio of bend angle to bend, where bend is the displacement in strips between the two hits making up stub.
     float dphiOverBend() const {
-      this->check2();
+      this->check();
       return dphiOverBend_;
     }
     // Correction factor that was used when calculating dPhiOverBend, due to tilt of module.
@@ -302,15 +297,10 @@ namespace tmtt {
     // Function to calculate approximation for dphiOverBendCorrection aka B
     double approxB();
 
-    // No HT firmware can access directly the stub bend info.
-    void check1() const {
+    // After GP, firmware can't access directly the stub bend or dphi info.
+    void check() const {
       if (digitizeWarningsOn_ && digitizedForHTinput_)
-        throw cms::Exception("LogicError") << "Stub: You can't access digitized bend variable within HT firmware!";
-    }
-    // If using daisy-chain firmware, then it makes no sense to access the digiitzed values of dphi within HT.
-    void check2() const {
-      if (digitizeWarningsOn_ && digitizedForHTinput_)
-        throw cms::Exception("LogicError") << "Stub: You can't access digitized dphi within the HT or KF!";
+        throw cms::Exception("LogicError") << "Stub: no access digitized bend or dphi variables after GP!";
     }
 
   private:
@@ -380,8 +370,8 @@ namespace tmtt {
     DigitalStub digitalStub_;   // Class used to digitize stub if required.
     bool digitizedForGPinput_;  // Has this stub been digitized for GP input?
     bool digitizedForHTinput_;  // Has this stub been digitized for HT input?
-    std::string
-        digitizedForSForTFinput_;  // Has this stub been digitized for seed filter or track fitter input? If so, this was its name.
+    // Has this stub been digitized for SF/TF input? If so, this was SF/TF name.
+    std::string digitizedForSForTFinput_;  
     bool digitizedForDRinput_;  // Has this stub been digitized for seed filter input?
     bool digitizeWarningsOn_;   // Enable warnings about accessing non-digitized quantities.
 

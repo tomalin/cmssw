@@ -23,10 +23,6 @@ namespace tmtt {
 
     virtual ~TrackFitGeneric() {}
 
-    // Static method to produce a fitter based on a std::string
-    //  static std::auto_ptr<TrackFitGeneric> create(std::string, const Settings* settings);
-    static TrackFitGeneric* create(std::string, const Settings* settings);
-
     // Fit a track candidate obtained from the Hough Transform.
     virtual L1fittedTrack fit(const L1track3D& l1track3D) { return L1fittedTrack(); }
 

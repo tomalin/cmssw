@@ -16,7 +16,6 @@
 #include "L1Trigger/TrackFindingTMTT/interface/Stub.h"
 #include "L1Trigger/TrackFindingTMTT/interface/L1track3D.h"
 #include "L1Trigger/TrackFindingTMTT/interface/TrackerGeometryInfo.h"
-#include "L1Trigger/TrackFindingTMTT/interface/TrackFitGeneric.h"
 #include "DataFormats/Common/interface/DetSetVector.h"
 #include "MagneticField/Engine/interface/MagneticField.h"
 #include "MagneticField/Records/interface/IdealMagneticFieldRecord.h"
@@ -31,6 +30,8 @@
 #include <memory>
 
 namespace demo {
+
+  class TrackFitGeneric;
 
   class DigiProducer : public edm::EDProducer {
   public:
@@ -52,11 +53,11 @@ namespace demo {
     edm::ESGetToken<TrackerGeometry, TrackerDigiGeometryRecord> trackerGeometryToken_;
     edm::ESGetToken<TrackerTopology, TrackerTopologyRcd> trackerTopologyToken_;
     // ED tokens
-    const edm::EDGetTokenT<TrackingParticleCollection> tpToken_;
-    const edm::EDGetTokenT<tmtt::TTStubDetSetVec> stubToken_;
-    const edm::EDGetTokenT<tmtt::TTStubAssMap> stubTruthToken_;
-    const edm::EDGetTokenT<tmtt::TTClusterAssMap> clusterTruthToken_;
-    const edm::EDGetTokenT<reco::GenJetCollection> genJetToken_;
+    edm::EDGetTokenT<TrackingParticleCollection> tpToken_;
+    edm::EDGetTokenT<tmtt::TTStubDetSetVec> stubToken_;
+    edm::EDGetTokenT<tmtt::TTStubAssMap> stubTruthToken_;
+    edm::EDGetTokenT<tmtt::TTClusterAssMap> clusterTruthToken_;
+    edm::EDGetTokenT<reco::GenJetCollection> genJetToken_;
 
     const TrackerGeometry *trackerGeometry_;
     const TrackerTopology *trackerTopology_;
@@ -75,4 +76,4 @@ namespace demo {
 
 }  // namespace demo
 
-#endif /* __DEMONSTRATOR_PRODUCER_DIGIPRODUCER_HPP__ */
+#endif 

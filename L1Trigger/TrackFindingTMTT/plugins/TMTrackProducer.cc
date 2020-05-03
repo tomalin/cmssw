@@ -5,7 +5,6 @@
 #include <L1Trigger/TrackFindingTMTT/interface/Make3Dtracks.h>
 #include <L1Trigger/TrackFindingTMTT/interface/DupFitTrkKiller.h>
 #include <L1Trigger/TrackFindingTMTT/interface/TrackFitFactory.h>
-#include <L1Trigger/TrackFindingTMTT/interface/TrackFitGeneric.h>
 #include <L1Trigger/TrackFindingTMTT/interface/L1fittedTrack.h>
 #include <L1Trigger/TrackFindingTMTT/interface/ConverterToTTTrack.h>
 #include "L1Trigger/TrackFindingTMTT/interface/HTcell.h"
@@ -20,9 +19,6 @@
 #include <iostream>
 #include <vector>
 #include <set>
-
-// If this is defined, then TTTrack collections will be output using tracks after HT (and optionally r-z filter) too.
-//#define OutputHT_TTracks
 
 using namespace std;
 using boost::numeric::ublas::matrix;
@@ -72,13 +68,13 @@ namespace tmtt {
 
     //--- Define EDM output to be written to file (if required)
 
-#ifdef OutputHT_TTracks
-    // L1 tracks found by Hough Transform
-    produces<TTTrackCollection>("TML1TracksHT").setBranchAlias("TML1TracksHT");
-    // L1 tracks found by r-z track filter.
-    if (runRZfilter_)
-      produces<TTTrackCollection>("TML1TracksRZ").setBranchAlias("TML1TracksRZ");
-#endif
+    if (settings_.enableOutputIntermediateTTTracks()) {
+      // L1 tracks found by Hough Transform
+      produces<TTTrackCollection>("TML1TracksHT").setBranchAlias("TML1TracksHT");
+      // L1 tracks found by r-z track filter.
+      if (runRZfilter_)
+        produces<TTTrackCollection>("TML1TracksRZ").setBranchAlias("TML1TracksRZ");
+    }
     // L1 tracks after track fit by each of the fitting algorithms under study
     for (const string& fitterName : trackFitters_) {
       string edmName = string("TML1Tracks") + fitterName;
@@ -100,6 +96,7 @@ namespace tmtt {
   }
 
   void TMTrackProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
+
     // Note useful info about MC truth particles and about reconstructed stubs .
     InputData inputData(iEvent,
                         iSetup,
@@ -125,22 +122,15 @@ namespace tmtt {
     //=== Initialization
     // Create utility for converting L1 tracks from our private format to official CMSSW EDM format.
     const ConverterToTTTrack converter(&settings_);
-#ifdef OutputHT_TTracks
-    // Storage for EDM L1 track collection to be produced directly from HT output.
+
+    // Pointers to TTTrack collections for ED output.
     auto htTTTracksForOutput = std::make_unique<TTTrackCollection>();
-    // Storage for EDM L1 track collection to be produced directly from r-z track filter output (if run).
     auto rzTTTracksForOutput = std::make_unique<TTTrackCollection>();
-#endif
-    // Storage for EDM L1 track collection to be produced from fitted tracks (one for each fit algorithm being used).
-    // auto_ptr cant be stored in std containers, so use C one, together with map noting which element corresponds to which algorithm.
     const unsigned int nFitAlgs = trackFitters_.size();
-    std::unique_ptr<TTTrackCollection> allFitTTTracksForOutput[nFitAlgs];
-    map<string, unsigned int> locationInsideArray;
-    unsigned int ialg = 0;
+    map<string, unique_ptr<TTTrackCollection>> allFitTTTracksForOutput;
     for (const string& fitterName : trackFitters_) {
       auto fitTTTracksForOutput = std::make_unique<TTTrackCollection>();
-      allFitTTTracksForOutput[ialg] = std::move(fitTTTracksForOutput);
-      locationInsideArray[fitterName] = ialg++;
+      allFitTTTracksForOutput[fitterName] = std::move(fitTTTracksForOutput);
     }
 
     //=== Do tracking in the r-phi Hough transform within each sector.
@@ -217,7 +207,8 @@ namespace tmtt {
         // Convert 2D tracks found by HT to 3D tracks (optionally by running r-z filters & duplicate track removal)
         make3Dtrk.run(vecTracksRphi);
 
-#ifdef OutputHT_TTracks
+	if (settings_.enableOutputIntermediateTTTracks()) {
+
         // Convert these tracks to EDM format for output (used for collaborative work outside TMTT group).
         // Do this for tracks output by HT & optionally also for those output by r-z track filter.
         const vector<L1track3D>& vecTrk3D_ht = make3Dtrk.trackCands3D(false);
@@ -233,7 +224,7 @@ namespace tmtt {
             rzTTTracksForOutput->push_back(rzTTTrack);
           }
         }
-#endif
+	}
       }
     }
 
@@ -294,7 +285,7 @@ namespace tmtt {
             fittedTracks[fitterName].push_back(fitTrk);
             // Convert these fitted tracks to EDM format for output (used for collaborative work outside TMTT group).
             TTTrack<Ref_Phase2TrackerDigi_> fitTTTrack = converter.makeTTTrack(&fitTrk, iPhiSec, iEtaReg);
-            allFitTTTracksForOutput[locationInsideArray[fitterName]]->push_back(fitTTTrack);
+            allFitTTTracksForOutput[fitterName]->push_back(fitTTTrack);
           }
         }
       }
@@ -328,14 +319,14 @@ namespace tmtt {
     hists_.fill(inputData, mSectors, mHtRphis, mMake3Dtrks, fittedTracks);
 
     //=== Store output EDM track and hardware stub collections.
-#ifdef OutputHT_TTracks
+	if (settings_.enableOutputIntermediateTTTracks()) {
     iEvent.put(std::move(htTTTracksForOutput), "TML1TracksHT");
     if (runRZfilter_)
       iEvent.put(std::move(rzTTTracksForOutput), "TML1TracksRZ");
-#endif
+	}
     for (const string& fitterName : trackFitters_) {
       string edmName = string("TML1Tracks") + fitterName;
-      iEvent.put(std::move(allFitTTTracksForOutput[locationInsideArray[fitterName]]), edmName);
+      iEvent.put(std::move(allFitTTTracksForOutput[fitterName]), edmName);
     }
   }
 

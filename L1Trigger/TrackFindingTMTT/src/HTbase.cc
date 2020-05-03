@@ -155,7 +155,7 @@ namespace tmtt {
         float extraUp = (coordMax - upper) / coordAxisBinSize;
         constexpr float small = 0.001;  // allow tolerance on floating point precision.
         if (min(extraLow, extraUp) < -small || max(extraLow, extraUp) > (1.0 + small))
-          cout << "THIS SHOULD NOT HAPPEN " << extraLow << endl;
+	  throw cms::Exception("LogicError")<<"HTbase: convertCoordRangeToBinRange error";
         if (extraLow < fracCut && (nbins >= 3 || extraLow < extraUp))
           iCoordBinMin += 1;
         if (extraUp < fracCut && (nbins >= 3 || extraUp < extraLow))

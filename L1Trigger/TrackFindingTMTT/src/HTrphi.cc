@@ -42,7 +42,7 @@ namespace tmtt {
     HTbase::init(settings, iPhiSec, iEtaReg);
 
     invPtToDphi_ = settings->invPtToDphi();
-    shape_ = settings->shape();
+    shape_ = static_cast<HTshape>(settings->shape());
 
     int nCellsHT = settings->houghNcellsRphi();  // Total number of required cells in HT array (if > 0)
 
@@ -53,7 +53,7 @@ namespace tmtt {
     if (nCellsHT > 0)
       nBinsQoverPtAxis_ = 1;  // Will calculate number of bins automatically. Initialize it to non-zero value.
     binSizeQoverPtAxis_ = 2 * maxAbsQoverPtAxis_ / nBinsQoverPtAxis_;
-    if (shape_ == 2 || shape_ == 1 || settings_->shape() == 3)
+    if (shape_ != HTshape::square)
       binSizeQoverPtAxis_ = 2. * maxAbsQoverPtAxis_ / (nBinsQoverPtAxis_ - 1.);
 
     //--- Specification of HT phiTrk axis
@@ -66,9 +66,9 @@ namespace tmtt {
     if (nCellsHT > 0)
       nBinsPhiTrkAxis_ = 1;  // Will calculate number of bins automatically. Initialize it to non-zero value.
     binSizePhiTrkAxis_ = 2 * maxAbsPhiTrkAxis_ / nBinsPhiTrkAxis_;
-    if (shape_ == 2)
+    if (shape_ == HTshape::hexagon)
       binSizePhiTrkAxis_ = 2. * maxAbsPhiTrkAxis_ / (nBinsPhiTrkAxis_ - 1. / 6.);
-    else if (shape_ == 1)
+    else if (shape_ == HTshape::diamond)
       binSizePhiTrkAxis_ = 2. * maxAbsPhiTrkAxis_ / (nBinsPhiTrkAxis_ - 1. / 2.);
 
     // Did user specify number of cells required in HT array? If so, determine number of bins along
@@ -220,16 +220,16 @@ namespace tmtt {
 
       // Loop over q/Pt related bins in HT array.
       for (unsigned int i = 0; i < nBinsQoverPtAxis_; i++) {
-        if (shape_ == 0) {
+        if (shape_ == HTshape::square) {
           //--- This is a traditional HT with square cells.
 
           // In this q/Pt bin, find the range of phi bins that this stub is consistent with.
-          pair<unsigned int, unsigned int> iRange = this->iPhiRange(stub, i);
-          unsigned int iPhiTrkBinMin = iRange.first;
-          unsigned int iPhiTrkBinMax = iRange.second;
+          pair<unsigned int, unsigned int> jRange = this->iPhiRange(stub, i);
+          unsigned int jPhiTrkBinMin = jRange.first;
+          unsigned int jPhiTrkBinMax = jRange.second;
 
           // Store stubs in these cells.
-          for (unsigned int j = iPhiTrkBinMin; j <= iPhiTrkBinMax; j++) {
+          for (unsigned int j = jPhiTrkBinMin; j <= jPhiTrkBinMax; j++) {
             bool canStoreStub = true;
             unsigned int iStore = i;
             unsigned int jStore = j;
@@ -256,12 +256,12 @@ namespace tmtt {
           }
 
           // Check that limitations of firmware would not prevent stub being stored correctly in this HT column.
-          this->countFirmwareErrors(i, iPhiTrkBinMin, iPhiTrkBinMax);
+          this->countFirmwareErrors(i, jPhiTrkBinMin, jPhiTrkBinMax);
 
         } else {
           //--- This is are novel HT with unusual shaped cells.
 
-          if (shape_ == 1) {
+          if (shape_ == HTshape::diamond) {
             //--- This HT has diamond shaped cells.
 
             float qOverPtBin = -maxAbsQoverPtAxis_ + i * binSizeQoverPtAxis_;
@@ -273,7 +273,7 @@ namespace tmtt {
             if (binCenter < nBinsPhiTrkAxis_)
               HTbase::htArray_(i, binCenter).store(stub, inEtaSubSecs);
 
-          } else if (shape_ == 2) {
+          } else if (shape_ == HTshape::hexagon) {
             //--- This HT has hexagonal cells (with two of its sides parallel to the phi axis).
 
             float qOverPtBin = -maxAbsQoverPtAxis_ + i * binSizeQoverPtAxis_;
@@ -309,7 +309,7 @@ namespace tmtt {
             else if (binMax.first && binMax.second < nBinsPhiTrkAxis_)
               HTbase::htArray_(i, binMax.second).store(stub, inEtaSubSecs);
 
-          } else if (shape_ == 3) {
+          } else if (shape_ == HTshape::brick) {
             //--- This HT has square cells with alternate rows shifted horizontally by 0.5*cell_width.
 
             float qOverPtBin = -maxAbsQoverPtAxis_ + i * binSizeQoverPtAxis_;
@@ -402,10 +402,6 @@ namespace tmtt {
       phiTrkMax += phiTrkVarStub;
     }
 
-    // Allow for multiple scattering/resolution
-    // phiTrkMin -= 0.005;
-    // phiTrkMax += 0.005;
-
     float deltaPhiMin = reco::deltaPhi(phiTrkMin, phiCentreSector_);  // Offset to centre of sector.
     float deltaPhiMax = reco::deltaPhi(phiTrkMax, phiCentreSector_);
     pair<float, float> phiTrkRange(deltaPhiMin, deltaPhiMax);
@@ -473,15 +469,19 @@ namespace tmtt {
     float qOverPtBinCenter = .5;
     float phiTrkBinCenter = .5;
 
-    if (shape_ == 2 || shape_ == 1 || shape_ == 3)
+    if (shape_ != HTshape::square) {
       qOverPtBinCenter = 0.;
 
-    if (shape_ == 2)
-      phiTrkBinCenter = (qOverPtBin % 2 == 0) ? 1. / 6. : 2. / 3.;
-    else if (shape_ == 1)
-      phiTrkBinCenter = (qOverPtBin % 2 == 0) ? 0. : 1. / 2.;
-    else if (shape_ == 3)
-      phiTrkBinCenter = (qOverPtBin % 2 == 0) ? 1. / 4. : 3. / 4.;
+      float evenPhiPos = 0., oddPhiPos = 0.;
+      if (shape_ == HTshape::hexagon) {
+        evenPhiPos = 1./6.; oddPhiPos = 2./3.;
+      } else if (shape_ == HTshape::diamond) {
+        evenPhiPos = 0.; oddPhiPos = 0.5;
+      } else if (shape_ == HTshape::brick) {
+        evenPhiPos = 0.25; oddPhiPos = 0.75;
+      }
+      phiTrkBinCenter = (qOverPtBin % 2 == 0) ? evenPhiPos : oddPhiPos;
+    }
 
     float qOverPt = -maxAbsQoverPtAxis_ + (qOverPtBin + qOverPtBinCenter) * binSizeQoverPtAxis_;
     float phiTrk = -maxAbsPhiTrkAxis_ + (phiTrkBin + phiTrkBinCenter) * binSizePhiTrkAxis_;
@@ -491,8 +491,8 @@ namespace tmtt {
       phiTrk += 0.5 * binSizePhiTrkAxis_;
     }
 
-    phiTrk = reco::deltaPhi(phiTrk + phiCentreSector_,
-                            0.);  // Correct phiTrk to centre of sector, taking care of 2*pi wrapping
+    // Correct phiTrk to centre of sector, taking care of 2*pi wrapping
+    phiTrk = reco::deltaPhi(phiTrk + phiCentreSector_, 0.);  
     return pair<float, float>(qOverPt, phiTrk);
   }
 
@@ -505,9 +505,8 @@ namespace tmtt {
     pair<float, float> helix2Dht = this->helix2Dhough(i, j);
     // Convert to the conventionally agreed pair of helix parameters, (q/pt, phi0).
     float qOverPt = helix2Dht.first;  // easy
-    float phi0 = reco::deltaPhi(
-        helix2Dht.second + invPtToDphi_ * chosenRofPhi_ * qOverPt,
-        0.);  // If HT defined track phi other than at r=0, must correct to get phi0. Allow for 2*pi wrapping of phi.
+    // If HT defined track phi other than at r=0, must correct to get phi0. Allow for 2*pi wrapping of phi.
+    float phi0 = reco::deltaPhi(helix2Dht.second + invPtToDphi_ * chosenRofPhi_ * qOverPt, 0.);  
     return pair<float, float>(qOverPt, phi0);
   }
 
@@ -525,13 +524,11 @@ namespace tmtt {
     int iPhiTrk = floor((deltaPhi - (-maxAbsPhiTrkAxis_)) / binSizePhiTrkAxis_);
     // Check if this cell was within the HT array.
     if (iQoverPt >= 0 && iQoverPt < int(nBinsQoverPtAxis_) && iPhiTrk >= 0 && iPhiTrk < int(nBinsPhiTrkAxis_)) {
-      // Check if this cell is merged with its neighbours (as in low Pt region), and if so return merged cell location.
-      /*
-    if (this->mergedCell((unsigned int) iQoverPt, (unsigned int) iPhiTrk)) {
-      if (iQoverPt%2 == 1) iQoverPt -= 1;
-      if (iPhiTrk%2  == 1) iPhiTrk  -= 1;
-    }
-    */
+        // Check if this cell is merged with its neighbours (as in low Pt region), and if so return merged cell location.
+        // New: because 2nd stage mini HT may recreate tracks from merged cells with finer cell granularity, one can't predict
+        //      if a merged cell was used to create a track merely by looking at its cell location.
+        //      So instead ask L1track3D, which knows if it was created from a merged HT cell or not.
+      ;
     } else {
       // TP is not in this HT array at all. Flag this by setting "outside" bin index to 0 (Nbins) if outside array below (above).
       if (iQoverPt < 0)
@@ -562,7 +559,7 @@ namespace tmtt {
     int iQoverPt = 999999;
     int iPhiTrk = 999999;
 
-    if (shape_ == 0) {
+    if (shape_ == HTshape::square) {
       //--- This is a traditional HT with square cells.
 
       iQoverPt = floor((qOverPt - (-maxAbsQoverPtAxis_)) / binSizeQoverPtAxis_);
@@ -574,13 +571,7 @@ namespace tmtt {
         // New: because 2nd stage mini HT may recreate tracks from merged cells with finer cell granularity, one can't predict
         //      if a merged cell was used to create a track merely by looking at its cell location.
         //      So instead ask L1track3D, which knows if it was created from a merged HT cell or not.
-
-        /*
-      if (fitTrk->l1track3D().mergedHTcell()) {
-        if (iQoverPt%2 == 1) iQoverPt -= 1;
-        if (iPhiTrk%2  == 1) iPhiTrk  -= 1;
-      }
-      */
+        ;
       } else {
         // Fitted track is not in this HT array at all. Flag this by setting "outside" bin index to 0 (Nbins-1) if outside array below (above).
         if (iQoverPt < 0)
@@ -641,7 +632,6 @@ namespace tmtt {
       float fMergeBins = (maxAbsQoverPtAxis_ - minInvPtToMerge2x2_) / (2. * binSizeQoverPtAxis_);
       // Number of unmerged bins this corresponds to, which must be even, since each merged bin comprises two normal q/pt bins.
       unsigned int numQoverPtBinsToMerge = 2 * min((unsigned int)(std::round(fMergeBins)), (nBinsQoverPtAxis_ / 4));
-      // IRT - bug fix
       const float small = 0.001;
       if (minInvPtToMerge2x2_ < small && (unsigned int)(std::round(2. * fMergeBins)) % 2 == 1)
         numQoverPtBinsToMerge++;
@@ -662,11 +652,11 @@ namespace tmtt {
     float maxGrad = max(gradOuter, gradInner);
     // Convert it to units of bin width.
     maxGrad *= binSizeQoverPtAxis_ / binSizePhiTrkAxis_;
-    if (shape_ == 2)
+    if (shape_ == HTshape::hexagon)
       maxGrad *= 3.;
-    else if (shape_ == 1)
+    else if (shape_ == HTshape::diamond)
       maxGrad *= 2.;
-    else if (shape_ == 3)
+    else if (shape_ == HTshape::brick)
       maxGrad *= 4.;
     return maxGrad;
   }
@@ -679,8 +669,8 @@ namespace tmtt {
 
     if (busySectorKill_) {
       unsigned int nStubsOut = 0;  // #stubs assigned to tracks in this sector.
-      vector<unsigned int> nStubsOutInRange(busySectorMbinRanges_.size(),
-                                            0);  // #stubs assigned to each m bin range in this sector.
+      // #stubs assigned to each m bin range in this sector.
+      vector<unsigned int> nStubsOutInRange(busySectorMbinRanges_.size(), 0); 
 
       for (const L1track2D& trk : tracks) {
         bool keep = true;

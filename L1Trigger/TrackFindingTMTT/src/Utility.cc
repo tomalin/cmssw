@@ -2,7 +2,6 @@
 #include "L1Trigger/TrackFindingTMTT/interface/TP.h"
 #include "L1Trigger/TrackFindingTMTT/interface/Stub.h"
 #include "L1Trigger/TrackFindingTMTT/interface/Settings.h"
-#include "L1Trigger/TrackFindingTMTT/interface/DeadModuleDB.h"
 
 #include "FWCore/Utilities/interface/Exception.h"
 
@@ -168,22 +167,18 @@ namespace tmtt {
 
       bool reduce = false;
 
-      // e.g. To increase efficiency for high Pt tracks.
+      // to increase efficiency for high Pt tracks.
       bool applyMinPt = (settings->minPtToReduceLayers() > 0);
       if (applyMinPt && std::abs(invPt) < 1 / settings->minPtToReduceLayers())
         reduce = true;
 
-      // e.g. Or to increase efficiency in the barrel-endcap transition or very forward regions.
+      // or to increase efficiency in the barrel-endcap transition or very forward regions.
       const vector<unsigned int> etaSecsRed = settings->etaSecsReduceLayers();
       if (std::count(etaSecsRed.begin(), etaSecsRed.end(), iEtaReg) != 0)
         reduce = true;
 
-      // e.g. Or to increase efficiency in sectors containing dead modules.
-      if (settings->deadReduceLayers()) {
-        const DeadModuleDB dead;
-        if (dead.reduceLayerCut(iPhiSec, iEtaReg))
-          reduce = true;
-      }
+      // or to increase efficiency in sectors containing dead modules (hard-wired in KF only)
+      // Not implemented here.
 
       if (reduce)
         nLayCut--;

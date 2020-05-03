@@ -1,4 +1,4 @@
-#include <L1Trigger/TrackFindingTMTT/interface/Settings.h>
+#include "L1Trigger/TrackFindingTMTT/interface/Settings.h"
 #include "FWCore/Utilities/interface/Exception.h"
 #include <set>
 #include <cmath>
@@ -23,7 +23,6 @@ namespace tmtt {
     stubMatchStrict_ = false;
     minStubLayers_ = 4;
     minPtToReduceLayers_ = 99999.;
-    deadReduceLayers_ = false;
     kalmanMinNumStubs_ = 4;
     kalmanMaxNumStubs_ = 6;
     numPhiNonants_ = 9;
@@ -80,9 +79,8 @@ namespace tmtt {
     ssStripPitch_ = 0.009;
     ssNStrips_ = 1016;
     ssStripLength_ = 5.0250;
-    zMaxNonTilted_[1] = 15.3;  // max z at which non-tilted modules are found in inner 3 barrel layers.
-    zMaxNonTilted_[2] = 24.6;
-    zMaxNonTilted_[3] = 33.9;
+    // max z at which non-tilted modules are found in 3 barrel PS layers. (Element 0 not used).
+    zMaxNonTilted_ = {0, 15.3, 24.6, 33.9};
 
     magneticField_ = 3.81120228767395;
 
@@ -145,6 +143,7 @@ namespace tmtt {
 
         enableMCtruth_(iConfig.getParameter<bool>("EnableMCtruth")),
         enableHistos_(iConfig.getParameter<bool>("EnableHistos")),
+        enableOutputIntermediateTTTracks_(iConfig.getParameter<bool>("EnableOutputIntermediateTTTracks")),
 
         //=== Cuts on MC truth tracks used for tracking efficiency measurements.
 
@@ -324,8 +323,6 @@ namespace tmtt {
 
         //=== Treatment of dead modules.
 
-        deadReduceLayers_(deadModuleOpts_.getParameter<bool>("DeadReduceLayers")),
-        deadSimulateFrac_(deadModuleOpts_.getParameter<double>("DeadSimulateFrac")),
         killScenario_(deadModuleOpts_.getParameter<unsigned int>("KillScenario")),
         killRecover_(deadModuleOpts_.getParameter<bool>("KillRecover")),
 
@@ -481,12 +478,6 @@ namespace tmtt {
         throw cms::Exception("BadConfig")
             << "Settings: Invalid cfg parameters - merging only allowed for square-shaped cells.";
     }
-
-    // Do not use our private dead module emulation together with the communal Tracklet/TMTT dead module emulation
-    // developed for the Stress Test.
-    if (deadSimulateFrac_ > 0. && killScenario_ > 0)
-      throw cms::Exception("BadConfig")
-          << "Settings: Invalid cfg parameters - don't enable both DeadSimulateFrac and KillScenario";
 
     // Check Kalman fit params.
     if (kalmanMaxNumStubs_ < kalmanMinNumStubs_)

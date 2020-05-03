@@ -4,11 +4,8 @@
 #include "L1Trigger/TrackFindingTMTT/interface/TrkRZfilter.h"
 #include "L1Trigger/TrackFindingTMTT/interface/L1track3D.h"
 
-#include "boost/numeric/ublas/matrix.hpp"
 #include <vector>
 #include <utility>
-
-using boost::numeric::ublas::matrix;
 
 //=== This reconstructs 3D tracks from the 2D tracks found by the Hough transform.
 //=== It can do this by simply estimating the r-z helix parameters from the centre of the eta sector

@@ -2,15 +2,11 @@
 #include "DataFormats/TrackerCommon/interface/TrackerTopology.h"
 #include "Geometry/CommonTopologies/interface/PixelGeomDetUnit.h"
 #include "Geometry/CommonTopologies/interface/PixelTopology.h"
-
-//#include "SimTracker/TrackTriggerAssociation/interface/TTStubAssociationMap.h"
 #include "DataFormats/Math/interface/deltaPhi.h"
 #include "FWCore/Utilities/interface/Exception.h"
-#include "TRandom.h"
 
 #include "L1Trigger/TrackFindingTMTT/interface/Stub.h"
 #include "L1Trigger/TrackFindingTMTT/interface/TP.h"
-#include "L1Trigger/TrackFindingTMTT/interface/DeadModuleDB.h"
 
 #include <iostream>
 
@@ -50,8 +46,8 @@ namespace tmtt {
         digitalStub_(settings, r, phi, z, iPhiSec),
         stubWindowSuggest_(settings) {  //work in progress on better constructor for new hybrid
     if (psModule && barrel) {
-      double zMax[4];
-      settings->zMaxNonTilted(zMax);
+      // max z at which non-tilted modules are found in 3 barrel PS layers. (Element 0 not used).
+      const vector<float>& zMax = settings->zMaxNonTilted();
       tiltedBarrel_ = (std::abs(z) > zMax[layerid]);
     } else {
       tiltedBarrel_ = false;
@@ -485,18 +481,9 @@ namespace tmtt {
       frontendPass_ = false;
     }
 
-    // Emulate stubs in dead tracker regions using private TMTT emulation.
-    if (settings_->deadSimulateFrac() > 0.) {  // Is option to emulate dead modules enabled?
-      const DeadModuleDB dead;
-      if (dead.killStub(this)) {
-        static thread_local TRandom randomGenerator;
-        if (randomGenerator.Rndm() < settings_->deadSimulateFrac())
-          frontendPass_ = false;
-      }
-    }
-
-    // Or emulate stubs in dead tracker regions using communal emulation shared with Tracklet.
-    if (settings_->killScenario() != StubKiller::KillOptions::none) {
+    // Emulate stubs in dead tracker regions..
+    StubKiller::KillOptions killScenario = static_cast<StubKiller::KillOptions>(settings_->killScenario()); 
+    if (killScenario != StubKiller::KillOptions::none) {
       bool kill = stubKiller->killStub(ttStubRef_.get());
       if (kill)
         frontendPass_ = false;

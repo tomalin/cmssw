@@ -90,11 +90,12 @@ namespace tmtt {
 
     void fillNearestJetInfo(const reco::GenJetCollection* genJets);  // Store info (deltaR, pt) with nearest jet
 
-    float tpInJet() const { return tpInJet_ && nearestJetPt_ > 30; }
-    float tpInHighPtJet() const { return tpInJet_ && nearestJetPt_ > 100; }
-    float tpInVeryHighPtJet() const { return tpInJet_ && nearestJetPt_ > 200; }
-
-    float nearestJetPt() const { return nearestJetPt_; }
+    // Check if TP is in a jet (for performance studies in jets)
+    float tpInJet(float genJetPtCut) const {return (tpInJet_ && nearestJetPt_ > genJetPtCut);}
+    float tpInJet() const {constexpr float genJetPtCut=30.; return this->tpInJet(genJetPtCut);}
+    float tpInHighPtJet() const {constexpr float genJetPtCut=100.; return this->tpInJet(genJetPtCut);}
+    float tpInVeryHighPtJet() const {constexpr float genJetPtCut=200.; return this->tpInJet(genJetPtCut);}
+    float nearestJetPt() const { return nearestJetPt_; } // -ve if no nearest jet.
 
   private:
     void fillUse();           // Fill the use_ flag.

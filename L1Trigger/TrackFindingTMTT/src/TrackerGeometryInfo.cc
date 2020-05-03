@@ -1,7 +1,5 @@
 #include "L1Trigger/TrackFindingTMTT/interface/TrackerGeometryInfo.h"
 #include "DataFormats/SiStripDetId/interface/StripSubdetector.h"
-#include <TGraph.h>
-#include <TF1.h>
 
 using namespace std;
 

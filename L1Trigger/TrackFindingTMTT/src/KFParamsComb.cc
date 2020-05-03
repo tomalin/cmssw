@@ -78,8 +78,8 @@ namespace tmtt {
   // Stub position resolution in (phi,z)
 
   TMatrixD KFParamsComb::matrixV(const Stub* stub, const KalmanState* state) const {
-    double inv2R =
-        (settings_->invPtToInvR()) * 0.5 * state->candidate().qOverPt();  // alternatively use state->vectorX()(INV2R)
+    // Take Pt from input track candidate as more stable.
+    double inv2R = (settings_->invPtToInvR()) * 0.5 * state->candidate().qOverPt();  
     double inv2R2 = inv2R * inv2R;
 
     double tanl = state->vectorX()(T);  // factor of 0.9 improves rejection
@@ -125,7 +125,7 @@ namespace tmtt {
       }
 
       if (settings_->kalmanHOdodgy()) {
-        // Use original (Dec. 2016) dodgy implementation was this.
+        // Inaccurate calculation, but corresponds to current firmware.
         vz = b;
       }
 
@@ -145,18 +145,6 @@ namespace tmtt {
         double beta2 = beta * beta;
         vphi += b * beta2;
         vcorr = b * (beta * tanl);
-
-        // IRT - for checking efficiency of removing phi-z correlation from projection.
-        // "ultimate_off1"
-        //vphi  = a * invr2 + b * pow(-stub->alpha(), 2) + b * inv2R2 + sigmaScat2;
-        //vcorr = b * ((-stub->alpha()) * tanl);
-
-        // IRT - This higher order correction doesn't significantly improve the track fit performance, so commented out.
-        //if (settings_->kalmanHOhelixExp()) {
-        //  float dsByDr = 1. + (1./2.)*r2*inv2R2; // Allows for z = z0 + s*tanL, where s is not exactly r due to circle.
-        //  vcorr *= dsByDr;
-        //  vz *= dsByDr * dsByDr;
-        //}
 
         if (settings_->kalmanHOdodgy()) {
           // Use original (Dec. 2016) dodgy implementation was this.

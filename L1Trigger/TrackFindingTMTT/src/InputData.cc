@@ -3,20 +3,12 @@
 #include "FWCore/Framework/interface/EventSetup.h"
 #include "FWCore/Utilities/interface/InputTag.h"
 #include "FWCore/Framework/interface/EDAnalyzer.h"
-
 #include "SimDataFormats/Track/interface/SimTrack.h"
 #include "SimDataFormats/EncodedEventId/interface/EncodedEventId.h"
-
-// #include "Geometry/Records/interface/StackedTrackerGeometryRecord.h"
+#include "SimDataFormats/TrackingAnalysis/interface/TrackingParticle.h"
 #include "Geometry/TrackerGeometryBuilder/interface/TrackerGeometry.h"
 #include "Geometry/Records/interface/TrackerDigiGeometryRecord.h"
 #include "DataFormats/TrackerCommon/interface/TrackerTopology.h"
-
-// TTStubAssociationMap.h forgets to two needed files, so must include them here ...
-#include "SimDataFormats/TrackingAnalysis/interface/TrackingParticle.h"
-#include "SimTracker/TrackTriggerAssociation/interface/TTClusterAssociationMap.h"
-#include "SimTracker/TrackTriggerAssociation/interface/TTStubAssociationMap.h"
-
 #include "DataFormats/JetReco/interface/GenJetCollection.h"
 #include "DataFormats/JetReco/interface/GenJet.h"
 
@@ -41,9 +33,11 @@ namespace tmtt {
                        const edm::EDGetTokenT<TTStubAssMap> stubTruthToken,
                        const edm::EDGetTokenT<TTClusterAssMap> clusterTruthToken,
                        const edm::EDGetTokenT<reco::GenJetCollection> genJetToken) {
-    vTPs_.reserve(2500);
-    vStubs_.reserve(35000);
-    vAllStubs_.reserve(35000);
+
+    constexpr unsigned int nTypicalTPs=1200, nTypicalStubs=15000, nTypicalAllStubs=20000;
+    vTPs_.reserve(nTypicalTPs);
+    vStubs_.reserve(nTypicalStubs);
+    vAllStubs_.reserve(nTypicalAllStubs);
 
     // Note if job will use MC truth info (or skip it to save CPU).
     enableMCtruth_ = settings->enableMCtruth();

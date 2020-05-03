@@ -38,6 +38,8 @@ namespace tmtt {
     bool enableMCtruth() const { return enableMCtruth_; }
     // Enable output histograms & job tracking performance summary (disable to save CPU).
     bool enableHistos() const { return enableHistos_; }
+    // Enable output of TTTracks from part-way through tracking chain (after HT & RZ).
+    bool enableOutputIntermediateTTTracks() const {return enableOutputIntermediateTTTracks_;}
 
     //=== Cuts on MC truth tracks for tracking efficiency measurements.
 
@@ -97,9 +99,10 @@ namespace tmtt {
 
     unsigned int numPhiNonants() const { return numPhiNonants_; }
     unsigned int numPhiSectors() const { return numPhiSectors_; }
+    // Use phi of track at this radius as sector hourglass reference radius.
     double chosenRofPhi() const {
       return chosenRofPhi_;
-    }  // Use phi of track at this radius for assignment of stubs to phi sectors & also for one of the axes of the r-phi HT. If ChosenRofPhi=0, then use track phi0.
+    }  
     bool useStubPhi() const {
       return useStubPhi_;
     }  // Require stub phi to be consistent with track of Pt > HTArraySpec.HoughMinPt that crosses HT phi axis?
@@ -356,17 +359,7 @@ namespace tmtt {
     bool kalmanHOdodgy() const { return kalmanHOdodgy_; }
 
     //=== Treatment of dead modules.
-
-    //--- Either use this private TMTT way of studying dead modules
-    // In (eta,phi) sectors containing dead modules, reduce the min. number of layers cut on tracks to (MinStubLayers() - 1)?
-    // The sectors affected are hard-wired in DeadModuleDB::defineDeadTrackerRegions().
-    bool deadReduceLayers() const { return deadReduceLayers_; }
-    // Emulate dead modules by killing fraction of stubs given by DeadSimulateFrac in certain layers & angular regions of
-    // the tracker that are hard-wired in DeadModuleDB::defineDeadSectors(). Disable by std::setting <= 0. Fully enable by std::setting to 1.
-    // Do not use if KillScenario > 0.
-    double deadSimulateFrac() const { return deadSimulateFrac_; }
     //
-    //--- Or this use communal way developed with Tracklet of studying dead modules
     // Emulate dead/inefficient modules using the StubKiller code, with stubs killed according to the scenarios of the Stress Test group.
     // (0=Don't kill any stubs; 1-5 = Scenarios described in StubKiller.cc). 
     unsigned int killScenario() const { return killScenario_; }
@@ -456,12 +449,8 @@ namespace tmtt {
     double psStripPitch() const { return psStripPitch_; }
     double psNStrips() const { return psNStrips_; }
     double psPixelLength() const { return psPixelLength_; }
-    // max z at which non-tilted modules are found in inner 3 barrel layers. (Element 0 not used).
-    void zMaxNonTilted(double (&zMax)[4]) const {
-      zMax[1] = zMaxNonTilted_[1];
-      zMax[2] = zMaxNonTilted_[2];
-      zMax[3] = zMaxNonTilted_[3];
-    }
+    // max z at which non-tilted modules are found in 3 barrel PS layers. (Element 0 not used).
+    const std::vector<float>& zMaxNonTilted() const { return zMaxNonTilted_; }
 
   private:
     // Input tags for ES & ED data.
@@ -494,6 +483,7 @@ namespace tmtt {
     // General settings
     bool enableMCtruth_;
     bool enableHistos_;
+    bool enableOutputIntermediateTTTracks_;
 
     // Cuts on truth tracking particles.
     double genMinPt_;
@@ -665,8 +655,6 @@ namespace tmtt {
     bool kalmanHOdodgy_;
 
     // Treatment of dead modules.
-    bool deadReduceLayers_;
-    double deadSimulateFrac_;
     unsigned int killScenario_;
     bool killRecover_;
 
@@ -723,7 +711,7 @@ namespace tmtt {
     double ssNStrips_;
     double ssStripLength_;
 
-    double zMaxNonTilted_[4];
+    std::vector<float> zMaxNonTilted_;
   };
 
 }  // namespace tmtt

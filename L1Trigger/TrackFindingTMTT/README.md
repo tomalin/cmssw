@@ -98,7 +98,7 @@ other classes that implement linearized chi2, linear regression or Kalman filter
    - SimpleLR (linear regression fit, which is similar to chi2 fit, but assumes all hits have same uncertainty).
    - KFParamsComb: Kalman Filter fit to a 4 or 5 parameter helix.
 
-The fit also uses a couple of dedicated utility classes (Matrix & kalmanState & StubCluster).
+The fit also uses a classe to represent the helix state + stubs: KalmanState.
 
 11) Class "L1fittedTrack" contains the result of running a track fitter (the algorithm for which is 
 implemented in class "TrackFitAlgo") on the L1track3D track candidate found by the Hough transform. 
@@ -126,10 +126,5 @@ Each user of the code will probably want to book their own set of histograms ins
 just consider the version of this class in GIT as a set of examples of how to do things. Don't feel
 obliged to understand what every histogram does.
 
-17) Class "DeadModuleDB" is used both to emulate dead modules by killing stubs in certain tracker
-regions, and to recover efficiency caused by dead modules indicating in which sectors looser
-track-finding cuts are required.
-
-Class "StubKiller" also emulates dead modules. It was written in collaboration with Tracklet to
-model the scenarios requested by the Stress Test committee. If it is used, then the emulation in
-DeadModuleDB should not be.
+17) Class "StubKiller" emulates dead modules. It was written to
+model the scenarios requested by the Stress Test committee. 

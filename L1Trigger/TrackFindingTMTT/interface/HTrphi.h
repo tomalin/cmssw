@@ -21,6 +21,9 @@ namespace tmtt {
 
   class HTrphi : public HTbase {
   public:
+
+    enum class HTshape {square, diamond, hexagon, brick};
+
     HTrphi() : HTbase() {}
     ~HTrphi() {}
 
@@ -107,7 +110,8 @@ namespace tmtt {
 
   private:
     float invPtToDphi_;  // conversion constant.
-    unsigned int shape_;
+
+    HTshape shape_;
     std::vector<std::vector<std::pair<float, float> > > cellCenters_;
 
     //--- Specifications of HT array.
