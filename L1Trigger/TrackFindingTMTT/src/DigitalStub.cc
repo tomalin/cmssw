@@ -2,6 +2,7 @@
 #include "L1Trigger/TrackFindingTMTT/interface/DigitalStub.h"
 
 #include "DataFormats/Math/interface/deltaPhi.h"
+#include "FWCore/Utilities/interface/Exception.h"
 
 #include <atomic>
 
@@ -441,17 +442,11 @@ namespace tmtt {
     float TD = phiO_ - phiO_orig_;
     float TE = bend_ - bend_orig_;
 
-    static std::atomic<unsigned int> nErr = 0;
-    const unsigned int maxErr = 20;  // Print error message only this number of times.
-    if (nErr < maxErr) {
-      // Compare to small numbers, representing acceptable precision loss.
-      const float smallTA = 0.001, smallTB = 0.3, smallTC = 0.25, smallTD = 0.005, smallTE = 0.01;
-      if (std::abs(TA) > smallTA || std::abs(TB) > smallTB || std::abs(TC) > smallTC || std::abs(TD) > smallTD ||
-          std::abs(TE) > smallTE) {
-        nErr++;
-        cout << "WARNING: DigitalStub lost precision: " << TA << " " << TB << " " << TC << " " << TD << " " << TE
-             << endl;
-      }
+    // Compare to small numbers, representing acceptable precision loss.
+    const float smallTA = 0.001, smallTB = 0.3, smallTC = 0.25, smallTD = 0.005, smallTE = 0.01;
+    if (std::abs(TA) > smallTA || std::abs(TB) > smallTB || std::abs(TC) > smallTC || std::abs(TD) > smallTD ||
+        std::abs(TE) > smallTE) {
+      throw cms::Exception("LogicError") << "WARNING: DigitalStub lost precision: " << TA << " " << TB << " " << TC << " " << TD << " " << TE;
     }
   }
 

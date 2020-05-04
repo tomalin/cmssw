@@ -2,7 +2,10 @@
 
 #include "L1Trigger/TrackFindingTMTT/interface/KFParamsComb.h"
 #include "L1Trigger/TrackFindingTMTT/interface/KalmanState.h"
+#include "L1Trigger/TrackFindingTMTT/interface/PrintL1trk.h"
 #include "DataFormats/Math/interface/deltaPhi.h"
+
+#include <sstream>
 
 using namespace std;
 
@@ -309,21 +312,23 @@ namespace tmtt {
 
     if (countUpdateCalls || (settings_->kalmanDebugLevel() >= 2 && tpa_ != nullptr) ||
         (settings_->kalmanDebugLevel() >= 2 && settings_->hybrid())) {
+      std::stringstream text;
+      text <<  std::fixed << std::setprecision(4);
       if (not goodState)
-        cout << "State veto:";
+        text << "State veto:";
       if (goodState)
-        cout << "State kept:";
-      cout << " nlay=" << nStubLayers << " nskip=" << state.nSkippedLayers() << " chi2_scaled=" << chi2scaled;
+        text << "State kept:";
+      text << " nlay=" << nStubLayers << " nskip=" << state.nSkippedLayers() << " chi2_scaled=" << chi2scaled;
       if (tpa_ != nullptr)
-        cout << " pt(mc)=" << tpa_->pt();
-      cout << " pt=" << pt << " q/pt=" << qOverPt << " tanL=" << vecY[T] << " z0=" << vecY[Z0]
+        text << " pt(mc)=" << tpa_->pt();
+      text << " pt=" << pt << " q/pt=" << qOverPt << " tanL=" << vecY[T] << " z0=" << vecY[Z0]
            << " phi0=" << vecY[PHI0];
       if (nPar_ == 5)
-        cout << " d0=" << vecY[D0];
-      cout << " fake" << (tpa_ == nullptr);
+        text << " d0=" << vecY[D0];
+      text << " fake" << (tpa_ == nullptr);
       if (tpa_ != nullptr)
-        cout << " pt(mc)=" << tpa_->pt();
-      cout << endl;
+        text << " pt(mc)=" << tpa_->pt();
+      PrintL1trk() << text.str();
     }
 
     return goodState;

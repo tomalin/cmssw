@@ -1,8 +1,11 @@
 #include "L1Trigger/TrackFindingTMTT/interface/StubWindowSuggest.h"
 #include "L1Trigger/TrackFindingTMTT/interface/Stub.h"
+#include "L1Trigger/TrackFindingTMTT/interface/PrintL1trk.h"
 
 #include "DataFormats/DetId/interface/DetId.h"
 #include "FWCore/Utilities/interface/Exception.h"
+
+#include <sstream>
 
 using namespace std;
 
@@ -95,52 +98,56 @@ namespace tmtt {
   //=== Print results (should be done in endJob();
 
   void StubWindowSuggest::printResults() {
-    cout << "==============================================================================" << endl;
-    cout << " Stub window sizes that TMTT suggests putting inside " << endl;
-    cout << "   /L1Trigger/TrackTrigger/python/TTStubAlgorithmRegister_cfi.py" << endl;
-    cout << " (These should give good efficiency, but tighter windows may be needed to" << endl;
-    cout << "  limit the data rate from the FE tracker electronics)." << endl;
-    cout << "==============================================================================" << endl;
+    PrintL1trk(1) << "==============================================================================";
+    PrintL1trk(1) << " Stub window sizes that TMTT suggests putting inside ";
+    PrintL1trk(1) << "   /L1Trigger/TrackTrigger/python/TTStubAlgorithmRegister_cfi.py";
+    PrintL1trk(1) << " (These should give good efficiency, but tighter windows may be needed to";
+    PrintL1trk(1) << "  limit the data rate from the FE tracker electronics).";
+    PrintL1trk(1) << "==============================================================================";
 
-    int old_precision = cout.precision();
-    cout.precision(1);  // Set significant digits for print.
+    std::stringstream text;
+    string div;
 
-    string str;
-
-    str = "BarrelCut = cms.vdouble( ";
+    text << "BarrelCut = cms.vdouble( ";
+    div = "";
     for (const auto& cut : barrelCut_) {
-      cout << str << cut;
-      str = ", ";
+      text << div << cut;
+      div = ", ";
     }
-    cout << ")," << endl;
-
-    cout << "TiltedBarrelCutSet = cms.VPSET(" << endl;
-    cout << "     cms.PSet( TiltedCut = cms.vdouble( 0 ";
+    text << "),";
+    PrintL1trk(1) << text.str();
+    
+    PrintL1trk(1) << "TiltedBarrelCutSet = cms.VPSET( ";
     for (const auto& cutVec : tiltedCut_) {
-      str = "     cms.PSet( TiltedCut = cms.vdouble( ";
+      text.str("");
+      text << "     cms.PSet( TiltedCut = cms.vdouble(";
+      if (cutVec.empty()) text << "0";
+      div = "";
       for (const auto& cut : cutVec) {
-        cout << str << cut;
-        str = ", ";
+        text << div << cut;
+        div = ", ";
       }
-      cout << ") )," << endl;
+      text << "), ),";
+      PrintL1trk(1) << text.str();
     }
-    cout << ")," << endl;
+    PrintL1trk(1) << "),";
 
-    cout << "EndcapCutSet = cms.VPSET(" << endl;
-    cout << "     cms.PSet( EndcapCut = cms.vdouble( 0 ";
+    PrintL1trk(1) << "EndcapCutSet = cms.VPSET( ";
     for (const auto& cutVec : ringCut_) {
-      str = "     cms.PSet( EndcapCut = cms.vdouble( ";
+      text.str("");
+      text << "     cms.PSet( EndcapCut = cms.vdouble(";
+      if (cutVec.empty()) text << "0";
+      div = "";
       for (const auto& cut : cutVec) {
-        cout << str << cut;
-        str = ", ";
+	text << div << cut;
+	div = ", ";
       }
-      cout << ") )," << endl;
+      text << "), ),";
+      PrintL1trk(1) << text.str();
     }
-    cout << ")," << endl;
-
-    cout.precision(old_precision);
-
-    cout << "==============================================================================" << endl;
+    PrintL1trk(1) << ")";
+    
+    PrintL1trk(1) << "==============================================================================";
   }
 
 }  // namespace tmtt

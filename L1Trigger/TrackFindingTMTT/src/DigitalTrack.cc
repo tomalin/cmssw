@@ -2,6 +2,7 @@
 #include "L1Trigger/TrackFindingTMTT/interface/DigitalTrack.h"
 
 #include "DataFormats/Math/interface/deltaPhi.h"
+#include "FWCore/Utilities/interface/Exception.h"
 
 #include <map>
 
@@ -337,17 +338,10 @@ namespace tmtt {
       float TF = chisquaredRphi_ - chisquaredRphi_orig_;
       float TG = chisquaredRz_ - chisquaredRz_orig_;
 
-      static thread_local map<string, unsigned int> nErr;  // Count precision errors from each fitter.
-      if (nErr.find(fitterName_) == nErr.end())
-        nErr[fitterName_] = 0;         // Initialize error count.
-      const unsigned int maxErr = 20;  // Print error message only this number of times.
-      if (nErr[fitterName_] < maxErr) {
-        if (std::abs(TA) > 0.01 || std::abs(TB) > 0.001 || std::abs(TC) > 0.05 || std::abs(TD) > 0.002 ||
-            std::abs(TE) > 0.05 || std::abs(TF) > 0.5 || std::abs(TG) > 0.5) {
-          nErr[fitterName_]++;
-          cout << "WARNING: DigitalTrack lost precision: " << fitterName_ << " accepted=" << accepted_ << " " << TA
-               << " " << TB << " " << TC << " " << TD << " " << TE << " " << TF << " " << TG << endl;
-        }
+      if (std::abs(TA) > 0.01 || std::abs(TB) > 0.001 || std::abs(TC) > 0.05 || std::abs(TD) > 0.002 ||
+          std::abs(TE) > 0.05 || std::abs(TF) > 0.5 || std::abs(TG) > 0.5) {
+        throw cms::Exception("LogicError") << "WARNING: DigitalTrack lost precision: " << fitterName_ << " accepted=" << accepted_ << " " << TA
+             << " " << TB << " " << TC << " " << TD << " " << TE << " " << TF << " " << TG;
       }
     }
   }

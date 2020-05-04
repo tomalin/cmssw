@@ -6,6 +6,7 @@
 #include "L1Trigger/TrackFindingTMTT/interface/TrkRZfilter.h"
 #include "L1Trigger/TrackFindingTMTT/interface/L1fittedTrack.h"
 #include "L1Trigger/TrackFindingTMTT/interface/Utility.h"
+#include "L1Trigger/TrackFindingTMTT/interface/PrintL1trk.h"
 
 #include "DataFormats/Math/interface/deltaPhi.h"
 #include "DataFormats/Math/interface/deltaR.h"
@@ -1382,7 +1383,7 @@ namespace tmtt {
               trksToLinkCount[link] += 1;
             } else if (firstMess) {
               firstMess = false;
-              cout << endl << "===== HISTOS MESS UP: Increase size of nLinks ===== " << link << endl << endl;
+              PrintL1trk() << "\n ===== HISTOS MESS UP: Increase size of nLinks ===== " << link << "\n";
             }
           }
         }
@@ -2844,9 +2845,6 @@ namespace tmtt {
                        addn("EffVsEta"),
                        "; #eta; Tracking efficiency");
 
-    // std::cout << "Made first graph" << std::endl;
-    // graphEffVsEta_[tName] = inputDir.make<TGraphAsymmErrors>(hisRecoTPetaForEff_[tName], hisTPetaForEff_);
-    // graphEffVsEta_[tName]->SetNameTitle("EffVsEta","; #eta; Tracking efficiency");
     makeEfficiencyPlot(inputDir,
                        teffEffVsPhi_[tName],
                        hisRecoTPphiForEff_[tName],
@@ -3202,25 +3200,23 @@ namespace tmtt {
         float(numPerfRecoTPforAlg) / (numTPforAlg + 1.0e-6);  //protection against demoninator equals zero.
     float algPerfEffErr = sqrt(algPerfEff * (1 - algPerfEff) / (numTPforAlg + 1.0e-6));  // uncertainty
 
-    cout.setf(ios::fixed, ios::floatfield);
-    cout.precision(4);
-
-    cout << "=========================================================================" << endl;
+    PrintL1trk() << "=========================================================================";
     if (tName == "HT") {
-      cout << "               TRACK-FINDING SUMMARY AFTER HOUGH TRANSFORM             " << endl;
+      PrintL1trk() << "               TRACK-FINDING SUMMARY AFTER HOUGH TRANSFORM             ";
     } else if (tName == "RZ") {
-      cout << "               TRACK-FINDING SUMMARY AFTER R-Z TRACK FILTER            " << endl;
+      PrintL1trk() << "               TRACK-FINDING SUMMARY AFTER R-Z TRACK FILTER            ";
     } else if (tName == "TRACKLET") {
-      cout << "               TRACK-FINDING SUMMARY AFTER TRACKLET PATTERN RECO       " << endl;
+      PrintL1trk() << "               TRACK-FINDING SUMMARY AFTER TRACKLET PATTERN RECO       ";
     }
-    cout << "Number of track candidates found per event = " << numTrackCands << " +- " << numTrackCandsErr << endl;
-    cout << "                     with mean stubs/track = " << meanStubsPerTrack << endl;
-    cout << "Fraction of track cands that are fake = " << fracFake << endl;
-    cout << "Fraction of track cands that are genuine, but extra duplicates = " << fracDup << endl;
-    cout << "Algorithmic tracking efficiency = " << numRecoTPforAlg << "/" << numTPforAlg << " = " << algEff << " +- "
-         << algEffErr << endl;
-    cout << "Perfect algorithmic tracking efficiency = " << numPerfRecoTPforAlg << "/" << numTPforAlg << " = "
-         << algPerfEff << " +- " << algPerfEffErr << " (no incorrect hits)" << endl;
+    PrintL1trk() << "Number of track candidates found per event = " << numTrackCands << " +- " << numTrackCandsErr;
+    PrintL1trk() << "                     with mean stubs/track = " << meanStubsPerTrack;
+    PrintL1trk() << "Fraction of track cands that are fake = " << fracFake;
+    PrintL1trk() << "Fraction of track cands that are genuine, but extra duplicates = " << fracDup;
+
+    PrintL1trk() <<std::fixed<<std::setprecision(4)<< "Algorithmic tracking efficiency = " << numRecoTPforAlg << "/" << numTPforAlg << " = " << algEff << " +- "
+         << algEffErr;
+    PrintL1trk() << "Perfect algorithmic tracking efficiency = " << numPerfRecoTPforAlg << "/" << numTPforAlg << " = "
+         << algPerfEff << " +- " << algPerfEffErr << " (no incorrect hits)";
   }
 
   //=== Print summary of track-finding performance after helix fit for given track fitter.
@@ -3253,24 +3249,18 @@ namespace tmtt {
     // Does this fitter require r-z track filter to be run before it?
     bool useRZfilt = (std::count(useRZfilter_.begin(), useRZfilter_.end(), fitName) > 0);
 
-    cout << "=========================================================================" << endl;
-    cout << "                    TRACK FIT SUMMARY FOR: " << fitName << endl;
-    cout << "Number of fitted track candidates found per event = " << numFitTracks << " +- " << numFitTracksErr << endl;
-    cout << "                     with mean stubs/track = " << meanStubsPerFitTrack << endl;
-    cout << "Fraction of fitted tracks that are fake = " << fracFakeFit << endl;
-    cout << "Fraction of fitted tracks that are genuine, but extra duplicates = " << fracDupFit << endl;
-    cout << "Algorithmic fitting efficiency = " << numFitTPforAlg << "/" << numTPforAlg << " = " << fitEff << " +- "
-         << fitEffErr << endl;
-    cout << "Perfect algorithmic fitting efficiency = " << numPerfFitTPforAlg << "/" << numTPforAlg << " = "
-         << fitPerfEff << " +- " << fitPerfEffErr << " (no incorrect hits)" << endl;
+    PrintL1trk() << "=========================================================================";
+    PrintL1trk() << "                    TRACK FIT SUMMARY FOR: " << fitName;
+    PrintL1trk() << "Number of fitted track candidates found per event = " << numFitTracks << " +- " << numFitTracksErr;
+    PrintL1trk() << "                     with mean stubs/track = " << meanStubsPerFitTrack;
+    PrintL1trk() << "Fraction of fitted tracks that are fake = " << fracFakeFit;
+    PrintL1trk() << "Fraction of fitted tracks that are genuine, but extra duplicates = " << fracDupFit;
+    PrintL1trk() << "Algorithmic fitting efficiency = " << numFitTPforAlg << "/" << numTPforAlg << " = " << fitEff << " +- "
+         << fitEffErr;
+    PrintL1trk() << "Perfect algorithmic fitting efficiency = " << numPerfFitTPforAlg << "/" << numTPforAlg << " = "
+         << fitPerfEff << " +- " << fitPerfEffErr << " (no incorrect hits)";
     if (useRZfilt)
-      cout << "(The above fitter used the '" << settings_->rzFilterName() << "' r-z track filter.)" << endl;
-
-    /*
-    if ( settings_->detailedFitOutput() ){
-    cout << endl<< "More detailed information about helix fit:"<<endl<<endl;
-    }
-  */
+      PrintL1trk() << "(The above fitter used the '" << settings_->rzFilterName() << "' r-z track filter.)";
   }
 
   //=== Print tracking performance summary & make tracking efficiency histograms.
@@ -3303,64 +3293,62 @@ namespace tmtt {
       this->plotTrackEffAfterFit(fitName);
     }
 
-    cout << "=========================================================================" << endl;
+    PrintL1trk() << "=========================================================================";
 
     // Print r (z) range in which each barrel layer (endcap wheel) appears.
     // (Needed by firmware).
-    cout << endl;
-    cout << "--- r range in which stubs in each barrel layer appear ---" << endl;
+    PrintL1trk();
+    PrintL1trk() << "--- r range in which stubs in each barrel layer appear ---";
     for (const auto& p : mapBarrelLayerMinR_) {
       unsigned int layer = p.first;
-      cout << "   layer = " << layer << " : " << mapBarrelLayerMinR_[layer] << " < r < " << mapBarrelLayerMaxR_[layer]
-           << endl;
+      PrintL1trk() << "   layer = " << layer << " : " << mapBarrelLayerMinR_[layer] << " < r < " << mapBarrelLayerMaxR_[layer];
     }
-    cout << "--- |z| range in which stubs in each endcap wheel appear ---" << endl;
+    PrintL1trk() << "--- |z| range in which stubs in each endcap wheel appear ---";
     for (const auto& p : mapEndcapWheelMinZ_) {
       unsigned int layer = p.first;
-      cout << "   wheel = " << layer << " : " << mapEndcapWheelMinZ_[layer] << " < |z| < " << mapEndcapWheelMaxZ_[layer]
-           << endl;
+      PrintL1trk() << "   wheel = " << layer << " : " << mapEndcapWheelMinZ_[layer] << " < |z| < " << mapEndcapWheelMaxZ_[layer];
     }
 
     // Print (r,|z|) range in which each module type (defined in DigitalStub) appears.
     // (Needed by firmware).
-    cout << endl;
-    cout << "--- (r,|z|) range in which each module type (defined in DigitalStub) appears ---" << endl;
+    PrintL1trk();
+    PrintL1trk() << "--- (r,|z|) range in which each module type (defined in DigitalStub) appears ---";
     for (const auto& p : mapModuleTypeMinR_) {
       unsigned int modType = p.first;
-      cout << "   Module type = " << modType << setprecision(1) << " : r range = (" << mapModuleTypeMinR_[modType]
+      PrintL1trk() << "   Module type = " << modType << setprecision(1) << " : r range = (" << mapModuleTypeMinR_[modType]
            << "," << mapModuleTypeMaxR_[modType] << "); z range = (" << mapModuleTypeMinZ_[modType] << ","
-           << mapModuleTypeMaxZ_[modType] << ")" << endl;
+           << mapModuleTypeMaxZ_[modType] << ")";
     }
     // Ugly bodge to allow for modules in barrel layers 1-2 & endcap wheels 3-5 being different.
-    cout << "and in addition" << endl;
+    PrintL1trk() << "and in addition";
     for (const auto& p : mapExtraAModuleTypeMinR_) {
       unsigned int modType = p.first;
-      cout << "   Module type = " << modType << setprecision(1) << " : r range = (" << mapExtraAModuleTypeMinR_[modType]
+      PrintL1trk() << "   Module type = " << modType << setprecision(1) << " : r range = (" << mapExtraAModuleTypeMinR_[modType]
            << "," << mapExtraAModuleTypeMaxR_[modType] << "); z range = (" << mapExtraAModuleTypeMinZ_[modType] << ","
-           << mapExtraAModuleTypeMaxZ_[modType] << ")" << endl;
+           << mapExtraAModuleTypeMaxZ_[modType] << ")";
     }
-    cout << "and in addition" << endl;
+    PrintL1trk() << "and in addition";
     for (const auto& p : mapExtraBModuleTypeMinR_) {
       unsigned int modType = p.first;
-      cout << "   Module type = " << modType << setprecision(1) << " : r range = (" << mapExtraBModuleTypeMinR_[modType]
+      PrintL1trk() << "   Module type = " << modType << setprecision(1) << " : r range = (" << mapExtraBModuleTypeMinR_[modType]
            << "," << mapExtraBModuleTypeMaxR_[modType] << "); z range = (" << mapExtraBModuleTypeMinZ_[modType] << ","
-           << mapExtraBModuleTypeMaxZ_[modType] << ")" << endl;
+           << mapExtraBModuleTypeMaxZ_[modType] << ")";
     }
-    cout << "and in addition" << endl;
+    PrintL1trk() << "and in addition";
     for (const auto& p : mapExtraCModuleTypeMinR_) {
       unsigned int modType = p.first;
-      cout << "   Module type = " << modType << setprecision(1) << " : r range = (" << mapExtraCModuleTypeMinR_[modType]
+      PrintL1trk() << "   Module type = " << modType << setprecision(1) << " : r range = (" << mapExtraCModuleTypeMinR_[modType]
            << "," << mapExtraCModuleTypeMaxR_[modType] << "); z range = (" << mapExtraCModuleTypeMinZ_[modType] << ","
-           << mapExtraCModuleTypeMaxZ_[modType] << ")" << endl;
+           << mapExtraCModuleTypeMaxZ_[modType] << ")";
     }
-    cout << "and in addition" << endl;
+    PrintL1trk() << "and in addition";
     for (const auto& p : mapExtraDModuleTypeMinR_) {
       unsigned int modType = p.first;
-      cout << "   Module type = " << modType << setprecision(1) << " : r range = (" << mapExtraDModuleTypeMinR_[modType]
+      PrintL1trk() << "   Module type = " << modType << setprecision(1) << " : r range = (" << mapExtraDModuleTypeMinR_[modType]
            << "," << mapExtraDModuleTypeMaxR_[modType] << "); z range = (" << mapExtraDModuleTypeMinZ_[modType] << ","
-           << mapExtraDModuleTypeMaxZ_[modType] << ")" << endl;
+           << mapExtraDModuleTypeMaxZ_[modType] << ")";
     }
-    cout << endl;
+    PrintL1trk();
 
     if (settings_->hybrid() && not wierdMixedMode) {
       //--- Print summary of tracklet pattern reco
@@ -3379,27 +3367,26 @@ namespace tmtt {
     for (const string& fitName : trackFitters_) {
       this->printFitTrackPerformance(fitName);
     }
-    cout << "=========================================================================" << endl;
+    PrintL1trk() << "=========================================================================";
 
     if (not settings_->hybrid()) {
       // Check that stub filling was consistent with known limitations of HT firmware design.
 
-      cout << endl << "Max. |gradients| of stub lines in HT array is: r-phi = " << HTrphi::maxLineGrad() << endl;
+      PrintL1trk() << "\n Max. |gradients| of stub lines in HT array is: r-phi = " << HTrphi::maxLineGrad();
 
       if (HTrphi::maxLineGrad() > 1.) {
-        cout << "WARNING: Line |gradient| exceeds 1, which firmware will not be able to cope with! Please adjust HT "
-                "array size to avoid this."
-             << endl;
+        PrintL1trk() << "WARNING: Line |gradient| exceeds 1, which firmware will not be able to cope with! Please adjust HT "
+                "array size to avoid this.";
 
       } else if (HTrphi::fracErrorsTypeA() > 0.) {
-        cout << "WARNING: Despite line gradients being less than one, some fraction of HT columns have filled cells "
+        PrintL1trk() << "WARNING: Despite line gradients being less than one, some fraction of HT columns have filled cells "
                 "with no filled neighbours in W, SW or NW direction. Firmware will object to this! ";
-        cout << "This fraction = " << HTrphi::fracErrorsTypeA() << " for r-phi HT" << endl;
+        PrintL1trk() << "This fraction = " << HTrphi::fracErrorsTypeA() << " for r-phi HT";
 
       } else if (HTrphi::fracErrorsTypeB() > 0.) {
-        cout << "WARNING: Despite line gradients being less than one, some fraction of HT columns recorded individual "
+        PrintL1trk() << "WARNING: Despite line gradients being less than one, some fraction of HT columns recorded individual "
                 "stubs being added to more than two cells! Thomas firmware will object to this! ";
-        cout << "This fraction = " << HTrphi::fracErrorsTypeB() << " for r-phi HT" << endl;
+        PrintL1trk() << "This fraction = " << HTrphi::fracErrorsTypeB() << " for r-phi HT";
       }
     }
 
@@ -3407,21 +3394,19 @@ namespace tmtt {
 
     float meanShared = hisFracStubsSharingClus0_->GetMean();
     if (meanShared > 0.01)
-      cout << endl
-           << "WARNING: You are using buggy MC. A fraction " << meanShared
-           << " of stubs share clusters in the module seed sensor, which front-end electronics forbids." << endl;
+      PrintL1trk() 
+           << "\n WARNING: You are using buggy MC. A fraction " << meanShared
+           << " of stubs share clusters in the module seed sensor, which front-end electronics forbids.";
 
     // Check that the constants in class DegradeBend are up to date.
     float meanFracStubsLost = hisStubKillDegradeBend_->GetMean(2);
     if (meanFracStubsLost > 0.001)
-      cout << endl
-           << "WARNING: You should update the constants in class DegradeBend, since some stubs had bend outside the "
-              "expected window range."
-           << endl;
+      PrintL1trk() 
+           << "\n WARNING: You should update the constants in class DegradeBend, since some stubs had bend outside the expected window range.";
 
     // Check if GP B approximation cfg params are inconsistent.
     if (bApproxMistake_)
-      cout << endl << "WARNING: BApprox cfg params are inconsistent - see printout above." << endl;
+      PrintL1trk() << "\n WARNING: BApprox cfg params are inconsistent - see printout above.";
 
     // Restore original ROOT default cfg.
     TH1::SetDefaultSumw2(oldSumW2opt_);
@@ -3434,15 +3419,15 @@ namespace tmtt {
     if (!this->enabled())
       return;
 
-    cout << endl << "=========================================================================" << endl;
-    cout << "--- Fit to cfg params for FPGA-friendly approximation to B parameter in GP & KF ---" << endl;
-    cout << "--- (used to allowed for tilted barrel modules)                                 ---" << endl;
+    PrintL1trk() << "\n =========================================================================";
+    PrintL1trk() << "--- Fit to cfg params for FPGA-friendly approximation to B parameter in GP & KF ---";
+    PrintL1trk() << "--- (used to allowed for tilted barrel modules)                                 ---";
     // Check that info on the correct number of modules has been stored
     if (trackerGeometryInfo.moduleZoR().size() !=
         trackerGeometryInfo.barrelNTiltedModules() * trackerGeometryInfo.barrelNLayersWithTiltedModules() * 2) {
-      cout << "WARNING : Expected "
+      PrintL1trk() << "WARNING : Expected "
            << trackerGeometryInfo.barrelNTiltedModules() * trackerGeometryInfo.barrelNLayersWithTiltedModules() * 2
-           << " modules, but only recorded info on " << trackerGeometryInfo.moduleZoR().size() << endl;
+           << " modules, but only recorded info on " << trackerGeometryInfo.moduleZoR().size();
     }
 
     TFileDirectory inputDir = fs_->mkdir("InputData");
@@ -3453,16 +3438,16 @@ namespace tmtt {
     TF1* fittedFunction = graphBVsZoverR_->GetFunction("pol1");
     double gradient = fittedFunction->GetParameter(1);
     double intercept = fittedFunction->GetParameter(0);
-    cout << "         BApprox_gradient (fitted)  = " << gradient << endl;
-    cout << "         BApprox_intercept (fitted) = " << intercept << endl;
+    PrintL1trk() << "         BApprox_gradient (fitted)  = " << gradient;
+    PrintL1trk() << "         BApprox_intercept (fitted) = " << intercept;
     // Check fitted params consistent with those assumed in cfg file.
     if (settings_->useApproxB()) {
       double gradientDiff = std::abs(gradient - settings_->bApprox_gradient());
       double interceptDiff = std::abs(intercept - settings_->bApprox_intercept());
       if (gradientDiff > 0.001 || interceptDiff > 0.001) {  // Uncertainty independent of number of events
-        cout << endl << "WARNING: fitted parameters inconsistent with those specified in cfg file:" << endl;
-        cout << "         BApprox_gradient  (cfg) = " << settings_->bApprox_gradient() << endl;
-        cout << "         BApprox_intercept (cfg) = " << settings_->bApprox_intercept() << endl;
+        PrintL1trk() << "\n WARNING: fitted parameters inconsistent with those specified in cfg file:";
+        PrintL1trk() << "         BApprox_gradient  (cfg) = " << settings_->bApprox_gradient();
+        PrintL1trk() << "         BApprox_intercept (cfg) = " << settings_->bApprox_intercept();
         bApproxMistake_ = true;  // Note that problem has occurred.
       }
     }

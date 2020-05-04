@@ -3,6 +3,7 @@
 #include "L1Trigger/TrackFindingTMTT/interface/TrkRZfilter.h"
 #include "L1Trigger/TrackFindingTMTT/interface/Settings.h"
 #include "L1Trigger/TrackFindingTMTT/interface/Stub.h"
+#include "L1Trigger/TrackFindingTMTT/interface/PrintL1trk.h"
 
 using namespace std;
 
@@ -174,9 +175,9 @@ namespace tmtt {
               numSeedsPerStub++;
               numSeedCombinations++;  //Increase filter cycles counter
               if (print)
-                cout << "s0: "
+                PrintL1trk() << "s0: "
                      << "z: " << s0->z() << ", r: " << s0->r() << ", id:" << s0->layerId() << " ****** s1: "
-                     << "z: " << s1->z() << ", r: " << s1->r() << ", id:" << s1->layerId() << endl;
+                     << "z: " << s1->z() << ", r: " << s1->r() << ", id:" << s1->layerId();
               //double sumSeedDist = 0.;
               //double oldSumSeedDist = 1000000.;  //Define variable used to estimate the quality of seeds
               vector<const Stub*> tempStubs;  //Create a temporary container for stubs

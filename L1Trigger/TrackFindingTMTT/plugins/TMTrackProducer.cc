@@ -11,6 +11,7 @@
 #include "L1Trigger/TrackFindingTMTT/interface/MuxHToutputs.h"
 #include "L1Trigger/TrackFindingTMTT/interface/MiniHTstage.h"
 #include "L1Trigger/TrackFindingTMTT/interface/StubWindowSuggest.h"
+#include "L1Trigger/TrackFindingTMTT/interface/PrintL1trk.h"
 
 #include "FWCore/MessageService/interface/MessageLogger.h"
 #include "FWCore/Framework/interface/ESHandle.h"
@@ -54,10 +55,6 @@ namespace tmtt {
     useRZfilter_ = settings_.useRZfilter();
     runRZfilter_ = (not useRZfilter_.empty());  // Do any fitters require an r-z track filter to be run?
 
-    // Tame debug printout.
-    cout.setf(ios::fixed, ios::floatfield);
-    cout.precision(4);
-
     // Book histograms.
     hists_.book();
 
@@ -86,7 +83,7 @@ namespace tmtt {
     // Get the B-field and store its value in the Settings class.
     const MagneticField* theMagneticField = &(iSetup.getData(magneticFieldToken_));
     float bField = theMagneticField->inTesla(GlobalPoint(0, 0, 0)).z();  // B field in Tesla.
-    cout << endl << "--- B field = " << bField << " Tesla ---" << endl << endl;
+    PrintL1trk() << "\n--- B field = " << bField << " Tesla ---\n";
     settings_.setMagneticField(bField);
 
     // Get tracker geometry
@@ -293,7 +290,7 @@ namespace tmtt {
 
     // Debug printout
     if (debug_) {
-      cout << "INPUT #TPs = " << vTPs.size() << " #STUBs = " << vStubs.size() << endl;
+      PrintL1trk() << "INPUT #TPs = " << vTPs.size() << " #STUBs = " << vStubs.size();
       unsigned int numHTtracks = 0;
       for (unsigned int iPhiSec = 0; iPhiSec < settings_.numPhiSectors(); iPhiSec++) {
         for (unsigned int iEtaReg = 0; iEtaReg < settings_.numEtaRegions(); iEtaReg++) {
@@ -301,11 +298,11 @@ namespace tmtt {
           numHTtracks += make3Dtrk.trackCands3D(false).size();
         }
       }
-      cout << "Number of tracks after HT = " << numHTtracks << endl;
+      PrintL1trk() << "Number of tracks after HT = " << numHTtracks;
       for (const auto& p : fittedTracks) {
         const string& fitName = p.first;
         const vector<L1fittedTrack>& fittedTracks = p.second;
-        cout << "Number of tracks after " << fitName << " track helix fit = " << fittedTracks.size() << endl;
+        PrintL1trk() << "Number of tracks after " << fitName << " track helix fit = " << fittedTracks.size();
       }
     }
 
@@ -339,9 +336,7 @@ namespace tmtt {
     hists_.trackerGeometryAnalysis(trackerGeometryInfo_);
     hists_.endJobAnalysis();
 
-    cout << endl
-         << "Number of (eta,phi) sectors used = (" << settings_.numEtaRegions() << "," << settings_.numPhiSectors()
-         << ")" << endl;
+    PrintL1trk() << "\n Number of (eta,phi) sectors used = (" << settings_.numEtaRegions() << "," << settings_.numPhiSectors() << ")";
   }
 
 }  // namespace tmtt

@@ -7,6 +7,7 @@
 
 #include "L1Trigger/TrackFindingTMTT/interface/Stub.h"
 #include "L1Trigger/TrackFindingTMTT/interface/TP.h"
+#include "L1Trigger/TrackFindingTMTT/interface/PrintL1trk.h"
 
 #include <iostream>
 
@@ -441,9 +442,7 @@ namespace tmtt {
     static std::atomic<bool> firstErr = true;
     if (trackerGeometryVersion_ < 5) {
       if (firstErr) {
-        cout << "Stub: WARNING - Stub windows in DegradeBend class have not been tuned for flat tracker geometry, so "
-                "may need retuning "
-             << trackerGeometryVersion_ << endl;
+        PrintL1trk() << "Stub: WARNING - Stub windows in DegradeBend class have not been tuned for flat tracker geometry, so may need retuning " << trackerGeometryVersion_;
         firstErr = false;
       }
     }
@@ -656,8 +655,6 @@ namespace tmtt {
     if (moduleTilt_ < -M_PI / 2.)
       moduleTilt_ += M_PI;  //
 
-    // cout<<"DEBUG STUB "<<barrel_<<" "<<psModule_<<"  sep(r,z)=( "<<moduleMaxR_ - moduleMinR_<<" , "<<moduleMaxZ_ - moduleMinZ_<<" )    stub(r,z)=( "<<0.5*(moduleMaxR_ + moduleMinR_) - r_<<" , "<<0.5*(moduleMaxZ_ + moduleMinZ_) - z_<<" )"<<endl;
-
     // Encode layer ID.
     if (barrel_) {
       layerId_ = trackerTopology->layer(detId);  // barrel layer 1-6 encoded as 1-6
@@ -732,9 +729,7 @@ namespace tmtt {
         trackerGeometryVersion_ = 4;  // Flat geometry T4
       } else {
         trackerGeometryVersion_ = -1;
-        cout << "Stub: WARNING -- The tracker geometry you are using is yet not known to the stub class. Please update "
-                "Stub::degradeResolution() & Stub::setTrackerGeometryVersion(). Number of tracker modules = "
-             << numDet << endl;
+        PrintL1trk() << "Stub: WARNING -- The tracker geometry you are using is yet not known to the stub class. Please update Stub::degradeResolution() & Stub::setTrackerGeometryVersion(). Number of tracker modules = " << numDet;
       }
     }
   }

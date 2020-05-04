@@ -144,10 +144,10 @@ namespace tmtt {
     virtual bool isGoodState(const KalmanState &state) const = 0;
 
     //--- Debug printout
-    void printTP(std::ostream &os, const TP *tp) const;
-    void printStubLayers(std::ostream &os, const std::vector<const Stub *> &stubs, unsigned int iEtaReg) const;
-    void printStub(std::ostream &os, const Stub *stub, bool addReturn = true) const;
-    void printStubs(std::ostream &os, const std::vector<const Stub *> &stubs) const;
+    void printTP(const TP *tp) const;
+    void printStubLayers(const std::vector<const Stub *> &stubs, unsigned int iEtaReg) const;
+    void printStub(const Stub *stub) const;
+    void printStubs(const std::vector<const Stub *> &stubs) const;
 
   protected:
     unsigned nPar_;

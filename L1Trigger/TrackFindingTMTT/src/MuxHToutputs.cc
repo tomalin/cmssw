@@ -1,10 +1,9 @@
-
-
 //--- Note that the word "link" appearing in the C++ or comments in this class actually corresponds
 //--- to a pair of links in the hardware.
 
 #include "L1Trigger/TrackFindingTMTT/interface/MuxHToutputs.h"
 #include "L1Trigger/TrackFindingTMTT/interface/Settings.h"
+#include "L1Trigger/TrackFindingTMTT/interface/PrintL1trk.h"
 
 #include "FWCore/Utilities/interface/Exception.h"
 
@@ -44,8 +43,8 @@ namespace tmtt {
     static std::atomic<bool> first = true;
     if (first) {
       first = false;
-      cout << "=== The R-PHI HT output is multiplexed onto " << this->numLinksPerNonant()
-           << " pairs of opto-links per nonant." << endl;
+      PrintL1trk() << "=== The R-PHI HT output is multiplexed onto " << this->numLinksPerNonant()
+           << " pairs of opto-links per nonant.";
     }
   }
 

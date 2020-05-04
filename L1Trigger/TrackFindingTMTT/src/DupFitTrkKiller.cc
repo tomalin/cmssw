@@ -1,5 +1,6 @@
 #include "L1Trigger/TrackFindingTMTT/interface/DupFitTrkKiller.h"
 #include "L1Trigger/TrackFindingTMTT/interface/Settings.h"
+#include "L1Trigger/TrackFindingTMTT/interface/PrintL1trk.h"
 #include "FWCore/Utilities/interface/Exception.h"
 #include <map>
 
@@ -56,7 +57,7 @@ namespace tmtt {
     constexpr bool limitDiff = true;       // Limit allowed diff. between HT & Fit cell to <= 1.
 
     if (debug && tracks.size() > 0)
-      cout << "Start DupFitTrkKiller" << tracks.size() << endl;
+      PrintL1trk() << "Start DupFitTrkKiller" << tracks.size();
 
     vector<L1fittedTrack> tracksFiltered;
 
@@ -100,13 +101,13 @@ namespace tmtt {
             }
 
             if (debug && tp != nullptr) {
-              cout << "FIRST PASS: m=" << trk.cellLocationHT().first << "/" << trk.cellLocationFit().first
+              PrintL1trk() << "FIRST PASS: m=" << trk.cellLocationHT().first << "/" << trk.cellLocationFit().first
                    << " c=" << trk.cellLocationHT().second << "/" << trk.cellLocationFit().second << " Delta(m,c)=("
                    << int(trk.cellLocationHT().first) - int(trk.cellLocationFit().first) << ","
                    << int(trk.cellLocationHT().second) - int(trk.cellLocationFit().second) << ") pure=" << trk.purity()
                    << " merged=" << trk.l1track3D()->mergedHTcell() << " #layers=" << trk.l1track3D()->numLayers()
                    << " tp=" << tp->index() << " dupCell=(" << tpFound[tp->index()].first << ","
-                   << tpFound[tp->index()].second << ") dup=" << tpFoundAtPass[tp->index()] << endl;
+                   << tpFound[tp->index()].second << ") dup=" << tpFoundAtPass[tp->index()];
               // If the following two variables are non-zero in printout, then track has already been found,
               // so we have mistakenly kept a duplicate.
               if (tpFound.find(tp->index()) != tpFound.end())
@@ -125,13 +126,13 @@ namespace tmtt {
             }
 
             if (debug && tp != nullptr) {
-              cout << "FIRST REJECT: m=" << trk.cellLocationHT().first << "/" << trk.cellLocationFit().first
+              PrintL1trk() << "FIRST REJECT: m=" << trk.cellLocationHT().first << "/" << trk.cellLocationFit().first
                    << " c=" << trk.cellLocationHT().second << "/" << trk.cellLocationFit().second << " Delta(m,c)=("
                    << int(trk.cellLocationHT().first) - int(trk.cellLocationFit().first) << ","
                    << int(trk.cellLocationHT().second) - int(trk.cellLocationFit().second) << ") pure=" << trk.purity()
                    << " merged=" << trk.l1track3D()->mergedHTcell() << " #layers=" << trk.l1track3D()->numLayers()
                    << " tp=" << tp->index() << " dupCell=(" << tpFound[tp->index()].first << ","
-                   << tpFound[tp->index()].second << ") dup=" << tpFoundAtPass[tp->index()] << endl;
+                   << tpFound[tp->index()].second << ") dup=" << tpFoundAtPass[tp->index()];
             }
           }
           // Memorize HT cell location corresponding to this track, even if it was not accepted by first pass..
@@ -173,13 +174,13 @@ namespace tmtt {
           const TP* tp = trk->matchedTP();
 
           if (debug && tp != nullptr) {
-            cout << "SECOND PASS: m=" << trk->cellLocationHT().first << "/" << trk->cellLocationFit().first
+            PrintL1trk() << "SECOND PASS: m=" << trk->cellLocationHT().first << "/" << trk->cellLocationFit().first
                  << " c=" << trk->cellLocationHT().second << "/" << trk->cellLocationFit().second << " Delta(m,c)=("
                  << int(trk->cellLocationHT().first) - int(trk->cellLocationFit().first) << ","
                  << int(trk->cellLocationHT().second) - int(trk->cellLocationFit().second) << ") pure=" << trk->purity()
                  << " merged=" << trk->l1track3D()->mergedHTcell() << " #layers=" << trk->l1track3D()->numLayers()
                  << " tp=" << tp->index() << " dupCell=(" << tpFound[tp->index()].first << ","
-                 << tpFound[tp->index()].second << ") dup=" << tpFoundAtPass[tp->index()] << endl;
+                 << tpFound[tp->index()].second << ") dup=" << tpFoundAtPass[tp->index()];
             if (tpFound.find(tp->index()) != tpFound.end())
               tpFound[tp->index()] = htCell;
             tpFoundAtPass[tp->index()] = 2;
@@ -206,7 +207,7 @@ namespace tmtt {
     const bool debug = false;
 
     if (debug && tracks.size() > 0)
-      cout << "START " << tracks.size() << endl;
+      PrintL1trk() << "START " << tracks.size();
 
     vector<L1fittedTrack> tracksFiltered;
     set<pair<unsigned int, unsigned int>> htCellUsed;
@@ -223,9 +224,9 @@ namespace tmtt {
         if (debug) {
           const TP* tp = trk.matchedTP();
           int tpIndex = (tp != nullptr) ? tp->index() : -999;
-          cout << "ALG51: m=" << trk.cellLocationHT().first << "/" << trk.cellLocationFit().first
+          PrintL1trk() << "ALG51: m=" << trk.cellLocationHT().first << "/" << trk.cellLocationFit().first
                << " c=" << trk.cellLocationHT().second << "/" << trk.cellLocationFit().second << " tp=" << tpIndex
-               << " pure=" << trk.purity() << endl;
+               << " pure=" << trk.purity();
         }
       }
     }
@@ -251,18 +252,18 @@ namespace tmtt {
       const vector<const L1fittedTrack*> vecTrk = p.second;
       if (vecTrk.size() > 1) {
         for (const L1fittedTrack* trk : vecTrk) {
-          cout << "  MESS UP : m=" << trk->cellLocationHT().first << "/" << trk->cellLocationFit().first
+          PrintL1trk() << "  MESS UP : m=" << trk->cellLocationHT().first << "/" << trk->cellLocationFit().first
                << " c=" << trk->cellLocationHT().second << "/" << trk->cellLocationFit().second << " tp=" << tp->index()
-               << " tp_pt=" << tp->pt() << " fit_pt=" << trk->pt() << " pure=" << trk->purity() << endl;
-          cout << "     stubs = ";
+               << " tp_pt=" << tp->pt() << " fit_pt=" << trk->pt() << " pure=" << trk->purity();
+          PrintL1trk() << "     stubs = ";
           for (const Stub* s : trk->stubs())
-            cout << s->index() << " ";
-          cout << endl;
+            PrintL1trk() << s->index() << " ";
+          PrintL1trk();
         }
       }
     }
     if (tracks.size() > 0)
-      cout << "FOUND " << tracks.size() << endl;
+      PrintL1trk() << "FOUND " << tracks.size();
   }
 
 }  // namespace tmtt

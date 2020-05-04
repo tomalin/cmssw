@@ -3,6 +3,8 @@
 #include "L1Trigger/TrackFindingTMTT/interface/TP.h"
 #include "L1Trigger/TrackFindingTMTT/interface/L1fittedTrack.h"
 #include "L1Trigger/TrackFindingTMTT/interface/Settings.h"
+#include "L1Trigger/TrackFindingTMTT/interface/PrintL1trk.h"
+#include "FWCore/ServiceRegistry/interface/Service.h"
 
 #include "DataFormats/Math/interface/deltaPhi.h"
 #include "FWCore/Utilities/interface/Exception.h"
@@ -10,6 +12,7 @@
 #include <vector>
 #include <limits>
 #include <atomic>
+#include <sstream>
 
 using namespace std;
 
@@ -181,22 +184,20 @@ namespace tmtt {
     static std::atomic<bool> first = true;
     if (first) {
       first = false;
-      cout << "=== R-PHI HOUGH TRANSFORM AXES RANGES: abs(q/Pt) < " << maxAbsQoverPtAxis_ << " & abs(track-phi) < "
-           << maxAbsPhiTrkAxis_ << " ===" << endl;
-      cout << "=== R-PHI HOUGH TRANSFORM ARRAY SIZE: q/Pt bins = " << nBinsQoverPtAxis_
-           << " & track-phi bins = " << nBinsPhiTrkAxis_ << " ===" << endl;
-      cout << "=== R-PHI HOUGH TRANSFORM BIN SIZE: BIN(q/Pt) = " << binSizeQoverPtAxis_
-           << " & BIN(track-phi) = " << binSizePhiTrkAxis_ << " ===" << endl
-           << endl;
+      PrintL1trk() << "=== R-PHI HOUGH TRANSFORM AXES RANGES: abs(q/Pt) < " << maxAbsQoverPtAxis_ << " & abs(track-phi) < "<< maxAbsPhiTrkAxis_ << " ===";
+      PrintL1trk() << "=== R-PHI HOUGH TRANSFORM ARRAY SIZE: q/Pt bins = " << nBinsQoverPtAxis_
+           << " & track-phi bins = " << nBinsPhiTrkAxis_ << " ===";
+      PrintL1trk() << "=== R-PHI HOUGH TRANSFORM BIN SIZE: BIN(q/Pt) = " << binSizeQoverPtAxis_
+		   << " & BIN(track-phi) = " << binSizePhiTrkAxis_ << " ===\n";
       if (busySectorKill_ && busySectorUseMbinRanges_ && rescaleMbins) {
-        cout << "=== R-PHI HOUGH TRANSFORM WARNING: Rescaled m bin ranges specified by cfg parameter "
-                "BusySectorMbinRanges, as they were inconsistent with total number of m bins in HT."
-             << endl;
-        cout << "=== Rescaled values for BusySectorMbinRanges =";
+        PrintL1trk() << "=== R-PHI HOUGH TRANSFORM WARNING: Rescaled m bin ranges specified by cfg parameter "
+	  "BusySectorMbinRanges, as they were inconsistent with total number of m bins in HT.";
+	std::stringstream text;
+        text << "=== Rescaled values for BusySectorMbinRanges =";
         for (unsigned int i = 0; i < busySectorMbinRanges_.size(); i++) {
-          cout << " " << (busySectorMbinHigh_[i] - busySectorMbinLow_[i] + 1);
+          text << " " << (busySectorMbinHigh_[i] - busySectorMbinLow_[i] + 1);
         }
-        cout << endl;
+        PrintL1trk() << text.str();
       }
     }
 
