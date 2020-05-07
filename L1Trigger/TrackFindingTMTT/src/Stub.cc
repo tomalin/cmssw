@@ -36,7 +36,7 @@ namespace tmtt {
         bend_(bend),
         iphi_(iphi),
         alpha_(alpha),
-        digitalStub_(std::make_shared<DigitalStub>(settings, r, phi, z, iPhiSec)),
+        digitalStub_(std::make_unique<DigitalStub>(settings, r, phi, z, iPhiSec)),
         stubWindowSuggest_(settings),
         psModule_(psModule),
         layerId_(layerId),
@@ -177,7 +177,7 @@ namespace tmtt {
     this->calcQoverPtrange();
 
     // Initialize class used to produce digital version of stub, with original stub parameters pre-digitization.
-    digitalStub_ = std::make_shared<DigitalStub>(settings_, 
+    digitalStub_ = std::make_unique<DigitalStub>(settings_, 
 		      phi_,
                       r_,
                       z_,

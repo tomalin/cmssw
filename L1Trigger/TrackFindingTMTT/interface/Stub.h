@@ -347,7 +347,7 @@ namespace tmtt {
     // Used for stub bend resolution degrading.
     unsigned int numMergedBend_;
 
-    std::shared_ptr<DigitalStub> digitalStub_;   // Class used to digitize stub if required.
+    std::unique_ptr<DigitalStub> digitalStub_;   // Class used to digitize stub if required.
     bool digitizedForGPinput_;  // Has this stub been digitized for GP input?
     bool digitizedForHTinput_;  // Has this stub been digitized for HT input?
     // Has this stub been digitized for SF/TF input? If so, this was SF/TF name.

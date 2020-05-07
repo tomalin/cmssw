@@ -33,13 +33,7 @@ namespace tmtt {
                        const edm::EDGetTokenT<TTStubAssMap> stubTruthToken,
                        const edm::EDGetTokenT<TTClusterAssMap> clusterTruthToken,
                        const edm::EDGetTokenT<reco::GenJetCollection> genJetToken) {
-    /*
-    constexpr unsigned int nTypicalMods=15000, nTypicalTPs=1200, nTypicalStubs=15000, nTypicalAllStubs=20000;
-    trackerModules_.reserve(nTypicalMods);
-    vTPs_.reserve(nTypicalTPs);
-    vStubs_.reserve(nTypicalStubs);
-    vAllStubs_.reserve(nTypicalAllStubs);
-    */
+
     // Note if job will use MC truth info (or skip it to save CPU).
     enableMCtruth_ = settings->enableMCtruth();
 
@@ -121,12 +115,13 @@ namespace tmtt {
 	    const unsigned int stubIndex = vAllStubs_.size();
 
             // Store the Stub info, using class Stub to provide easy access to the most useful info.
-            Stub stub(ttStubRef, stubIndex, settings, trackerGeometry, trackerTopology, &moduleInfo, stubKiller.get());
+            vAllStubs_.emplace_back(ttStubRef, stubIndex, settings, trackerGeometry, trackerTopology, &moduleInfo, stubKiller.get());
 
             // Also fill truth associating stubs to tracking particles.
-            if (enableMCtruth_)
+            if (enableMCtruth_) {
+	      Stub& stub = vAllStubs_.back();
               stub.fillTruth(translateTP, mcTruthTTStubHandle, mcTruthTTClusterHandle);
-            vAllStubs_.push_back(stub);
+	    }
           }
 	}
       }
