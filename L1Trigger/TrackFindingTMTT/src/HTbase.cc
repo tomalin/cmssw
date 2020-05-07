@@ -4,7 +4,6 @@
 
 #include "DataFormats/Math/interface/deltaPhi.h"
 
-#include <vector>
 #include <unordered_set>
 
 using namespace std;
@@ -109,18 +108,6 @@ HTbase::HTbase(const Settings* settings, unsigned int iPhiSec, unsigned int iEta
     return assocRecoTrk;
   }
 
-  //=== Function to replace the collection of 2D tracks found by this HT.
-  //=== (This is used by class MuxHToutputs to kill tracks that can't be output in the time-multiplexed period).
-
-  void HTbase::replaceTrackCands2D(const vector<const L1track2D*>& newTracks) {
-    vector<L1track2D> tmpTracks;
-    for (const L1track2D* trk : newTracks) {
-      tmpTracks.push_back(*trk);
-    }
-    trackCands2D_.clear();
-    trackCands2D_ = tmpTracks;
-  }
-
   //=== Disable filters (used for debugging).
 
   void HTbase::disableBendFilter() {
@@ -198,8 +185,8 @@ HTbase::HTbase(const Settings* settings, unsigned int iPhiSec, unsigned int iEta
   //=== Return a list of all track candidates found in this array, giving access to all the stubs on each one
   //=== and the track helix parameters, plus the associated truth particle (if any).
 
-  vector<L1track2D> HTbase::calcTrackCands2D() const {
-    vector<L1track2D> trackCands2D;
+  list<L1track2D> HTbase::calcTrackCands2D() const {
+    list<L1track2D> trackCands2D;
 
     // Check if the hardware processes rows of the HT array in a specific order when outputting track candidates.
     // Currently this is by decreasing Pt for r-phi HT and unordered for r-z HT.

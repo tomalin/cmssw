@@ -53,7 +53,6 @@ namespace tmtt {
          unsigned int iphi,
          double alpha,
          const Settings* settings,
-         const TrackerTopology* trackerTopology,
          unsigned int ID,
          unsigned int iPhiSec);
 
@@ -61,7 +60,6 @@ namespace tmtt {
     Stub(const TTStubRef& ttStubRef,
          unsigned int index_in_vStubs,
          const Settings* settings,
-         const TrackerGeometry* trackerGeometry,
          const TrackerTopology* trackerTopology,
 	 const ModuleInfo* moduleInfo,
 	 const StubKiller* stubKiller);
@@ -291,9 +289,6 @@ namespace tmtt {
                        const TrackerTopology* trackerTopology,
                        const DetId& detId);
 
-    // Determine tracker geometry version by counting modules.
-    void setTrackerGeometryVersion(const TrackerGeometry* trackerGeometry, const TrackerTopology* trackerTopology);
-
     // Function to calculate approximation for dphiOverBendCorrection aka B
     double approxB();
 
@@ -354,9 +349,6 @@ namespace tmtt {
     std::string digitizedForSForTFinput_;  
     bool digitizedForDRinput_;  // Has this stub been digitized for seed filter input?
     bool digitizeWarningsOn_;   // Enable warnings about accessing non-digitized quantities.
-
-    // Which tracker geometry is this?
-    static std::atomic<unsigned int> trackerGeometryVersion_;
 
     // Info about tracker module containing stub.
     const ModuleInfo* moduleInfo_;

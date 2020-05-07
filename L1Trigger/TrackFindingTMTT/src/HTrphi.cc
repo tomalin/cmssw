@@ -620,8 +620,8 @@ namespace tmtt {
   //=== If requested, kill those tracks in this sector that can't be read out during the time-multiplexed period, because
   //=== the HT has associated too many stubs to tracks.
 
-  vector<L1track2D> HTrphi::killTracksBusySec(const vector<L1track2D>& tracks) const {
-    vector<L1track2D> outTracks;
+  list<L1track2D> HTrphi::killTracksBusySec(const list<L1track2D>& tracks) const {
+    list<L1track2D> outTracks;
 
     if (busySectorKill_) {
       unsigned int nStubsOut = 0;  // #stubs assigned to tracks in this sector.

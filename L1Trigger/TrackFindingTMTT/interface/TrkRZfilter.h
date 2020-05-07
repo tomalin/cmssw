@@ -6,6 +6,7 @@
 #include "L1Trigger/TrackFindingTMTT/interface/HTrphi.h"
 
 #include <vector>
+#include <list>
 
 //=== This class runs filters in track candidates previously found by the r-phi Hough transform,
 //=== which check that each track's stubs are consistent with a straight line in the r-z plane.
@@ -46,7 +47,7 @@ namespace tmtt {
     // also killing some of the tracks altogether if they are left with too few stubs.
     // Also adds an estimate of r-z helix parameters to the selected track objects, returning the tracks as L1track3D type.
     //
-    std::vector<L1track3D> filterTracks(const std::vector<L1track2D>& tracks);
+    std::list<L1track3D> filterTracks(const std::list<L1track2D>& tracks);
 
     //=== Extra information about each track input to filter. (Only use after you have first called filterTracks).
 

@@ -28,6 +28,7 @@ namespace tmtt {
                        Settings* settings,
                        const TrackerGeometry* trackerGeometry,
                        const TrackerTopology* trackerTopology,
+		       const list<ModuleInfo>& listModuleInfo,
                        const edm::EDGetTokenT<TrackingParticleCollection> tpToken,
                        const edm::EDGetTokenT<TTStubDetSetVec> stubToken,
                        const edm::EDGetTokenT<TTStubAssMap> stubTruthToken,
@@ -96,36 +97,26 @@ namespace tmtt {
 
     // Loop over tracker modules to get module info & stubs.
     
-    for (const GeomDet* gd : trackerGeometry->dets()) {
-      DetId detId = gd->geographicalId();
-      if (detId.subdetId() != StripSubdetector::TOB && detId.subdetId() != StripSubdetector::TID) continue;
-       // Phase 2 Outer Tracker uses TOB for entire barrel & TID for entire endcap.
-      if ( trackerTopology->isLower(detId) ) { // Select only lower of the two sensors in a module.
+    for (const ModuleInfo& moduleInfo : listModuleInfo) {
 
-	// Get info about this tracker module.
-	trackerModules_.emplace_back(trackerGeometry, trackerTopology, detId);
-	const ModuleInfo& moduleInfo = trackerModules_.back();
+      const DetId& stackedDetId = moduleInfo.stackedDetId();
+      TTStubDetSetVec::const_iterator p_module = ttStubHandle->find(stackedDetId);
+      if (p_module != ttStubHandle->end()) {
+        for (TTStubDetSet::const_iterator p_ttstub = p_module->begin(); p_ttstub != p_module->end(); p_ttstub++) {
+          TTStubRef ttStubRef = edmNew::makeRefTo(ttStubHandle, p_ttstub);
+          const unsigned int stubIndex = vAllStubs_.size();
 
-	// Get the stubs in this module.
-	const DetId& stackedDetId = moduleInfo.stackedDetId();
-	TTStubDetSetVec::const_iterator p_module = ttStubHandle->find(stackedDetId);
-	if (p_module != ttStubHandle->end()) {
-          for (TTStubDetSet::const_iterator p_ttstub = p_module->begin(); p_ttstub != p_module->end(); p_ttstub++) {
-            TTStubRef ttStubRef = edmNew::makeRefTo(ttStubHandle, p_ttstub);
-	    const unsigned int stubIndex = vAllStubs_.size();
+          // Store the Stub info, using class Stub to provide easy access to the most useful info.
+          vAllStubs_.emplace_back(ttStubRef, stubIndex, settings, trackerTopology, &moduleInfo, stubKiller.get());
 
-            // Store the Stub info, using class Stub to provide easy access to the most useful info.
-            vAllStubs_.emplace_back(ttStubRef, stubIndex, settings, trackerGeometry, trackerTopology, &moduleInfo, stubKiller.get());
-
-            // Also fill truth associating stubs to tracking particles.
-            if (enableMCtruth_) {
-	      Stub& stub = vAllStubs_.back();
-              stub.fillTruth(translateTP, mcTruthTTStubHandle, mcTruthTTClusterHandle);
-	    }
+          // Also fill truth associating stubs to tracking particles.
+          if (enableMCtruth_) {
+            Stub& stub = vAllStubs_.back();
+            stub.fillTruth(translateTP, mcTruthTTStubHandle, mcTruthTTClusterHandle);
           }
-	}
+        }
       }
-    } 
+    }
     
     // Produced reduced list containing only the subset of stubs that the user has declared will be
     // output by the front-end readout electronics.

@@ -23,6 +23,7 @@ namespace tmtt {
               Settings* settings,
               const TrackerGeometry* trackerGeometry,
               const TrackerTopology* trackerTopology,
+	      const std::list<ModuleInfo>& listModuleInfo,
               const edm::EDGetTokenT<TrackingParticleCollection> tpToken,
               const edm::EDGetTokenT<TTStubDetSetVec> stubToken,
               const edm::EDGetTokenT<TTStubAssMap> stubTruthToken,

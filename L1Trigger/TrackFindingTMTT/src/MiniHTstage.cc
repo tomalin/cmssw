@@ -55,8 +55,8 @@ void MiniHTstage::exec(matrix<unique_ptr<HTrphi>>& mHtRphis) {
           Sector sector(settings_, iPhiSec, iEtaReg);
           const float& phiCentre = sector.phiCentre();
           HTrphi* htRphi = mHtRphis(iPhiSec, iEtaReg).get();
-          const vector<L1track2D>& roughTracks = htRphi->trackCands2D();
-          vector<L1track2D> fineTracks;
+          const list<L1track2D>& roughTracks = htRphi->trackCands2D();
+          list<L1track2D> fineTracks;
 
           for (const L1track2D& roughTrk : roughTracks) {
             float roughTrkPhi =

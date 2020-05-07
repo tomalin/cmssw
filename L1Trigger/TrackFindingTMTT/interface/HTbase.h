@@ -6,6 +6,7 @@
 
 #include "boost/numeric/ublas/matrix.hpp"
 #include <vector>
+#include <list>
 #include <utility>
 #include <memory>
 
@@ -53,7 +54,7 @@ namespace tmtt {
 
     // Get list of all track candidates found in this HT array, giving access to stubs on each track
     // and helix parameters.
-    virtual const std::vector<L1track2D>& trackCands2D() const { return trackCands2D_; }
+    virtual const std::list<L1track2D>& trackCands2D() const { return trackCands2D_; }
 
     // Number of track candidates found in this HT array.
     // If a duplicate track filter was run, this will contain the reduced list of tracks passing this filter.
@@ -69,8 +70,7 @@ namespace tmtt {
     //=== Function to replace the collection of 2D tracks found by this HT.
 
     // (This is used by classes MuxHToutputs & MiniHTstage).
-    virtual void replaceTrackCands2D(const std::vector<const L1track2D*>& newTracks);
-    virtual void replaceTrackCands2D(const std::vector<L1track2D>& newTracks) { trackCands2D_ = newTracks; }
+    virtual void replaceTrackCands2D(const std::list<L1track2D>& newTracks) { trackCands2D_ = newTracks; }
 
     //=== Utilities
 
@@ -106,11 +106,11 @@ namespace tmtt {
   private:
     // Return a list of all track candidates found in this array, giving access to all the stubs on each one
     // and the track helix parameters, plus the associated truth particle (if any).
-    virtual std::vector<L1track2D> calcTrackCands2D() const;
+    virtual std::list<L1track2D> calcTrackCands2D() const;
 
     // If requested, kill those tracks in this sector that can't be read out during the time-multiplexed period, because
     // the HT has associated too many stubs to tracks.
-    virtual std::vector<L1track2D> killTracksBusySec(const std::vector<L1track2D>& tracks) const = 0;
+    virtual std::list<L1track2D> killTracksBusySec(const std::list<L1track2D>& tracks) const = 0;
 
     // Define the order in which the hardware processes rows of the HT array when it outputs track candidates.
     virtual std::vector<unsigned int> rowOrder(unsigned int numRows) const = 0;
@@ -139,7 +139,7 @@ namespace tmtt {
     // List of all track candidates found by HT & their associated properties.
     // If a duplicate track filter was run inside the HT, this will contain the reduced list of tracks passing this filter.
     // If some tracks could not be read out during the TM period, then such tracks are deleted from this list.
-    std::vector<L1track2D> trackCands2D_;
+    std::list<L1track2D> trackCands2D_;
   };
 
 }  // namespace tmtt

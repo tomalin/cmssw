@@ -5,6 +5,7 @@
 #include "L1Trigger/TrackFindingTMTT/interface/L1track3D.h"
 
 #include <vector>
+#include <list>
 #include <utility>
 #include <memory>
 
@@ -37,7 +38,7 @@ namespace tmtt {
     //=== Main routines to make 3D tracks.
 
     // Make 3D track collections.
-    void run(const std::vector<L1track2D>& vecTracksRphi) {
+    void run(const std::list<L1track2D>& vecTracksRphi) {
       this->makeUnfilteredTrks(vecTracksRphi);
       if (runRZfilter_)
         this->makeRZfilteredTrks(vecTracksRphi);
@@ -48,7 +49,7 @@ namespace tmtt {
     // Get 3D tracks (either r-z filtered or unfiltered, depending on the boolean).
     // (Each L1track3D object gives access to stubs on each track and helix parameters
     // & also to the associated truth tracking particle).
-    const std::vector<L1track3D>& trackCands3D(bool rzFiltered) const {
+    const std::list<L1track3D>& trackCands3D(bool rzFiltered) const {
       if (rzFiltered) {
         return vecTracks3D_rzFiltered_;
       } else {
@@ -70,12 +71,12 @@ namespace tmtt {
   private:
     // Convert 2D HT tracks within the current sector to 3D tracks,
     // by adding a rough estimate of their r-z helix parameters, without running any r-z track filter.
-    void makeUnfilteredTrks(const std::vector<L1track2D>& vecTracksRphi);
+    void makeUnfilteredTrks(const std::list<L1track2D>& vecTracksRphi);
 
     // Make 3D tracks from the 2D HT tracks within the current sector, by running the r-z track filter.
     // The r-z filter also adds an estimate of the r-z helix parameters to each track.
     // (Not filled if no track fitter needs the r-z filter).
-    void makeRZfilteredTrks(const std::vector<L1track2D>& vecTracksRphi);
+    void makeRZfilteredTrks(const std::list<L1track2D>& vecTracksRphi);
 
   private:
     // Configuration parameters
@@ -92,8 +93,8 @@ namespace tmtt {
     std::unique_ptr<TrkRZfilter> rzFilter_;
 
     // List of all found 3D track candidates and their associated properties.
-    std::vector<L1track3D> vecTracks3D_rzFiltered_;  // After r-z filter run
-    std::vector<L1track3D> vecTracks3D_unfiltered_;  // Before r-z filter run.
+    std::list<L1track3D> vecTracks3D_rzFiltered_;  // After r-z filter run
+    std::list<L1track3D> vecTracks3D_unfiltered_;  // Before r-z filter run.
   };
 
 }  // namespace tmtt

@@ -15,12 +15,13 @@
 #include "L1Trigger/TrackFindingTMTT/interface/Histos.h"
 #include "L1Trigger/TrackFindingTMTT/interface/Stub.h"
 #include "L1Trigger/TrackFindingTMTT/interface/L1track3D.h"
+#include "L1Trigger/TrackFindingTMTT/interface/ModuleInfo.h"
 #include "L1Trigger/TrackFindingTMTT/interface/TrackerGeometryInfo.h"
 #include "MagneticField/Engine/interface/MagneticField.h"
 #include "MagneticField/Records/interface/IdealMagneticFieldRecord.h"
 
 #include <vector>
-#include <map>
+#include <list>
 #include <string>
 #include <memory>
 
@@ -54,8 +55,10 @@ namespace tmtt {
     edm::EDGetTokenT<TTClusterAssMap> clusterTruthToken_;
     edm::EDGetTokenT<reco::GenJetCollection> genJetToken_;
 
+    // Info about tracker geometry
     const TrackerGeometry *trackerGeometry_;
     const TrackerTopology *trackerTopology_;
+    std::list<ModuleInfo> listModuleInfo_;
 
     // Configuration parameters
     Settings settings_;

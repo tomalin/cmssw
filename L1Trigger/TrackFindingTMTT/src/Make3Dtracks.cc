@@ -38,7 +38,7 @@ namespace tmtt {
   //=== Convert 2D tracks found by HT within the current sector to 3D tracks, without running any r-z track filter.
   //=== by adding a rough estimate of their r-z helix parameters.
 
-  void Make3Dtracks::makeUnfilteredTrks(const vector<L1track2D>& vecTracksRphi) {
+  void Make3Dtracks::makeUnfilteredTrks(const list<L1track2D>& vecTracksRphi) {
     vecTracks3D_unfiltered_.clear();
 
     for (const L1track2D& trkRphi : vecTracksRphi) {
@@ -89,13 +89,13 @@ namespace tmtt {
   //=== Make 3D tracks from the 2D tracks found by the HT within the current sector, by running the r-z track filter.
   //=== The r-z filter also adds an estimate of the r-z helix parameters to each track.
 
-  void Make3Dtracks::makeRZfilteredTrks(const vector<L1track2D>& vecTracksRphi) {
+  void Make3Dtracks::makeRZfilteredTrks(const list<L1track2D>& vecTracksRphi) {
     vecTracks3D_rzFiltered_ = rzFilter_->filterTracks(vecTracksRphi);
 
     // Optionally use MC truth to eliminate all fake tracks & all incorrect stubs assigned to tracks
     // before doing fit (for debugging).
     if (settings_->trackFitCheat()) {
-      vector<L1track3D> vecTracks3D_tmp;
+      list<L1track3D> vecTracks3D_tmp;
       for (const L1track3D& trk : vecTracks3D_rzFiltered_) {
         L1track3D trk_tmp = trk;
         bool cheat_keep = trk_tmp.cheat();
@@ -111,7 +111,7 @@ namespace tmtt {
   //=== (If the vector is empty, then the tracking particle was not reconstructed in this sector).
 
   vector<const L1track3D*> Make3Dtracks::assocTrackCands3D(const TP& tp, bool rzFiltered) const {
-    const vector<L1track3D>& allTracks3D = (rzFiltered) ? vecTracks3D_rzFiltered_ : vecTracks3D_unfiltered_;
+    const list<L1track3D>& allTracks3D = (rzFiltered) ? vecTracks3D_rzFiltered_ : vecTracks3D_unfiltered_;
 
     vector<const L1track3D*> assocRecoTrk;
 

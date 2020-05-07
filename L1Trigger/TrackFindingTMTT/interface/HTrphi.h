@@ -4,6 +4,7 @@
 #include "L1Trigger/TrackFindingTMTT/interface/HTbase.h"
 
 #include <vector>
+#include <list>
 #include <utility>
 #include <atomic>
 
@@ -96,7 +97,7 @@ namespace tmtt {
 
     // If requested, kill those tracks in this sector that can't be read out during the time-multiplexed period, because
     // the HT has associated too many stubs to tracks.
-    std::vector<L1track2D> killTracksBusySec(const std::vector<L1track2D>& tracks) const;
+    std::list<L1track2D> killTracksBusySec(const std::list<L1track2D>& tracks) const;
 
     // Define the order in which the hardware processes rows of the HT array when it outputs track candidates.
     // Currently corresponds to highest Pt tracks first.

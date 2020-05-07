@@ -46,6 +46,8 @@ public:
     float maxPhi() const { return moduleMaxPhi_; }
     float minZ() const { return moduleMinZ_; }
     float maxZ() const { return moduleMaxZ_; }
+    // Polar angle of module (in range -PI/2 to +PI/2). 
+    float theta() const { return atan(moduleMinR_/moduleMinZ_);}
     // Which of two sensors in module is furthest from beam-line?
     bool outerModuleAtSmallerR() const { return outerModuleAtSmallerR_; }
     // Module type: PS or 2S?
@@ -77,6 +79,8 @@ public:
     float sigmaPar() const { constexpr float f=sqrt(1./12.); return f * stripLength_; }
     // Sensor pitch over separation.
     float pitchOverSep() const { return stripPitch_/sensorSpacing_; }
+    // "B" correction for module tilt.
+  float correctionB() const { return std::abs(cos(std::abs(theta()) - moduleTilt()) / sin(theta())); }
 
   //--- Utilties
 

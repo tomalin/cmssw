@@ -76,8 +76,8 @@ namespace tmtt {
   //=== also killing some of the tracks altogether if they are left with too few stubs.
   //=== Also adds an estimate of r-z helix parameters to the selected track objects, if the filters used provide this.
 
-  vector<L1track3D> TrkRZfilter::filterTracks(const vector<L1track2D>& tracks) {
-    vector<L1track3D> filteredTracks;
+  list<L1track3D> TrkRZfilter::filterTracks(const list<L1track2D>& tracks) {
+    list<L1track3D> filteredTracks;
 
     for (const L1track2D& trkIN : tracks) {
       const vector<const Stub*>& stubs = trkIN.stubs();  // stubs assigned to track

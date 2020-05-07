@@ -104,7 +104,7 @@ namespace tmtt {
     for (unsigned int iEtaReg = 0; iEtaReg < numEtaRegions_; iEtaReg++)
       for (unsigned int iPhiSec = 0; iPhiSec < numPhiSectors_; iPhiSec++) {
         const Make3Dtracks* make3Dtrk = mMake3Dtrks(iPhiSec, iEtaReg).get();
-        const std::vector<L1track3D>& tracks = make3Dtrk->trackCands3D(withRZfilter);
+        const std::list<L1track3D>& tracks = make3Dtrk->trackCands3D(withRZfilter);
         tracksHT.insert(tracksHT.end(), tracks.begin(), tracks.end());
       }
     this->fillTrackCands(inputData, tracksHT, "HT");
@@ -115,7 +115,7 @@ namespace tmtt {
       for (unsigned int iEtaReg = 0; iEtaReg < numEtaRegions_; iEtaReg++)
         for (unsigned int iPhiSec = 0; iPhiSec < numPhiSectors_; iPhiSec++) {
           const Make3Dtracks* make3Dtrk = mMake3Dtrks(iPhiSec, iEtaReg).get();
-          const std::vector<L1track3D>& tracks = make3Dtrk->trackCands3D(withRZfilter);
+          const std::list<L1track3D>& tracks = make3Dtrk->trackCands3D(withRZfilter);
           tracksRZ.insert(tracksRZ.end(), tracks.begin(), tracks.end());
         }
       this->fillTrackCands(inputData, tracksRZ, "RZ");
@@ -1818,7 +1818,7 @@ void Histos::fillEtaPhiSectors(const InputData& inputData, const matrix<unique_p
                   // Check if track r-z filters run after r-phi HT kept track.
                   if (rphiHTpass) {
                     // Do so by getting tracks found by r-phi HT and running them through r-z filter.
-                    const vector<L1track2D>& trksRphi = htRphiTmp.trackCands2D();
+                    const list<L1track2D>& trksRphi = htRphiTmp.trackCands2D();
 
                     // Initialize utility for making 3D tracks from 2S ones.
                     Make3Dtracks make3DtrkTmp(settings_,

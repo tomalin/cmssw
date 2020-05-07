@@ -69,16 +69,17 @@ void MuxHToutputs::exec(matrix<unique_ptr<HTrphi>>& mHtRphis) const {
         for (unsigned int iEtaReg = 0; iEtaReg < numEtaRegions_; iEtaReg++) {
           HTrphi* htRphi = mHtRphis(iPhiSec, iEtaReg).get();  // Get a mutable version of the r-phi HT.
 
-          vector<const L1track2D*> keptTracks;
-          vector<L1track2D> tracks = htRphi->trackCands2D();
+          list<L1track2D> keptTracks;
+          const list<L1track2D>& tracks = htRphi->trackCands2D();
 
-          for (L1track2D& trk : tracks) {
-            unsigned int nStubs = trk.numStubs();               // #stubs on this track.
-            unsigned int mBinRange = htRphi->getMbinRange(trk);  // Which m bin range is this track in?
+          for (const L1track2D& trk : tracks) {
+	    L1track2D trkTmp = trk;
+            unsigned int nStubs = trkTmp.numStubs();               // #stubs on this track.
+            unsigned int mBinRange = htRphi->getMbinRange(trkTmp);  // Which m bin range is this track in?
             // Get the output optical link corresponding to this sector & m-bin range.
             unsigned int link = this->linkID(iSecInNon, iEtaReg, mBinRange);
             // Make a note of opto-link number inside track object.
-            trk.setOptoLinkID(link);
+            trkTmp.setOptoLinkID(link);
 
             numStubsPerLink[link] += nStubs;
             // Check if this track can be output within the time-multiplexed period.
@@ -86,7 +87,7 @@ void MuxHToutputs::exec(matrix<unique_ptr<HTrphi>>& mHtRphis) const {
             // FIX: with 2 GeV threshold, this causes significant truncation.
             // Consider using one output link for each phi sector in nonant
             if (keep)
-              keptTracks.push_back(&trk);
+              keptTracks.push_back(trkTmp);
           }
 
           // Replace the collection of 2D tracks in the r-phi HT with the subset of them surviving the TM cut.

@@ -91,6 +91,18 @@ namespace tmtt {
     trackerGeometry_ = &(iSetup.getData(trackerGeometryToken_));
     trackerTopology_ = &(iSetup.getData(trackerTopologyToken_));
     trackerGeometryInfo_.getTiltedModuleInfo(&settings_, trackerTopology_, trackerGeometry_);
+
+    // Loop over tracker modules to get module info & stubs.
+    
+    for (const GeomDet* gd : trackerGeometry_->dets()) {
+      DetId detId = gd->geographicalId();
+      // Phase 2 Outer Tracker uses TOB for entire barrel & TID for entire endcap.
+      if (detId.subdetId() != StripSubdetector::TOB && detId.subdetId() != StripSubdetector::TID) continue;
+      if ( trackerTopology_->isLower(detId) ) { // Select only lower of the two sensors in a module.
+	// Store info about this tracker module.
+	listModuleInfo_.emplace_back(trackerGeometry_, trackerTopology_, detId);
+      }
+    }
   }
 
   void TMTrackProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
@@ -101,6 +113,7 @@ namespace tmtt {
                         &settings_,
                         trackerGeometry_,
                         trackerTopology_,
+			listModuleInfo_,
                         tpToken_,
                         stubToken_,
                         stubTruthToken_,
@@ -198,7 +211,7 @@ namespace tmtt {
 
         // Get tracks found by r-phi HT.
         const HTrphi* htRphi = mHtRphis(iPhiSec, iEtaReg).get();
-        const vector<L1track2D>& vecTracksRphi = htRphi->trackCands2D();
+        const list<L1track2D>& vecTracksRphi = htRphi->trackCands2D();
 
         // Initialize utility for making 3D tracks from 2D ones.
         mMake3Dtrks(iPhiSec, iEtaReg) = std::make_unique<Make3Dtracks>(&settings_, iPhiSec, iEtaReg, sector->etaMin(), sector->etaMax(), sector->phiCentre());
@@ -211,14 +224,14 @@ namespace tmtt {
 
         // Convert these tracks to EDM format for output (used for collaborative work outside TMTT group).
         // Do this for tracks output by HT & optionally also for those output by r-z track filter.
-        const vector<L1track3D>& vecTrk3D_ht = make3Dtrk->trackCands3D(false);
+        const list<L1track3D>& vecTrk3D_ht = make3Dtrk->trackCands3D(false);
         for (const L1track3D& trk : vecTrk3D_ht) {
           TTTrack<Ref_Phase2TrackerDigi_> htTTTrack = converter.makeTTTrack(&trk, iPhiSec, iEtaReg);
           htTTTracksForOutput->push_back(htTTTrack);
         }
 
         if (runRZfilter_) {
-          const vector<L1track3D>& vecTrk3D_rz = make3Dtrk->trackCands3D(true);
+          const list<L1track3D>& vecTrk3D_rz = make3Dtrk->trackCands3D(true);
           for (const L1track3D& trk : vecTrk3D_rz) {
             TTTrack<Ref_Phase2TrackerDigi_> rzTTTrack = converter.makeTTTrack(&trk, iPhiSec, iEtaReg);
             rzTTTracksForOutput->push_back(rzTTTrack);
@@ -249,7 +262,7 @@ namespace tmtt {
           bool useRZfilt = (std::count(useRZfilter_.begin(), useRZfilter_.end(), fitterName) > 0);
 
           // Get 3D track candidates found by Hough transform (plus optional r-z filters/duplicate removal) in this sector.
-          const vector<L1track3D>& vecTrk3D = make3Dtrk->trackCands3D(useRZfilt);
+          const list<L1track3D>& vecTrk3D = make3Dtrk->trackCands3D(useRZfilt);
 
           // Fit all tracks in this sector
           vector<L1fittedTrack> fittedTracksInSec;

@@ -27,7 +27,6 @@ namespace tmtt {
              unsigned int iphi,
              double alpha,
              const Settings* settings,
-             const TrackerTopology* trackerTopology,
              unsigned int ID,
              unsigned int iPhiSec)
       : phi_(phi),
@@ -68,7 +67,6 @@ namespace tmtt {
   Stub::Stub(const TTStubRef& ttStubRef,
              unsigned int index_in_vStubs,
              const Settings* settings,
-             const TrackerGeometry* trackerGeometry,
              const TrackerTopology* trackerTopology,
 	     const ModuleInfo* moduleInfo,
 	     const StubKiller* stubKiller)
