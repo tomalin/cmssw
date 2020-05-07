@@ -15,17 +15,13 @@ using namespace std;
 
 namespace tmtt {
 
-  // Static variables
-
-  std::atomic<unsigned int> Stub::trackerGeometryVersion_ = 0;
-
   //=== Store useful info about the stub (for use with HYBRID code), with hard-wired constants to allow use outside CMSSW.
 
   Stub::Stub(double phi,
              double r,
              double z,
              double bend,
-             int layerid,
+             unsigned int layerId,
              bool psModule,
              bool barrel,
              unsigned int iphi,
@@ -40,29 +36,30 @@ namespace tmtt {
         bend_(bend),
         iphi_(iphi),
         alpha_(alpha),
+        digitalStub_(std::make_shared<DigitalStub>(settings, r, phi, z, iPhiSec)),
+        stubWindowSuggest_(settings),
         psModule_(psModule),
-        layerId_(layerid),
+        layerId_(layerId),
+        layerIdReduced_(ModuleInfo::calcLayerIdReduced(layerId)),
         endcapRing_(0),
-        barrel_(barrel),
-        digitalStub_(settings, r, phi, z, iPhiSec),
-        stubWindowSuggest_(settings) {  //work in progress on better constructor for new hybrid
+        barrel_(barrel)
+  {  //work in progress on better constructor for new hybrid
     if (psModule && barrel) {
       // max z at which non-tilted modules are found in 3 barrel PS layers. (Element 0 not used).
       const vector<float>& zMax = settings->zMaxNonTilted();
-      tiltedBarrel_ = (std::abs(z) > zMax[layerid]);
+      tiltedBarrel_ = (std::abs(z) > zMax[layerId]);
     } else {
       tiltedBarrel_ = false;
     }
-    if (!psModule) {
-      stripPitch_ = settings->ssStripPitch();
-      nStrips_ = settings->ssNStrips();
-      sigmaPar_ = settings->ssStripLength() / std::sqrt(12.0);
-    } else {
-      stripPitch_ = settings->psStripPitch();
+    if (psModule) {
+      stripPitch_ = settings->psPixelPitch();
+      stripLength_ = settings->psPixelLength();
       nStrips_ = settings->psNStrips();
-      sigmaPar_ = settings->psPixelLength() / std::sqrt(12.0);
+    } else {
+      stripPitch_ = settings->ssStripPitch();
+      stripLength_ = settings->ssStripLength();
+      nStrips_ = settings->ssNStrips();
     }
-    sigmaPerp_ = stripPitch_ / std::sqrt(12.0);
     index_in_vStubs_ = ID;  // A unique ID to label the stub.
   }
 
@@ -73,61 +70,38 @@ namespace tmtt {
              const Settings* settings,
              const TrackerGeometry* trackerGeometry,
              const TrackerTopology* trackerTopology,
+	     const ModuleInfo* moduleInfo,
 	     const StubKiller* stubKiller)
       : ttStubRef_(ttStubRef),
         settings_(settings),
         index_in_vStubs_(index_in_vStubs),
         assocTP_(nullptr),  // Initialize in case job is using no MC truth info.
-        digitalStub_(settings),
-        digitizedForGPinput_(false),  // notes that stub has not yet been digitized for GP input.
-        digitizedForHTinput_(false),  // notes that stub has not yet been digitized for HT input.
-        digitizedForSForTFinput_(
-            ""),  // notes that stub has not yet been digitized for seed filter or track fitter input.
+        digitizedForGPinput_(false),  // Has stub has been digitized for GP input?
+        digitizedForHTinput_(false),  // Has stub been digitized for HT input?
+        digitizedForSForTFinput_(""),  // Has stub been digitized for SF/TF input?
         digitizeWarningsOn_(true),
-        stubWindowSuggest_(settings, trackerTopology),  // TMTT recommendations for stub window sizes to CMS.
-        degradeBend_(trackerTopology)                   // Used to degrade stub bend information.
+        moduleInfo_(moduleInfo),  // Info about tracker module containing stub 
+        stubWindowSuggest_(settings, trackerTopology),  // TMTT recommended stub window sizes.
+        degradeBend_(trackerTopology),                   // Used to degrade stub bend information.
+  // Module related variables (need to be stored for Hybrid)
+    psModule_(moduleInfo->psModule()),
+    layerId_(moduleInfo->layerId()),
+    layerIdReduced_(moduleInfo->layerIdReduced()),
+    endcapRing_(moduleInfo->endcapRing()),
+    barrel_(moduleInfo->barrel()),
+    tiltedBarrel_(moduleInfo->tiltedBarrel()),
+    stripPitch_(moduleInfo->stripPitch()),
+    stripLength_(moduleInfo->stripLength()),
+    nStrips_(moduleInfo->nStrips())
   {
-    // Determine tracker geometry version (T3, T4, T5 ...)
-    this->setTrackerGeometryVersion(trackerGeometry, trackerTopology);
-
     // Get coordinates of stub.
     const TTStub<Ref_Phase2TrackerDigi_>* ttStubP = ttStubRef_.get();
 
-    // The stub gives access to the DetId of the stacked module, but we want the DetId of the lower of
-    // the two sensors in the module.
-
-    /*
-  // This the way CMS usually does this conversion, but it uses huge amounts of CPU.
-  DetId geoDetId;
-  for (const GeomDet* gd : trackerGeometry->dets()) {
-      DetId detid = gd->geographicalId();
-      if (detid.subdetId() != StripSubdetector::TOB && detid.subdetId() != StripSubdetector::TID) continue; // Phase 2 Outer Tracker uses TOB for entire barrel & TID for entire endcap.
-      if ( trackerTopology->isLower(detid) ) { // Select only lower of the two sensors in a module.
-          DetId stackDetid = trackerTopology->stack(detid); // Det ID of stacked module containing stub.
-          if ( ttStubRef_->getDetId() == stackDetid ) {
-              geoDetId = detid; // Note Det ID of lower sensor in stacked module containing stub.
-              break;
-          }
-      }
-  }
-  if (geoDetId.null()) throw cms::Exception("LogicError")<<"Stub: Det ID corresponding to Stub not found";
-  */
-
-    // This is a faster way we found of doing the conversion. It seems to work ...
-    DetId stackDetid = ttStubRef_->getDetId();
-    DetId geoDetId(stackDetid.rawId() + 1);
-    if (not(trackerTopology->isLower(geoDetId) && trackerTopology->stack(geoDetId) == stackDetid))
-      throw cms::Exception("LogicError") << "Stub: determination of detId went wrong";
-
-    const GeomDetUnit* det0 = trackerGeometry->idToDetUnit(geoDetId);
-    // To get other module, can do this
-    // const GeomDetUnit* det1 = trackerGeometry->idToDetUnit( trackerTopology->partnerDetId( geoDetId ) );
-
-    const PixelGeomDetUnit* theGeomDet = dynamic_cast<const PixelGeomDetUnit*>(det0);
-    const PixelTopology* topol = dynamic_cast<const PixelTopology*>(&(theGeomDet->specificTopology()));
+    const PixelGeomDetUnit* specDet = moduleInfo_->specDet();
+    const PixelTopology* specTopol = moduleInfo_->specTopol();
     MeasurementPoint measurementPoint = ttStubRef_->clusterRef(0)->findAverageLocalCoordinatesCentered();
-    LocalPoint clustlp = topol->localPosition(measurementPoint);
-    GlobalPoint pos = theGeomDet->surface().toGlobal(clustlp);
+    LocalPoint clustlp = specTopol->localPosition(measurementPoint);
+    GlobalPoint pos = specDet->surface().toGlobal(clustlp);
 
     phi_ = pos.phi();
     r_ = pos.perp();
@@ -137,18 +111,7 @@ namespace tmtt {
         std::abs(z_) > settings_->trackerHalfLength()) {
       throw cms::Exception("BadConfig") << "Stub: Stub found outside assumed tracker volume. Please update tracker "
                                            "dimensions specified in Settings.h!"
-                                        << " r=" << r_ << " z=" << z_ << " " << ttStubRef_->getDetId().subdetId();
-    }
-
-    // Set info about the module this stub is in
-    this->setModuleInfo(trackerGeometry, trackerTopology, geoDetId);
-    // Uncertainty in stub coordinates due to strip or pixel length in r-z.
-    if (barrel_) {
-      rErr_ = 0.;
-      zErr_ = 0.5 * stripLength_;
-    } else {
-      rErr_ = 0.5 * stripLength_;
-      zErr_ = 0.;
+                                        << " r=" << r_ << " z=" << z_ << " id=" << moduleInfo_->detId().subdetId();
     }
 
     // Get the coordinates of the two clusters that make up this stub, measured in units of strip pitch, and measured
@@ -166,44 +129,26 @@ namespace tmtt {
     // Determine alpha correction for non-radial strips in endcap 2S modules.
     // (If true hit at larger r than stub r by deltaR, then stub phi needs correcting by +alpha*deltaR).
     alpha_ = 0.;
-    if ((not barrel_) && (not psModule_)) {
-      float fracPosInModule = (float(iphi_) - 0.5 * float(nStrips_)) / float(nStrips_);
-      float phiRelToModule = sensorWidth_ * fracPosInModule / r_;
+    if ((not barrel()) && (not psModule())) {
+      float fracPosInModule = (float(iphi_) - 0.5 * float(nStrips())) / float(nStrips());
+      float phiRelToModule = sensorWidth() * fracPosInModule / r_;
       if (z_ < 0)
         phiRelToModule *= -1;
-      if (outerModuleAtSmallerR_)
+      if (moduleInfo_->outerModuleAtSmallerR())
         phiRelToModule *= -1;  // Module flipped.
       // If true hit at larger r than stub r by deltaR, then stub phi needs correcting by +alpha*deltaR.
       alpha_ = -phiRelToModule / r_;
     }
 
-    // Calculate constants used to interpret bend information.
-
-    // float sensorSpacing = barrel_ ? (moduleMaxR_ - moduleMinR_) : (moduleMaxZ_ - moduleMinZ_);
-    // EJC Above not true for tilted modules
-    float sensorSpacing = sqrt((moduleMaxR_ - moduleMinR_) * (moduleMaxR_ - moduleMinR_) +
-                               (moduleMaxZ_ - moduleMinZ_) * (moduleMaxZ_ - moduleMinZ_));
-
-    pitchOverSep_ = stripPitch_ / sensorSpacing;
-    // IRT - use stub (r,z) instead of module (r,z). Logically correct but has negligable effect on results.
-    // This old equation was valid for flat geom, where all modules are parallel or perpendicular to beam.
-    //dphiOverBend_ = barrel_  ?  pitchOverSep_  :  pitchOverSep_*std::abs(z_)/r_;
-    // EJC - This new equation is valid in general case, so works for both flat and tilted geom.
-    dphiOverBendCorrection_ = std::abs(cos(this->theta() - moduleTilt_) / sin(this->theta()));
-    dphiOverBendCorrection_approx_ = approxB();
-    if (settings->useApproxB()) {
-      dphiOverBend_ = pitchOverSep_ * dphiOverBendCorrection_approx_;
-    } else {
-      dphiOverBend_ = pitchOverSep_ * dphiOverBendCorrection_;
-    }
+    // Calculate variables giving ratio of track intercept angle to stub bend.
+    this->calcDphiOverBend();
 
     // Get stub bend that is available in front-end electronics, where bend is displacement between
     // two hits in stubs in units of strip pitch.
     bendInFrontend_ = ttStubRef_->bendFE();
-    if ((not barrel_) && pos.z() > 0)
+    if ((not barrel()) && pos.z() > 0)
       bendInFrontend_ *= -1;
-    // EJC Bend in barrel seems to be flipped in tilted geom.
-    if (barrel_)
+    if (barrel())
       bendInFrontend_ *= -1;
 
     // Get stub bend that is available in off-detector electronics, allowing for degredation of
@@ -217,9 +162,9 @@ namespace tmtt {
       bend_ = degradedBend;
     } else if (settings->degradeBendRes() == 1) {
       bend_ = ttStubRef_->bendBE();  // Degraded bend from official CMS recipe.
-      if ((not barrel_) && pos.z() > 0)
+      if ((not barrel()) && pos.z() > 0)
         bend_ *= -1;
-      if (barrel_)
+      if (barrel())
         bend_ *= -1;
     } else {
       bend_ = bendInFrontend_;
@@ -232,21 +177,20 @@ namespace tmtt {
     this->calcQoverPtrange();
 
     // Initialize class used to produce digital version of stub, with original stub parameters pre-digitization.
-    digitalStub_.init(phi_,
+    digitalStub_ = std::make_shared<DigitalStub>(settings_, 
+		      phi_,
                       r_,
                       z_,
                       min_qOverPt_bin_,
                       max_qOverPt_bin_,
-                      layerId_,
-                      this->layerIdReduced(),
+                      layerId(),
+                      moduleInfo_->layerIdReduced(),
                       bend_,
-                      stripPitch_,
-                      sensorSpacing,
-                      rErr_,
-                      zErr_,
-                      barrel_,
-                      tiltedBarrel_,
-                      psModule_);
+                      stripPitch(),
+                      moduleInfo_->sensorSpacing(),
+                      barrel(),
+                      tiltedBarrel(),
+		      psModule());
 
     // Update recommended stub window sizes that TMTT recommends that CMS should use in FE electronics.
     if (settings_->printStubWindows())
@@ -293,7 +237,6 @@ namespace tmtt {
     if (min_bin > max_bin) {
       min_bin = max_array_bin;
       max_bin = min_array_bin;
-      //if (frontendPass_) throw cms::Exception("LogicError")<<Stub: m bin calculation found low Pt stub not killed by FE electronics cuts "<<qOverPtMin<<" "<<qOverPtMax;
     }
     min_qOverPt_bin_ = (unsigned int)min_bin;
     max_qOverPt_bin_ = (unsigned int)max_bin;
@@ -306,20 +249,21 @@ namespace tmtt {
   void Stub::digitizeForGPinput(unsigned int iPhiSec) {
     if (settings_->enableDigitize()) {
       // Save CPU by not redoing digitization if stub was already digitized for this phi sector.
-      if (!(digitizedForGPinput_ && digitalStub_.iGetNonant(iPhiSec) == digitalStub_.iDigi_Nonant())) {
+      if (!(digitizedForGPinput_ && digitalStub_->iGetNonant(iPhiSec) == digitalStub_->iDigi_Nonant())) {
         // Digitize
-        digitalStub_.makeGPinput(iPhiSec);
+        digitalStub_->makeGPinput(iPhiSec);
 
         // Replace stub coordinates with those degraded by digitization process.
-        phi_ = digitalStub_.phi();
-        r_ = digitalStub_.r();
-        z_ = digitalStub_.z();
-        bend_ = digitalStub_.bend();
+        phi_ = digitalStub_->phi();
+        r_ = digitalStub_->r();
+        z_ = digitalStub_->z();
+        bend_ = digitalStub_->bend();
 
         // If the Stub class contains any data members that are not input to the GP, but are derived from variables that
         // are, then be sure to update these here too, unless Stub.h uses the check*() functions to declare them invalid.
-        dphiOverBendCorrection_ = std::abs(cos(this->theta() - moduleTilt_) / sin(this->theta()));
-        dphiOverBend_ = pitchOverSep_ * dphiOverBendCorrection_;
+
+        // Update variables giving ratio of track intercept angle to stub bend.
+        this->calcDphiOverBend();
 
         // Note that stub has been digitized for GP input
         digitizedForGPinput_ = true;
@@ -333,18 +277,18 @@ namespace tmtt {
   void Stub::digitizeForHTinput(unsigned int iPhiSec) {
     if (settings_->enableDigitize()) {
       // Save CPU by not redoing digitization if stub was already digitized for this phi sector.
-      if (!(digitizedForHTinput_ && iPhiSec == digitalStub_.iDigi_PhiSec())) {
+      if (!(digitizedForHTinput_ && iPhiSec == digitalStub_->iDigi_PhiSec())) {
         // Call digitization for GP in case not already done. (Needed for variables that are common to GP & HT).
         this->digitizeForGPinput(iPhiSec);
 
         // Digitize
-        digitalStub_.makeHTinput(iPhiSec);
+        digitalStub_->makeHTinput(iPhiSec);
 
         // Since GP and HT use same digitisation in r and z, don't bother updating their values.
         // (Actually, the phi digitisation boundaries also match, except for systolic array, so could skip updating phi too).
 
         // Replace stub coordinates and bend with those degraded by digitization process. (Don't bother with r & z, as already done by GP digitisation).
-        phi_ = digitalStub_.phi();
+        phi_ = digitalStub_->phi();
 
         // Recalculate bin range along q/Pt axis of r-phi Hough transform array
         // consistent with bend of this stub, since it depends on r & z which have now been digitized.
@@ -368,15 +312,12 @@ namespace tmtt {
     if (settings_->enableDigitize()) {
       if (digitizedForSForTFinput_ != SForTF) {
         // Digitize variables specific to seed filter or track fittr if not already done.
-        digitalStub_.makeSForTFinput(SForTF);
+        digitalStub_->makeSForTFinput(SForTF);
 
-        // Replace stub (r,z) uncertainties, estimated from half-pixel/strip-length, by those degraded by the digitization process.
-        rErr_ = digitalStub_.rErr();
-        zErr_ = digitalStub_.zErr();
-        // Must also replace stub r coordinate, as seed filter & fitters work with digitized r instead of digitized rT.
-        r_ = digitalStub_.r();
+        // Must replace stub r coordinate, as seed filter & fitters work with digitized r instead of digitized rT.
+        r_ = digitalStub_->r();
         // And KF may also redigitize z.
-        z_ = digitalStub_.z();
+        z_ = digitalStub_->z();
 
         digitizedForSForTFinput_ = SForTF;
       }
@@ -388,7 +329,7 @@ namespace tmtt {
   void Stub::digitizeForDRinput(unsigned int stubId) {
     if (settings_->enableDigitize()) {
       // Digitize variables specific to seed filter if not already done.
-      digitalStub_.makeDRinput(stubId);
+      digitalStub_->makeDRinput(stubId);
       // digitizedForDRinput_ = true;
     }
   }
@@ -400,14 +341,10 @@ namespace tmtt {
       // Save CPU by not undoing digitization if stub was not already digitized.
       if (digitizedForGPinput_ || digitizedForHTinput_) {
         // Replace stub coordinates and bend with original coordinates stored prior to any digitization.
-        phi_ = digitalStub_.orig_phi();
-        r_ = digitalStub_.orig_r();
-        z_ = digitalStub_.orig_z();
-        bend_ = digitalStub_.orig_bend();
-
-        // Also restore original uncertainties in stub coordinates (estimated from strip or pixel half-length).
-        rErr_ = digitalStub_.orig_rErr();
-        zErr_ = digitalStub_.orig_zErr();
+        phi_ = digitalStub_->orig_phi();
+        r_ = digitalStub_->orig_r();
+        z_ = digitalStub_->orig_z();
+        bend_ = digitalStub_->orig_bend();
 
         // Note that stub is (no longer) digitized.
         digitizedForGPinput_ = false;
@@ -416,8 +353,9 @@ namespace tmtt {
 
         // If the Stub class contains any data members that are not input to the GP or HT, but are derived from
         // variables that are, then be sure to update these here too.
-        dphiOverBendCorrection_ = std::abs(cos(this->theta() - moduleTilt_) / sin(this->theta()));
-        dphiOverBend_ = pitchOverSep_ * dphiOverBendCorrection_;
+
+        // Update variables giving ratio of track intercept angle to stub bend.
+        this->calcDphiOverBend();
       }
     }
   }
@@ -440,14 +378,7 @@ namespace tmtt {
     }
 
     static std::atomic<bool> firstErr = true;
-    if (trackerGeometryVersion_ < 5) {
-      if (firstErr) {
-        PrintL1trk() << "Stub: WARNING - Stub windows in DegradeBend class have not been tuned for flat tracker geometry, so may need retuning " << trackerGeometryVersion_;
-        firstErr = false;
-      }
-    }
-
-    degradeBend_.degrade(bend, psModule_, idDet_, windowFE, degradedBend, reject, num);
+    degradeBend_.degrade(bend, psModule(), moduleInfo_->detId(), windowFE, degradedBend, reject, num);
   }
 
   //=== Set flag indicating if stub will be output by front-end readout electronics
@@ -491,12 +422,26 @@ namespace tmtt {
 
   //=== Function to calculate approximation for dphiOverBendCorrection aka B
   double Stub::approxB() {
-    if (tiltedBarrel_) {
+    if (tiltedBarrel()) {
       return settings_->bApprox_gradient() * std::abs(z_) / r_ + settings_->bApprox_intercept();
     } else {
-      return barrel_ ? 1 : std::abs(z_) / r_;
+      return barrel() ? 1 : std::abs(z_) / r_;
     }
   }
+
+    //=== Calculate variables giving ratio of track intercept angle to stub bend.
+
+  void Stub::calcDphiOverBend() {
+   // Uses stub (r,z) instead of module (r,z). Logically correct but has negligable effect on results.
+    dphiOverBendCorrection_ = std::abs(cos(this->theta() - moduleInfo_->moduleTilt()) / sin(this->theta()));
+    dphiOverBendCorrection_approx_ = approxB();
+    if (settings_->useApproxB()) {
+      dphiOverBend_ = moduleInfo_->pitchOverSep() * dphiOverBendCorrection_approx_;
+    } else {
+      dphiOverBend_ = moduleInfo_->pitchOverSep() * dphiOverBendCorrection_;
+    }
+
+    } 
 
   //=== Note which tracking particle(s), if any, produced this stub.
   //=== The 1st argument is a map relating TrackingParticles to TP.
@@ -567,8 +512,8 @@ namespace tmtt {
   //=== N.B. This is identical to Stub::beta() if rad=0.
 
   pair<float, float> Stub::trkPhiAtR(float rad) const {
-    float rStubMax = r_ + rErr_;  // Uncertainty in radial stub coordinate due to strip length.
-    float rStubMin = r_ - rErr_;
+    float rStubMax = r_ + sigmaR();  // Uncertainty in radial stub coordinate due to strip length.
+    float rStubMin = r_ - sigmaR();
     float trkPhi1 = (phi_ + dphi() * (1. - rad / rStubMin));
     float trkPhi2 = (phi_ + dphi() * (1. - rad / rStubMax));
     float trkPhi = 0.5 * (trkPhi1 + trkPhi2);
@@ -589,149 +534,4 @@ namespace tmtt {
     }
     return crazy;
   }
-
-  //=== Get reduced layer ID (in range 1-7), which can be packed into 3 bits so simplifying the firmware).
-
-  unsigned int Stub::layerIdReduced() const {
-    // Don't bother distinguishing two endcaps, as no track can have stubs in both.
-    unsigned int lay = (layerId_ < 20) ? layerId_ : layerId_ - 10;
-
-    // No genuine track can have stubs in both barrel layer 6 and endcap disk 11 etc., so merge their layer IDs.
-    // WARNING: This is tracker geometry dependent, so may need changing in future ...
-    if (lay == 6)
-      lay = 11;
-    if (lay == 5)
-      lay = 12;
-    if (lay == 4)
-      lay = 13;
-    if (lay == 3)
-      lay = 15;
-    // At this point, the reduced layer ID can have values of 1, 2, 11, 12, 13, 14, 15. So correct to put in range 1-7.
-    if (lay > 10)
-      lay -= 8;
-
-    if (lay < 1 || lay > 7)
-      throw cms::Exception("LogicError") << "Stub: Reduced layer ID out of expected range";
-
-    return lay;
-  }
-
-  //=== Set info about the module that this stub is in.
-
-  void Stub::setModuleInfo(const TrackerGeometry* trackerGeometry,
-                           const TrackerTopology* trackerTopology,
-                           const DetId& detId) {
-    idDet_ = detId;
-
-    // Note if module is PS or 2S, and whether in barrel or endcap.
-    // From https://github.com/cms-sw/cmssw/blob/CMSSW_8_1_X/Geometry/TrackerGeometryBuilder/README.md
-    psModule_ = (trackerGeometry->getDetectorType(detId) == TrackerGeometry::ModuleType::Ph2PSP);
-    barrel_ = detId.subdetId() == StripSubdetector::TOB || detId.subdetId() == StripSubdetector::TIB;
-
-    // Get min & max (r,phi,z) coordinates of the centre of the two sensors containing this stub.
-    const GeomDetUnit* det0 = trackerGeometry->idToDetUnit(detId);
-    const GeomDetUnit* det1 = trackerGeometry->idToDetUnit(trackerTopology->partnerDetId(detId));
-
-    float R0 = det0->position().perp();
-    float R1 = det1->position().perp();
-    float PHI0 = det0->position().phi();
-    float PHI1 = det1->position().phi();
-    float Z0 = det0->position().z();
-    float Z1 = det1->position().z();
-    moduleMinR_ = std::min(R0, R1);
-    moduleMaxR_ = std::max(R0, R1);
-    moduleMinPhi_ = std::min(PHI0, PHI1);
-    moduleMaxPhi_ = std::max(PHI0, PHI1);
-    moduleMinZ_ = std::min(Z0, Z1);
-    moduleMaxZ_ = std::max(Z0, Z1);
-
-    // Note if tilted barrel module & get title angle (in range 0 to PI).
-    tiltedBarrel_ = barrel_ && (trackerTopology->tobSide(detId) != 3);
-    float deltaR = std::abs(R1 - R0);
-    float deltaZ = (R1 - R0 > 0) ? (Z1 - Z0) : -(Z1 - Z0);
-    moduleTilt_ = atan2(deltaR, deltaZ);
-    if (moduleTilt_ > M_PI / 2.)
-      moduleTilt_ -= M_PI;  // Put in range -PI/2 to +PI/2.
-    if (moduleTilt_ < -M_PI / 2.)
-      moduleTilt_ += M_PI;  //
-
-    // Encode layer ID.
-    if (barrel_) {
-      layerId_ = trackerTopology->layer(detId);  // barrel layer 1-6 encoded as 1-6
-    } else {
-      // layerId_ = 10*detId.iSide() + detId.iDisk(); // endcap layer 1-5 encoded as 11-15 (endcap A) or 21-25 (endcapB)
-      // EJC This seems to give the same encoding as what we had in CMSSW6
-      layerId_ = 10 * trackerTopology->side(detId) + trackerTopology->tidWheel(detId);
-    }
-
-    // Note module ring in endcap
-    endcapRing_ = barrel_ ? 0 : trackerTopology->tidRing(detId);
-
-    if (trackerGeometryVersion_ >= 5) {  // Tilted geometry
-      if (!barrel_) {
-        // Apply bodge, since Topology class annoyingly starts ring count at 1, even in endcap wheels where
-        // inner rings are absent.
-        unsigned int iWheel = trackerTopology->tidWheel(detId);
-        if (iWheel >= 3 && iWheel <= 5)
-          endcapRing_ += 3;
-      }
-    }
-
-    // Get sensor strip or pixel pitch using innermost sensor of pair.
-
-    const PixelGeomDetUnit* unit = reinterpret_cast<const PixelGeomDetUnit*>(det0);
-    const PixelTopology& topo = unit->specificTopology();
-    const Bounds& bounds = det0->surface().bounds();
-
-    std::pair<float, float> pitch = topo.pitch();
-    stripPitch_ = pitch.first;      // Strip pitch (or pixel pitch along shortest axis)
-    stripLength_ = pitch.second;    //  Strip length (or pixel pitch along longest axis)
-    nStrips_ = topo.nrows();        // No. of strips in sensor
-    sensorWidth_ = bounds.width();  // Width of sensitive region of sensor (= stripPitch * nStrips).
-
-    // Note if modules are flipped back-to-front.
-    outerModuleAtSmallerR_ = (det0->position().mag() > det1->position().mag());
-    /*
-  if ( barrel_ && det0->position().perp() > det1->position().perp() ) {
-    outerModuleAtSmallerR_ = true;
-  }
-  */
-
-    sigmaPerp_ = stripPitch_ / sqrt(12.);  // resolution perpendicular to strip (or to longest pixel axis)
-    sigmaPar_ = stripLength_ / sqrt(12.);  // resolution parallel to strip (or to longest pixel axis)
-  }
-
-  //=== Determine tracker geometry version by counting modules.
-
-  void Stub::setTrackerGeometryVersion(const TrackerGeometry* trackerGeometry, const TrackerTopology* trackerTopology) {
-    // N.B. The relationship between Tracker geometry name (T3, T4, T5 ...) and CMS geometry name
-    // (D13, D17 ...) is documented in
-    //  https://github.com/cms-sw/cmssw/blob/CMSSW_9_1_X/Configuration/Geometry/README.md .
-
-    if (trackerGeometryVersion_ == 0) {
-      unsigned int numDet = 0;
-      for (const GeomDet* gd : trackerGeometry->dets()) {
-        DetId detid = gd->geographicalId();
-        if (detid.subdetId() != StripSubdetector::TOB ||
-            detid.subdetId() !=
-                StripSubdetector::TID) {  // Phase 2 Outer Tracker uses TOB for entire barrel & TID for entire endcap.
-          if (trackerTopology->isLower(detid)) {  // Select only lower of the two sensors in a module.
-            numDet++;
-          }
-        }
-      }
-
-      if (numDet == 13200) {
-        trackerGeometryVersion_ = 14;  // Tilted geometry T14/T15
-      } else if (numDet == 13296) {
-        trackerGeometryVersion_ = 5;  // Tilted geometry T5/T6
-      } else if (numDet == 14850) {
-        trackerGeometryVersion_ = 4;  // Flat geometry T4
-      } else {
-        trackerGeometryVersion_ = -1;
-        PrintL1trk() << "Stub: WARNING -- The tracker geometry you are using is yet not known to the stub class. Please update Stub::degradeResolution() & Stub::setTrackerGeometryVersion(). Number of tracker modules = " << numDet;
-      }
-    }
-  }
-
 }  // namespace tmtt

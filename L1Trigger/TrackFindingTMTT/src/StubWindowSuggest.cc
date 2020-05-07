@@ -37,20 +37,13 @@ namespace tmtt {
     // Values set according to L1Trigger/TrackTrigger/python/TTStubAlgorithmRegister_cfi.py
     // parameter NTiltedRings for whichever tracker geometry (T3, T4, T5 ...) is used..
     const vector<double> barrelNTilt_init = {0., 12., 12., 12., 0., 0., 0.};
-    if (stub->trackerGeometryVersion() >= 5) {  // Tilted barrel
-      barrelNTilt_ = barrelNTilt_init;
-    } else {
-      throw cms::Exception("LogicError")
-          << "StubWindowSuggest: the tracker geometry you are using is not yet known to StubWindowSuggest. Please "
-             "update constant barrelNTilt_T*_init inside it. Geometry="
-          << stub->trackerGeometryVersion();
-    }
+    barrelNTilt_ = barrelNTilt_init;
 
     // This code should be kept almost identical to that in
     // L1Trigger/TrackTrigger/src/TTStubAlgorithm_official.cc
     // The only exceptions are lines marked "Modified by TMTT group"
 
-    DetId stDetId(stub->idDet());
+    DetId stDetId(stub->moduleInfo()->detId());
 
     if (stDetId.subdetId() == StripSubdetector::TOB) {
       unsigned int layer = theTrackerTopo_->layer(stDetId);

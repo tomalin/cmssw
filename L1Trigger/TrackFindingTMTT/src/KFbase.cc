@@ -964,8 +964,8 @@ namespace tmtt {
     text << "r=" << stub->r() << " ";
     text << "phi=" << stub->phi() << " ";
     text << "z=" << stub->z() << " ";
-    text << "sigmaX=" << stub->sigmaX() << " ";
-    text << "sigmaZ=" << stub->sigmaZ() << " ";
+    text << "sigmaX=" << stub->sigmaPerp() << " ";
+    text << "sigmaZ=" << stub->sigmaPar() << " ";
     text << "TPids=";
     std::set<const TP *> tps = stub->assocTPs();
     for (auto tp : tps)

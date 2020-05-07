@@ -33,21 +33,32 @@ namespace tmtt {
                        const edm::EDGetTokenT<TTStubAssMap> stubTruthToken,
                        const edm::EDGetTokenT<TTClusterAssMap> clusterTruthToken,
                        const edm::EDGetTokenT<reco::GenJetCollection> genJetToken) {
-
-    constexpr unsigned int nTypicalTPs=1200, nTypicalStubs=15000, nTypicalAllStubs=20000;
+    /*
+    constexpr unsigned int nTypicalMods=15000, nTypicalTPs=1200, nTypicalStubs=15000, nTypicalAllStubs=20000;
+    trackerModules_.reserve(nTypicalMods);
     vTPs_.reserve(nTypicalTPs);
     vStubs_.reserve(nTypicalStubs);
     vAllStubs_.reserve(nTypicalAllStubs);
-
+    */
     // Note if job will use MC truth info (or skip it to save CPU).
     enableMCtruth_ = settings->enableMCtruth();
 
-    // Get TrackingParticle info
-
     edm::Handle<TrackingParticleCollection> tpHandle;
-
+    edm::Handle<TTStubDetSetVec> ttStubHandle;
+    edm::Handle<TTStubAssMap> mcTruthTTStubHandle;
+    edm::Handle<TTClusterAssMap> mcTruthTTClusterHandle;
+    edm::Handle<reco::GenJetCollection> genJetHandle;
+    iEvent.getByToken(stubToken, ttStubHandle);
     if (enableMCtruth_) {
       iEvent.getByToken(tpToken, tpHandle);
+      iEvent.getByToken(stubTruthToken, mcTruthTTStubHandle);
+      iEvent.getByToken(clusterTruthToken, mcTruthTTClusterHandle);
+      iEvent.getByToken(genJetToken, genJetHandle);
+    }
+
+    // Get TrackingParticle info
+
+    if (enableMCtruth_) {
 
       unsigned int tpCount = 0;
       for (unsigned int i = 0; i < tpHandle->size(); i++) {
@@ -60,8 +71,6 @@ namespace tmtt {
           TP tp(tpPtr, tpCount, settings);
           // Only bother storing tp if it could be useful for tracking efficiency or fake rate measurements.
           if (tp.use()) {
-            edm::Handle<reco::GenJetCollection> genJetHandle;
-            iEvent.getByToken(genJetToken, genJetHandle);
             if (genJetHandle.isValid()) {
               tp.fillNearestJetInfo(genJetHandle.product());
             }
@@ -91,35 +100,38 @@ namespace tmtt {
       stubKiller = std::make_unique<StubKiller>(killOpt, trackerTopology, trackerGeometry, iEvent);
     }
 
-    // Get stub info, by looping over modules and then stubs inside each module.
-    // Also get the association map from stubs to tracking particles.
+    // Loop over tracker modules to get module info & stubs.
+    
+    for (const GeomDet* gd : trackerGeometry->dets()) {
+      DetId detId = gd->geographicalId();
+      if (detId.subdetId() != StripSubdetector::TOB && detId.subdetId() != StripSubdetector::TID) continue;
+       // Phase 2 Outer Tracker uses TOB for entire barrel & TID for entire endcap.
+      if ( trackerTopology->isLower(detId) ) { // Select only lower of the two sensors in a module.
 
-    edm::Handle<TTStubDetSetVec> ttStubHandle;
-    edm::Handle<TTStubAssMap> mcTruthTTStubHandle;
-    edm::Handle<TTClusterAssMap> mcTruthTTClusterHandle;
-    iEvent.getByToken(stubToken, ttStubHandle);
-    if (enableMCtruth_) {
-      iEvent.getByToken(stubTruthToken, mcTruthTTStubHandle);
-      iEvent.getByToken(clusterTruthToken, mcTruthTTClusterHandle);
-    }
+	// Get info about this tracker module.
+	trackerModules_.emplace_back(trackerGeometry, trackerTopology, detId);
+	const ModuleInfo& moduleInfo = trackerModules_.back();
 
-    unsigned int stubCount = 0;
+	// Get the stubs in this module.
+	const DetId& stackedDetId = moduleInfo.stackedDetId();
+	TTStubDetSetVec::const_iterator p_module = ttStubHandle->find(stackedDetId);
+	if (p_module != ttStubHandle->end()) {
+          for (TTStubDetSet::const_iterator p_ttstub = p_module->begin(); p_ttstub != p_module->end(); p_ttstub++) {
+            TTStubRef ttStubRef = edmNew::makeRefTo(ttStubHandle, p_ttstub);
+	    const unsigned int stubIndex = vAllStubs_.size();
 
-    for (TTStubDetSetVec::const_iterator p_module = ttStubHandle->begin(); p_module != ttStubHandle->end();
-         p_module++) {
-      for (TTStubDetSet::const_iterator p_ttstub = p_module->begin(); p_ttstub != p_module->end(); p_ttstub++) {
-        TTStubRef ttStubRef = edmNew::makeRefTo(ttStubHandle, p_ttstub);
+            // Store the Stub info, using class Stub to provide easy access to the most useful info.
+            Stub stub(ttStubRef, stubIndex, settings, trackerGeometry, trackerTopology, &moduleInfo, stubKiller.get());
 
-        // Store the Stub info, using class Stub to provide easy access to the most useful info.
-        Stub stub(ttStubRef, stubCount, settings, trackerGeometry, trackerTopology, stubKiller.get());
-        // Also fill truth associating stubs to tracking particles.
-        if (enableMCtruth_)
-          stub.fillTruth(translateTP, mcTruthTTStubHandle, mcTruthTTClusterHandle);
-        vAllStubs_.push_back(stub);
-        stubCount++;
+            // Also fill truth associating stubs to tracking particles.
+            if (enableMCtruth_)
+              stub.fillTruth(translateTP, mcTruthTTStubHandle, mcTruthTTClusterHandle);
+            vAllStubs_.push_back(stub);
+          }
+	}
       }
-    }
-
+    } 
+    
     // Produced reduced list containing only the subset of stubs that the user has declared will be
     // output by the front-end readout electronics.
     for (const Stub& s : vAllStubs_) {
@@ -127,16 +139,20 @@ namespace tmtt {
         vStubs_.push_back(&s);
     }
     // Optionally sort stubs according to bend, so highest Pt ones are sent from DTC to GP first.
-    if (settings->orderStubsByBend())
-      std::sort(vStubs_.begin(), vStubs_.end(), SortStubsInBend());
+    if (settings->orderStubsByBend()) {
+      auto orderStubsByBend = [](const Stub *a, const Stub *b) {
+        return (std::abs(a->bend()) < std::abs(b->bend()));
+      };
+      vStubs_.sort(orderStubsByBend);
+    }
 
     // Note list of stubs produced by each tracking particle.
     // (By passing vAllStubs_ here instead of vStubs_, it means that any algorithmic efficiencies
     // measured will be reduced if the tightened frontend electronics cuts, specified in section StubCuts
     // of Analyze_Defaults_cfi.py, are not 100% efficient).
     if (enableMCtruth_) {
-      for (unsigned int j = 0; j < vTPs_.size(); j++) {
-        vTPs_[j].fillTruth(vAllStubs_);
+      for (TP& tp : vTPs_) {
+        tp.fillTruth(vAllStubs_);
       }
     }
   }

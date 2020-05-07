@@ -18,14 +18,13 @@ namespace tmtt {
 
   class DupFitTrkKiller {
   public:
-    DupFitTrkKiller() {}
-
-    ~DupFitTrkKiller() {}
 
     /**
   *  Make available cfg parameters & specify which algorithm is to be used for duplicate track removal.
   */
-    void init(const Settings* settings, unsigned int dupTrkAlg);
+    DupFitTrkKiller(const Settings* settings);
+
+    ~DupFitTrkKiller() {}
 
     /**
   *  Eliminate duplicate tracks from the input collection, and so return a reduced list of tracks.

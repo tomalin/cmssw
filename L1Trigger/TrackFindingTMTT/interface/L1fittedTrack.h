@@ -18,6 +18,7 @@
 #include <set>
 #include <utility>
 #include <string>
+#include <memory>
 
 //=== This represents a fitted L1 track candidate found in 3 dimensions.
 //=== It gives access to the fitted helix parameters & chi2 etc.
@@ -83,22 +84,17 @@ namespace tmtt {
         d0_ = 0.;
         d0_bcon_ = 0.;
       }
-      if (!settings->hybrid()) {
-        secTmp_.init(settings,
-                     iPhiSec_,
-                     iEtaReg_);  //Sector class used to check if fitted track trajectory is in expected sector.
-        htRphiTmp_.init(
-            settings,
-            iPhiSec_,
-            iEtaReg_,
-            secTmp_.etaMin(),
-            secTmp_.etaMax(),
-            secTmp_.phiCentre());  // HT class used to identify HT cell that corresponds to fitted helix parameters.
+      if (not settings->hybrid()) {
+	//Sector class used to check if fitted track trajectory is in expected sector.
+        secTmp_ = std::make_shared<Sector>(settings, iPhiSec_, iEtaReg_);  
+	// HT class used to identify HT cell that corresponds to fitted helix parameters.
+        htRphiTmp_ = std::make_shared<HTrphi>(settings, iPhiSec_, iEtaReg_,
+            secTmp_->etaMin(), secTmp_->etaMax(), secTmp_->phiCentre());  
       }
       this->setConsistentHTcell();
     }
 
-    L1fittedTrack() : L1trackBase(), accepted_(false){};  // Creates rejected track object.
+    L1fittedTrack() : L1trackBase(), accepted_(false) {};  // Creates rejected track object.
 
     ~L1fittedTrack() {}
 
@@ -181,7 +177,7 @@ namespace tmtt {
     // Get Hough transform cell locations in units of bin number, corresponding to the fitted helix parameters of the track.
     // Always uses the beam-spot constrained helix params if they are available.
     // (If fitted track is outside HT array, it it put in the closest bin inside it).
-    std::pair<unsigned int, unsigned int> cellLocationFit() const { return htRphiTmp_.cell(this); }
+    std::pair<unsigned int, unsigned int> cellLocationFit() const { return htRphiTmp_->cell(this); }
     // Also get HT cell determined by Hough transform.
     std::pair<unsigned int, unsigned int> cellLocationHT() const { return l1track3D_->cellLocationHT(); }
 
@@ -323,8 +319,8 @@ namespace tmtt {
     // Is the fitted track trajectory within the same (eta,phi) sector of the HT used to find it?
     bool consistentSector() const {
       bool insidePhi =
-          (std::abs(reco::deltaPhi(this->phiAtChosenR(done_bcon_), secTmp_.phiCentre())) < secTmp_.sectorHalfWidth());
-      bool insideEta = (this->zAtChosenR() > secTmp_.zAtChosenR_Min() && this->zAtChosenR() < secTmp_.zAtChosenR_Max());
+          (std::abs(reco::deltaPhi(this->phiAtChosenR(done_bcon_), secTmp_->phiCentre())) < secTmp_->sectorHalfWidth());
+      bool insideEta = (this->zAtChosenR() > secTmp_->zAtChosenR_Min() && this->zAtChosenR() < secTmp_->zAtChosenR_Max());
       return (insidePhi && insideEta);
     }
 
@@ -382,9 +378,9 @@ namespace tmtt {
     bool accepted_;
 
     //--- Sector class used to check if fitted track trajectory is in same sector as HT used to find it.
-    Sector secTmp_;
+    std::shared_ptr<Sector> secTmp_; // shared so as to allow copy of L1fittedTrack.
     //--- r-phi HT class used to determine HT cell location that corresponds to fitted track helix parameters.
-    HTrphi htRphiTmp_;
+    std::shared_ptr<HTrphi> htRphiTmp_;
 
     //--- Info specific to KF fitter.
     unsigned int nSkippedLayers_;

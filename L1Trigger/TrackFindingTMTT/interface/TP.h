@@ -12,6 +12,7 @@
 #include "DataFormats/JetReco/interface/GenJet.h"
 
 #include <vector>
+#include <list>
 
 namespace tmtt {
 
@@ -31,7 +32,7 @@ namespace tmtt {
     bool operator==(const TP& tpOther) const { return (this->index() == tpOther.index()); }
 
     // Fill truth info with association from tracking particle to stubs.
-    void fillTruth(const std::vector<Stub>& vStubs);
+    void fillTruth(const std::list<Stub>& vStubs);
 
     // == Functions for returning info about tracking particles ===
 

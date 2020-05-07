@@ -24,16 +24,11 @@ namespace tmtt {
 
     enum class HTshape {square, diamond, hexagon, brick};
 
-    HTrphi() : HTbase() {}
-    ~HTrphi() {}
-
     // Initialization with sector number, eta range covered by sector and phi coordinate of its centre.
-    void init(const Settings* settings,
-              unsigned int iPhiSec,
-              unsigned int iEtaReg,
-              float etaMinSector,
-              float etaMaxSector,
-              float phiCentreSector);
+    HTrphi(const Settings* settings, unsigned int iPhiSec, unsigned int iEtaReg,
+           float etaMinSector, float etaMaxSector, float phiCentreSector);
+
+    ~HTrphi() {}
 
     // Add stub to HT array.
     // If eta subsectors are being used within each sector, specify which ones the stub is compatible with.
@@ -125,15 +120,14 @@ namespace tmtt {
     float maxAbsPhiTrkAxis_;        // Half-width of phiTrk axis in HT array.
     unsigned int nBinsPhiTrkAxis_;  // Number of bins in HT array in phiTrk axis.
     float binSizePhiTrkAxis_;       // HT array bin size in phiTrk
-
-    bool enableMerge2x2_;  // Optionally merge 2x2 neighbouring cells into a single cell at low Pt, to reduce efficiency loss due to scattering. (Used also by mini-HT).
+    // Optionally merge 2x2 neighbouring cells into a single cell at low Pt, to reduce efficiency loss due to scattering. (Used also by mini-HT).
+    bool enableMerge2x2_;  
     float minInvPtToMerge2x2_;
 
     //--- Options when filling HT array.
 
-    unsigned int
-        killSomeHTCellsRphi_;  // Take all cells in HT array crossed by line corresponding to each stub (= 0) or take only some to reduce rate at cost of efficiency ( > 0)
-    bool handleStripsRphiHT_;  // Should algorithm allow for uncertainty in stub (r,z) coordinate caused by length of 2S module strips when fill stubs in r-phi HT?
+    // Take all cells in HT array crossed by line corresponding to each stub (= 0) or take only some to reduce rate at cost of efficiency ( > 0)
+    unsigned int killSomeHTCellsRphi_;  
     // Options for killing stubs/tracks that cant be sent within time-multiplexed period.
     bool busyInputSectorKill_;
     unsigned int busyInputSectorNumStubs_;

@@ -36,58 +36,32 @@ namespace tmtt {
 
   //=== Initialise
 
-  void HTrphi::init(const Settings* settings,
-                    unsigned int iPhiSec,
-                    unsigned int iEtaReg,
-                    float etaMinSector,
-                    float etaMaxSector,
-                    float phiCentreSector) {
-    HTbase::init(settings, iPhiSec, iEtaReg);
-
-    invPtToDphi_ = settings->invPtToDphi();
-    shape_ = static_cast<HTshape>(settings->shape());
-
-    int nCellsHT = settings->houghNcellsRphi();  // Total number of required cells in HT array (if > 0)
+  HTrphi::HTrphi(const Settings* settings, unsigned int iPhiSec, unsigned int iEtaReg,
+		 float etaMinSector, float etaMaxSector, float phiCentreSector) :
+    HTbase(settings, iPhiSec, iEtaReg, settings->houghNbinsPt(), settings->houghNbinsPhi()),
+    invPtToDphi_((settings->invPtToDphi())),
+    shape_(static_cast<HTshape>(settings->shape())), // shape of HT cells
 
     //--- Specification of HT q/Pt axis.
-
-    maxAbsQoverPtAxis_ = 1. / settings->houghMinPt();  // Max. |q/Pt| covered by  HT array.
-    nBinsQoverPtAxis_ = settings->houghNbinsPt();      // No. of bins in HT array in q/Pt.
-    if (nCellsHT > 0)
-      nBinsQoverPtAxis_ = 1;  // Will calculate number of bins automatically. Initialize it to non-zero value.
-    binSizeQoverPtAxis_ = 2 * maxAbsQoverPtAxis_ / nBinsQoverPtAxis_;
-    if (shape_ != HTshape::square)
-      binSizeQoverPtAxis_ = 2. * maxAbsQoverPtAxis_ / (nBinsQoverPtAxis_ - 1.);
+    maxAbsQoverPtAxis_(1. / settings->houghMinPt()), // Max. |q/Pt| covered by  HT array.
+    nBinsQoverPtAxis_(settings->houghNbinsPt()),      // No. of bins in HT array in q/Pt.
+    binSizeQoverPtAxis_(2 * maxAbsQoverPtAxis_ / nBinsQoverPtAxis_),
 
     //--- Specification of HT phiTrk axis
-
-    // N.B. phiTrk corresponds to phi where track crosses radius = chosenRofPhi_.
-    chosenRofPhi_ = settings->chosenRofPhi();
-    phiCentreSector_ = phiCentreSector;                           // Centre of phiTrk sector.
-    maxAbsPhiTrkAxis_ = M_PI / float(settings->numPhiSectors());  // Half-width of phiTrk axis in HT array.
-    nBinsPhiTrkAxis_ = settings->houghNbinsPhi();                 // No. of bins in HT array phiTrk
-    if (nCellsHT > 0)
-      nBinsPhiTrkAxis_ = 1;  // Will calculate number of bins automatically. Initialize it to non-zero value.
-    binSizePhiTrkAxis_ = 2 * maxAbsPhiTrkAxis_ / nBinsPhiTrkAxis_;
+    // (phiTrk corresponds to phi where track crosses radius = chosenRofPhi_).
+    chosenRofPhi_(settings->chosenRofPhi()),
+    phiCentreSector_(phiCentreSector),                           // Centre of phiTrk sector.
+    maxAbsPhiTrkAxis_(M_PI / float(settings->numPhiSectors())),  // Half-width of phiTrk axis in HT array.
+    nBinsPhiTrkAxis_(settings->houghNbinsPhi()),                 // No. of bins in HT array phiTrk
+    binSizePhiTrkAxis_(2 * maxAbsPhiTrkAxis_ / nBinsPhiTrkAxis_)
+  {
+    // Deal with unusually shaped HT cells.
+    if (shape_ != HTshape::square)
+      binSizeQoverPtAxis_ = 2. * maxAbsQoverPtAxis_ / (nBinsQoverPtAxis_ - 1.);
     if (shape_ == HTshape::hexagon)
       binSizePhiTrkAxis_ = 2. * maxAbsPhiTrkAxis_ / (nBinsPhiTrkAxis_ - 1. / 6.);
     else if (shape_ == HTshape::diamond)
       binSizePhiTrkAxis_ = 2. * maxAbsPhiTrkAxis_ / (nBinsPhiTrkAxis_ - 1. / 2.);
-
-    // Did user specify number of cells required in HT array? If so, determine number of bins along
-    // array axes such that their product equals required number of cells, and that their ratio gives
-    // a maximum line |gradient| of stubs crossing the array of 1.0.
-    if (nCellsHT > 0) {
-      // Get line gradient with current array axes.
-      float currentLineGrad = this->calcMaxLineGradArray();
-      // Calculate new number of bins on each axis to meet constraint.
-      float fact = nBinsQoverPtAxis_ * currentLineGrad / nBinsPhiTrkAxis_;
-      nBinsQoverPtAxis_ = ceil(sqrt(nCellsHT * fact));
-      nBinsPhiTrkAxis_ = int(sqrt(nCellsHT / fact));
-      // And recalculate bin size accordingly.
-      binSizeQoverPtAxis_ = 2 * maxAbsQoverPtAxis_ / nBinsQoverPtAxis_;
-      binSizePhiTrkAxis_ = 2 * maxAbsPhiTrkAxis_ / nBinsPhiTrkAxis_;
-    }
 
     // Note max. |gradient| that the line corresponding to any stub in any of the r-phi HT arrays could have.
     // Firmware assumes this should not exceed 1.0;
@@ -121,8 +95,6 @@ namespace tmtt {
 
     // Don't fill all HT cells nominally crossed by line corresponding to stub.
     killSomeHTCellsRphi_ = settings->killSomeHTCellsRphi();
-    // Should algorithm allow for uncertainty in stub (r,z) coordinate caused by length of 2S module strips when fill stubs in r-phi HT?
-    handleStripsRphiHT_ = settings->handleStripsRphiHT();
 
     // Used to kill excess stubs or tracks that can't be transmitted within time-multiplexed period.
     nReceivedStubs_ = 0;
@@ -164,9 +136,6 @@ namespace tmtt {
         mBinSum += rescaleFactor * busySectorMbinRanges_[i];
       }
     }
-
-    // Resize HT array to suit these specifications, and initialise each cell with configuration parameters.
-    HTbase::htArray_.resize(nBinsQoverPtAxis_, nBinsPhiTrkAxis_, false);
     //
     for (unsigned int i = 0; i < nBinsQoverPtAxis_; i++) {
       for (unsigned int j = 0; j < nBinsPhiTrkAxis_; j++) {
@@ -176,8 +145,8 @@ namespace tmtt {
         bool mergedCell = false;
         if (enableMerge2x2_ && this->mergedCell(i, j))
           mergedCell = true;
-        HTbase::htArray_(i, j).init(
-            settings, iPhiSec, iEtaReg, etaMinSector, etaMaxSector, qOverPt, i, mergedCell);  // Calls HTcell::init()
+	// Initialize each cell in HT array.
+        HTbase::htArray_(i, j) = std::make_unique<HTcell>(settings, iPhiSec, iEtaReg, etaMinSector, etaMaxSector, qOverPt, i, mergedCell);  
       }
     }
 
@@ -247,13 +216,13 @@ namespace tmtt {
                 if (j % 2 == 1)
                   jStore = j - 1;
                 // If this stub was already stored in this merged 2x2 cell, then don't store it again.
-                if (HTbase::htArray_(iStore, jStore).stubStoredInCell(stub))
+                if (HTbase::htArray_(iStore, jStore)->stubStoredInCell(stub))
                   canStoreStub = false;
               }
             }
 
             if (canStoreStub)
-              HTbase::htArray_(iStore, jStore).store(stub, inEtaSubSecs);  // Calls HTcell::store()
+              HTbase::htArray_(iStore, jStore)->store(stub, inEtaSubSecs);  // Calls HTcell::store()
           }
 
           // Check that limitations of firmware would not prevent stub being stored correctly in this HT column.
@@ -272,7 +241,7 @@ namespace tmtt {
               phiTrk += binSizePhiTrkAxis_ / 2.;
             unsigned int binCenter = std::floor(phiTrk / binSizePhiTrkAxis_);
             if (binCenter < nBinsPhiTrkAxis_)
-              HTbase::htArray_(i, binCenter).store(stub, inEtaSubSecs);
+              HTbase::htArray_(i, binCenter)->store(stub, inEtaSubSecs);
 
           } else if (shape_ == HTshape::hexagon) {
             //--- This HT has hexagonal cells (with two of its sides parallel to the phi axis).
@@ -304,11 +273,11 @@ namespace tmtt {
             binMin.first = (iMin % 3 == 0);
             binMax.first = (iMax % 3 == 0);
             if (binCenter.first && binCenter.second < nBinsPhiTrkAxis_)
-              HTbase::htArray_(i, binCenter.second).store(stub, inEtaSubSecs);
+              HTbase::htArray_(i, binCenter.second)->store(stub, inEtaSubSecs);
             else if (binMin.first && binMin.second < nBinsPhiTrkAxis_)
-              HTbase::htArray_(i, binMin.second).store(stub, inEtaSubSecs);
+              HTbase::htArray_(i, binMin.second)->store(stub, inEtaSubSecs);
             else if (binMax.first && binMax.second < nBinsPhiTrkAxis_)
-              HTbase::htArray_(i, binMax.second).store(stub, inEtaSubSecs);
+              HTbase::htArray_(i, binMax.second)->store(stub, inEtaSubSecs);
 
           } else if (shape_ == HTshape::brick) {
             //--- This HT has square cells with alternate rows shifted horizontally by 0.5*cell_width.
@@ -329,9 +298,9 @@ namespace tmtt {
             binMin.first = (iMin % 2 == i % 2);
             binMax.first = (iMax % 2 == i % 2);
             if (binMin.first && binMin.second < nBinsPhiTrkAxis_)
-              HTbase::htArray_(i, binMin.second).store(stub, inEtaSubSecs);
+              HTbase::htArray_(i, binMin.second)->store(stub, inEtaSubSecs);
             else if (binMax.first && binMax.second < nBinsPhiTrkAxis_)
-              HTbase::htArray_(i, binMax.second).store(stub, inEtaSubSecs);
+              HTbase::htArray_(i, binMax.second)->store(stub, inEtaSubSecs);
           }
         }
       }
@@ -388,20 +357,6 @@ namespace tmtt {
     float phiTrkVar = invPtToDphi_ * qOverPtBinVar * std::abs(stub->r() - chosenRofPhi_);
     float phiTrkMin = phiTrk - phiTrkVar;
     float phiTrkMax = phiTrk + phiTrkVar;
-
-    // Allow for uncertainty due to strip length if requested.
-    if (handleStripsRphiHT_) {
-      // Estimate uncertainty due to strip length, using first order derivative of phiTrk w.r.t. stub coords.
-      // Note that barrel modules only care about zErr and endcap ones about rErr.
-      float phiTrkVarStub;
-      if (stub->barrel()) {
-        phiTrkVarStub = 0.;
-      } else {
-        phiTrkVarStub = invPtToDphi_ * std::abs(qOverPtBin) * stub->rErr();
-      }
-      phiTrkMin -= phiTrkVarStub;
-      phiTrkMax += phiTrkVarStub;
-    }
 
     float deltaPhiMin = reco::deltaPhi(phiTrkMin, phiCentreSector_);  // Offset to centre of sector.
     float deltaPhiMax = reco::deltaPhi(phiTrkMax, phiCentreSector_);

@@ -107,14 +107,14 @@ namespace tmtt {
       if (digitize_) {
         (const_cast<Stub*>(stub))->digitizeForHTinput(l1track3D.iPhiSec());
         (const_cast<Stub*>(stub))->digitizeForSFinput();
-        const DigitalStub digiStub = stub->digitalStub();
+        const DigitalStub* digiStub = stub->digitalStub();
 
-        SumRPhi = SumRPhi + digiStub.rt() * digiStub.phiS();
-        SumR = SumR + digiStub.rt();
-        SumPhi = SumPhi + digiStub.phiS();
-        SumR2 = SumR2 + digiStub.rt() * digiStub.rt();
+        SumRPhi = SumRPhi + digiStub->rt() * digiStub->phiS();
+        SumR = SumR + digiStub->rt();
+        SumPhi = SumPhi + digiStub->phiS();
+        SumR2 = SumR2 + digiStub->rt() * digiStub->rt();
         if (debug_)
-          PrintL1trk() << "Input stub (digi): phiS " << digiStub.iDigi_PhiS() << " rT " << digiStub.iDigi_Rt() << " z " << digiStub.iDigi_Z();
+          PrintL1trk() << "Input stub (digi): phiS " << digiStub->iDigi_PhiS() << " rT " << digiStub->iDigi_Rt() << " z " << digiStub->iDigi_Z();
       } else {
         float phi = 0;
         if (l1track3D.iPhiSec() == 0 and stub->phi() > 0) {
@@ -190,13 +190,13 @@ namespace tmtt {
       if (digitize_) {
         (const_cast<Stub*>(stub))->digitizeForHTinput(l1track3D.iPhiSec());
         (const_cast<Stub*>(stub))->digitizeForSFinput();
-        const DigitalStub digiStub = stub->digitalStub();
+        const DigitalStub* digiStub = stub->digitalStub();
 
         ResPhi =
-            digiStub.iDigi_PhiS() * pow(2., shiftingBitsDenRPhi_ - shiftingBitsPt_) -
+            digiStub->iDigi_PhiS() * pow(2., shiftingBitsDenRPhi_ - shiftingBitsPt_) -
             floor(phiT * phiTMult_) *
                 pow(2., shiftingBitsDenRPhi_ - shiftingBitsPt_ - settings_->slr_phi0Bits() + settings_->phiSBits()) -
-            floor(qOverPt * qOverPtMult_) * digiStub.iDigi_Rt();
+            floor(qOverPt * qOverPtMult_) * digiStub->iDigi_Rt();
 
         ResPhi = floor(ResPhi) / resMult_;
       }
@@ -273,19 +273,19 @@ namespace tmtt {
       numStubs++;
       if (digitize_) {
         (const_cast<Stub*>(stub))->digitizeForHTinput(l1track3D.iPhiSec());
-        const DigitalStub digiStub = stub->digitalStub();
-        SumRPhi += digiStub.rt() * digiStub.phiS();
-        SumR += digiStub.rt();
-        SumPhi += digiStub.phiS();
-        SumR2 += digiStub.rt() * digiStub.rt();
+        const DigitalStub* digiStub = stub->digitalStub();
+        SumRPhi += digiStub->rt() * digiStub->phiS();
+        SumR += digiStub->rt();
+        SumPhi += digiStub->phiS();
+        SumR2 += digiStub->rt() * digiStub->rt();
         if (stub->psModule()) {
-          SumRZ += digiStub.rt() * digiStub.z();
-          SumZ += digiStub.z();
-          SumR_ps += digiStub.rt();
-          SumR2_ps += digiStub.rt() * digiStub.rt();
+          SumRZ += digiStub->rt() * digiStub->z();
+          SumZ += digiStub->z();
+          SumR_ps += digiStub->rt();
+          SumR2_ps += digiStub->rt() * digiStub->rt();
         }
         if (debug_) {
-          PrintL1trk() << "phiS " << digiStub.iDigi_PhiS() << " rT " << digiStub.iDigi_Rt() << " z " << digiStub.iDigi_Z();
+          PrintL1trk() << "phiS " << digiStub->iDigi_PhiS() << " rT " << digiStub->iDigi_Rt() << " z " << digiStub->iDigi_Z();
         }
       } else {
         float phi = 0;
@@ -387,16 +387,16 @@ namespace tmtt {
       if (digitize_) {
         (const_cast<Stub*>(stub))->digitizeForHTinput(l1track3D.iPhiSec());
         (const_cast<Stub*>(stub))->digitizeForSFinput();
-        const DigitalStub digiStub = stub->digitalStub();
-        ResPhi = digiStub.phiS() - phiT - qOverPt * digiStub.rt();
-        ResZ = digiStub.z() - zT - tanLambda * digiStub.rt();
+        const DigitalStub* digiStub = stub->digitalStub();
+        ResPhi = digiStub->phiS() - phiT - qOverPt * digiStub->rt();
+        ResZ = digiStub->z() - zT - tanLambda * digiStub->rt();
       } else {
         ResPhi = reco::deltaPhi(stub->phi(), phi0 + qOverPt * stub->r());
         ResZ = stub->z() - z0 - tanLambda * stub->r();
       }
 
       double RPhiSigma = 0.0002;
-      float RZSigma = stub->zErr() + std::abs(tanLambda) * stub->rErr();
+      float RZSigma = stub->sigmaZ() + std::abs(tanLambda) * stub->sigmaR();
 
       if (not stub->barrel())
         RPhiSigma = 0.0004;

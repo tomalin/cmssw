@@ -11,19 +11,18 @@ namespace tmtt {
 
   //=== Initialize configuration parameters, and note eta range covered by sector and phi coordinate of its centre.
 
-  void TrkRZfilter::init(const Settings* settings,
+  TrkRZfilter::TrkRZfilter(const Settings* settings,
                          unsigned int iPhiSec,
                          unsigned int iEtaReg,
                          float etaMinSector,
                          float etaMaxSector,
-                         float phiCentreSector) {
+			   float phiCentreSector) :
     // Configuration parameters.
-    settings_ = settings;
-
+    settings_(settings),
     // Sector number.
-    iPhiSec_ = iPhiSec;
-    iEtaReg_ = iEtaReg;
-
+    iPhiSec_(iPhiSec),
+    iEtaReg_(iEtaReg)
+{
     // Eta range of sector & phi coord of its centre.
     etaMinSector_ = etaMinSector;
     etaMaxSector_ = etaMaxSector;
@@ -57,7 +56,7 @@ namespace tmtt {
 
     // --- Options for Seed filter.
     //Added resolution for a tracklet-like filter algorithm, beyond that estimated from hit resolution.
-    seedResolution_ = settings->seedResolution();
+    seedResCut_ = settings->seedResCut();
     // Keep stubs compatible with all possible good seed.
     keepAllSeed_ = settings->keepAllSeed();
     // Maximum number of seed combinations to bother checking per track candidate.
@@ -186,10 +185,10 @@ namespace tmtt {
 
 	      // Estimate a value of z at the beam spot using the two seeding stubs
               double z0 = s1->z() + (-s1->z() + s0->z()) * s1->r() / (s1->r() - s0->r());  
-              //double z0err = s1->zErr() + ( s1->zErr() + s0->zErr() )*s1->r()/std::abs(s1->r()-s0->r()) + std::abs(-s1->z()+s0->z())*(s1->rErr()*std::abs(s1->r()-s0->r()) + s1->r()*(s1->rErr() + s0->rErr()) )/((s1->r()-s0->r())*(s1->r()-s0->r()));
+              //double z0err = s1->sigmaZ() + ( s1->sigmaZ() + s0->sigmaZ() )*s1->r()/std::abs(s1->r()-s0->r()) + std::abs(-s1->z()+s0->z())*(s1->sigmaR()*std::abs(s1->r()-s0->r()) + s1->r()*(s1->sigmaR() + s0->sigmaR()) )/((s1->r()-s0->r())*(s1->r()-s0->r()));
 	      // Estimate a value of z at a chosen Radius using the two seeding stubs
               float zTrk = s1->z() + (-s1->z() + s0->z()) * (s1->r() - chosenRofZ_) / (s1->r() - s0->r());  
-              // float zTrkErr = s1->zErr() + ( s1->zErr() + s0->zErr() )*std::abs(s1->r()-chosenRofZ_)/std::abs(s1->r()-s0->r()) + std::abs(-s1->z()+s0->z())*(s1->rErr()*std::abs(s1->r()-s0->r()) + std::abs(s1->r()-chosenRofZ_)*(s1->rErr() + s0->rErr()) )/((s1->r()-s0->r())*(s1->r()-s0->r()));
+              // float zTrkErr = s1->sigmaZ() + ( s1->sigmaZ() + s0->sigmaZ() )*std::abs(s1->r()-chosenRofZ_)/std::abs(s1->r()-s0->r()) + std::abs(-s1->z()+s0->z())*(s1->sigmaR()*std::abs(s1->r()-s0->r()) + std::abs(s1->r()-chosenRofZ_)*(s1->sigmaR() + s0->sigmaR()) )/((s1->r()-s0->r())*(s1->r()-s0->r()));
               float leftZtrk = zTrk * std::abs(s1->r() - s0->r());
               float rightZmin = zTrkMinSector_ * std::abs(s1->r() - s0->r());
               float rightZmax = zTrkMaxSector_ * std::abs(s1->r() - s0->r());
@@ -210,11 +209,11 @@ namespace tmtt {
                     // Calculate the seed and its tolerance
                     double seedDist =
                         (s->z() - s1->z()) * (s1->r() - s0->r()) - (s->r() - s1->r()) * (s1->z() - s0->z());
-                    double seedDistRes = (s->zErr() + s1->zErr()) * std::abs(s1->r() - s0->r()) +
-                                         (s->rErr() + s1->rErr()) * std::abs(s1->z() - s0->z()) +
-                                         (s0->zErr() + s1->zErr()) * std::abs(s->r() - s1->r()) +
-                                         (s0->rErr() + s1->rErr()) * std::abs(s->z() - s1->z());
-                    seedDistRes += seedResolution_;  // Add extra configurable contribution to assumed resolution.
+                    double seedDistRes = (s->sigmaZ() + s1->sigmaZ()) * std::abs(s1->r() - s0->r()) +
+                                         (s->sigmaR() + s1->sigmaR()) * std::abs(s1->z() - s0->z()) +
+                                         (s0->sigmaZ() + s1->sigmaZ()) * std::abs(s->r() - s1->r()) +
+                                         (s0->sigmaR() + s1->sigmaR()) * std::abs(s->z() - s1->z());
+                    seedDistRes *= seedResCut_;  // Scale cut by this amount.
                     //If seed is lower than the tolerance push back the stub (KEEP JUST ONE STUB PER LAYER, NOT ENABLED BY DEFAULT)
                     if (std::abs(seedDist) <= seedDistRes) {
                       if (s->layerId() != LiD and s->layerId() != s0->layerId() and s->layerId() != s1->layerId()) {

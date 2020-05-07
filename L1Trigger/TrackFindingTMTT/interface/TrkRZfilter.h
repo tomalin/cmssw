@@ -29,33 +29,18 @@ namespace tmtt {
 
   class TrkRZfilter {
   public:
-    TrkRZfilter()
-        : settings_(nullptr),
-          iPhiSec_(0),
-          iEtaReg_(0),
-          etaMinSector_(0),
-          etaMaxSector_(0),
-          phiCentreSector_(0),
-          rzHelix_z0_(0),
-          rzHelix_tanL_(0),
-          rzHelix_set_(false),
-          chosenRofZ_(0),
-          zTrkMinSector_(0),
-          zTrkMaxSector_(0),
-          beamWindowZ_(0) {}
-    ~TrkRZfilter() {}
-
-    struct SortStubsByLayer {
-      inline bool operator()(const Stub* stub1, const Stub* stub2) { return (stub1->layerId() < stub2->layerId()); }
-    };
 
     // Initialize configuration parameters, and note sector number, eta range covered by sector and phi coordinate of its centre.
-    void init(const Settings* settings,
+    TrkRZfilter(const Settings* settings,
               unsigned int iPhiSec,
               unsigned int iEtaReg,
               float etaMinSector,
               float etaMaxSector,
               float phiCentreSector);
+
+    struct SortStubsByLayer {
+      inline bool operator()(const Stub* stub1, const Stub* stub2) { return (stub1->layerId() < stub2->layerId()); }
+    };
 
     // Filters track candidates (found by the r-phi Hough transform), removing inconsistent stubs from the tracks,
     // also killing some of the tracks altogether if they are left with too few stubs.
@@ -110,7 +95,7 @@ namespace tmtt {
     bool useSeedFilter_;
 
     // Options for Seed filter.
-    float seedResolution_;
+    float seedResCut_;
     bool keepAllSeed_;
 
     // Number of seed combinations considered by the Seed Filter, for each input track.

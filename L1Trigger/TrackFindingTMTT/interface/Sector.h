@@ -13,39 +13,11 @@ namespace tmtt {
 
   class Sector {
   public:
-    Sector()
-        : settings_(nullptr),
-          beamWindowZ_(0),
-          trackerOuterRadius_(0),
-          trackerInnerRadius_(0),
-          trackerHalfLength_(0),
-          handleStripsPhiSec_(0),
-          handleStripsEtaSec_(0),
-          iPhiSec_(0),
-          iEtaReg_(0),
-          etaMin_(0),
-          etaMax_(0),
-          chosenRofZ_(0),
-          rOuterMax_(0),
-          zOuterMax_(0),
-          rOuterMin_(0),
-          zOuterMin_(0),
-          phiCentre_(0),
-          sectorHalfWidth_(0),
-          chosenRofPhi_(0),
-          useStubPhi_(0),
-          minPt_(0),
-          useStubPhiTrk_(0),
-          assumedPhiTrkRes_(0),
-          calcPhiTrkRes_(0),
-          numSubSecsEta_(0),
-          zOuterMinSub_(),
-          zOuterMaxSub_() {}
-
-    ~Sector() {}
 
     // Initialization.
-    void init(const Settings* settings, unsigned int iPhiSec, unsigned int iEtaSec);
+    Sector(const Settings* settings, unsigned int iPhiSec, unsigned int iEtaSec);
+
+    ~Sector() {}
 
     // Check if stub within the eta and/or phi boundaries of this sector.
     bool inside(const Stub* stub) const { return (this->insideEta(stub) && this->insidePhi(stub)); }
@@ -101,23 +73,15 @@ namespace tmtt {
   private:
     const Settings* settings_;
 
-    float beamWindowZ_;
-    float trackerOuterRadius_;
-    float trackerInnerRadius_;
-    float trackerHalfLength_;
-    bool handleStripsPhiSec_;
-    bool handleStripsEtaSec_;
-
-    // Define eta region.
-    unsigned int iPhiSec_;  // Sector number
+    // Sector number
+    unsigned int iPhiSec_;  
     unsigned int iEtaReg_;
+    float beamWindowZ_;
     float etaMin_;  // Range in eta covered by this sector.
     float etaMax_;
     float chosenRofZ_;  // Use z of track at radius="chosenRofZ" to define eta sectors.
-    float rOuterMax_;   // Larger eta boundary point (r,z)
+    float zOuterMin_; // z range of sector at reference radius
     float zOuterMax_;
-    float rOuterMin_;  // Smaller eta boundary point (r,z)
-    float zOuterMin_;
 
     // Define phi sector.
     float phiCentre_;        // phi of centre of sector.

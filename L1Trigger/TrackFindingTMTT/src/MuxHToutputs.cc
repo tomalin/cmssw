@@ -53,7 +53,7 @@ namespace tmtt {
   //=== to output all the tracks within the time-multiplexed period.
   //=== This function replaces the 2D track collection in the r-phi HT with the subset surviving the TM cut.
 
-  void MuxHToutputs::exec(matrix<HTrphi>& mHtRphis) const {
+void MuxHToutputs::exec(matrix<unique_ptr<HTrphi>>& mHtRphis) const {
     // As this loops over sectors in order of increasing sector number, this MUX algorithm always transmits tracks
     // from the lowest sector numbers on each link first. So the highest sector numbers are more likely to be
     // truncated by the TM period. The algorithm assumes that two or more m-bin ranges from the same sector will never
@@ -67,14 +67,14 @@ namespace tmtt {
         unsigned int iPhiSec = iPhiNon * numPhiSecPerNon_ + iSecInNon;
 
         for (unsigned int iEtaReg = 0; iEtaReg < numEtaRegions_; iEtaReg++) {
-          HTrphi& htRphi = mHtRphis(iPhiSec, iEtaReg);  // Get a mutable version of the r-phi HT.
+          HTrphi* htRphi = mHtRphis(iPhiSec, iEtaReg).get();  // Get a mutable version of the r-phi HT.
 
           vector<const L1track2D*> keptTracks;
-          vector<L1track2D> tracks = htRphi.trackCands2D();
+          vector<L1track2D> tracks = htRphi->trackCands2D();
 
           for (L1track2D& trk : tracks) {
             unsigned int nStubs = trk.numStubs();               // #stubs on this track.
-            unsigned int mBinRange = htRphi.getMbinRange(trk);  // Which m bin range is this track in?
+            unsigned int mBinRange = htRphi->getMbinRange(trk);  // Which m bin range is this track in?
             // Get the output optical link corresponding to this sector & m-bin range.
             unsigned int link = this->linkID(iSecInNon, iEtaReg, mBinRange);
             // Make a note of opto-link number inside track object.
@@ -90,7 +90,7 @@ namespace tmtt {
           }
 
           // Replace the collection of 2D tracks in the r-phi HT with the subset of them surviving the TM cut.
-          htRphi.replaceTrackCands2D(keptTracks);
+          htRphi->replaceTrackCands2D(keptTracks);
         }
       }
     }

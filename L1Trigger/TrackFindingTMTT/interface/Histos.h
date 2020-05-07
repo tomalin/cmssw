@@ -43,9 +43,9 @@ namespace tmtt {
     // Book & fill all histograms.
     virtual void book();
     virtual void fill(const InputData& inputData,
-                      const matrix<Sector>& mSectors,
-                      const matrix<HTrphi>& mHtPhis,
-                      const matrix<Make3Dtracks> mGet3Dtrks,
+                      const matrix<std::unique_ptr<Sector>>& mSectors,
+                      const matrix<std::unique_ptr<HTrphi>>& mHtPhis,
+                      const matrix<std::unique_ptr<Make3Dtracks>>& mGet3Dtrks,
                       const std::map<std::string, std::vector<L1fittedTrack>>& fittedTracks);
 
     // Print tracking performance summary & make tracking efficiency histograms.
@@ -71,9 +71,9 @@ namespace tmtt {
 
     // Fill histograms for specific topics.
     virtual void fillInputData(const InputData& inputData);
-    virtual void fillEtaPhiSectors(const InputData& inputData, const matrix<Sector>& mSectors);
-    virtual void fillRphiHT(const matrix<HTrphi>& mHtRphis);
-    virtual void fillRZfilters(const matrix<Make3Dtracks>& mGet3Dtrks);
+    virtual void fillEtaPhiSectors(const InputData& inputData, const matrix<std::unique_ptr<Sector>>& mSectors);
+    virtual void fillRphiHT(const matrix<std::unique_ptr<HTrphi>>& mHtRphis);
+    virtual void fillRZfilters(const matrix<std::unique_ptr<Make3Dtracks>>& mGet3Dtrks);
     virtual void fillTrackCands(const InputData& inputData, const std::vector<L1track3D>& tracks, std::string tName);
     virtual void fillTrackFitting(const InputData& inputData,
                                   const std::map<std::string, std::vector<L1fittedTrack>>& fittedTracks);
@@ -108,7 +108,7 @@ namespace tmtt {
     // Understand why not all tracking particles were reconstructed.
     // Returns list of tracking particles that were not reconstructed and an integer indicating why.
     // Only considers TP used for algorithmic efficiency measurement.
-    virtual std::map<const TP*, std::string> diagnoseTracking(const std::vector<TP>& allTPs,
+    virtual std::map<const TP*, std::string> diagnoseTracking(const std::list<TP>& allTPs,
                                                               const std::vector<L1track3D>& tracks,
                                                               bool withRZfilter) const;
 

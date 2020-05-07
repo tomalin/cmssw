@@ -12,8 +12,7 @@ namespace tmtt {
 
   //=== Simplified version of DigitalStub for use with KF in Hybrid tracking.
 
-  DigitalStub::DigitalStub(const Settings* settings, double r, double phi, double z, unsigned int iPhiSec)
-      : ranInit_(true),
+DigitalStub::DigitalStub(const Settings* settings, double r, double phi, double z, unsigned int iPhiSec) :
         ranMakeGPinput_(true),
         ranMakeHTinput_(true),
         ranMakeSForTFinput_("KF"),
@@ -30,7 +29,8 @@ namespace tmtt {
         numPhiSectors_(settings->numPhiSectors()),
         numPhiNonants_(9),
         phiSectorWidth_(2. * M_PI / float(numPhiSectors_)),
-        chosenRofPhi_(settings->chosenRofPhi()) {
+        chosenRofPhi_(settings->chosenRofPhi()) 
+{
     // Centre of this sector in phi. (Nonant 0 is centred on x-axis).
     double phiCentreSec0 = -M_PI / float(numPhiNonants_) + M_PI / float(numPhiSectors_);
     double phiSectorCentre = phiSectorWidth_ * float(iPhiSec) + phiCentreSec0;
@@ -67,62 +67,14 @@ namespace tmtt {
   */
   }
 
-  //=== Note configuration parameters (for use with TMTT tracking).
-
-  DigitalStub::DigitalStub(const Settings* settings)
-      :
-
-        // To check that DigitalStub is correctly initialized.
-        ranInit_(false),
-        ranMakeGPinput_(false),
-        ranMakeHTinput_(false),
-        ranMakeSForTFinput_(""),
-
-        // Digitization configuration parameters
-        phiSectorBits_(settings->phiSectorBits()),  // No. of bits to store phi sector number
-        //--- Parameters available in HT board.
-        phiSBits_(settings->phiSBits()),    // No. of bits to store phiS coord.
-        phiSRange_(settings->phiSRange()),  // Range of phiS coord. in radians.
-        rtBits_(settings->rtBits()),        // No. of bits to store rT coord.
-        rtRange_(settings->rtRange()),      // Range of rT coord. in cm.
-        zBits_(settings->zBits()),          // No. of bits to store z coord.
-        zRange_(settings->zRange()),        // Range of z coord in cm.
-        //--- Parameters available in GP board (excluding any in common with HT specified above).
-        phiOBits_(settings->phiOBits()),    // No. of bits to store phiO parameter.
-        phiORange_(settings->phiORange()),  // Range of phiO parameter
-        bendBits_(settings->bendBits()),    // No. of bits to store stub bend.
-
-        // Note if using reduced layer ID, so tracker layer can be encoded in 3 bits.
-        reduceLayerID_(settings->reduceLayerID()),
-
-        // Number of phi sectors and phi nonants.
-        numPhiSectors_(settings->numPhiSectors()),
-        numPhiNonants_(settings->numPhiNonants()),
-        // Phi sector and phi nonant width (radians)
-        phiSectorWidth_(2. * M_PI / float(numPhiSectors_)),
-        phiNonantWidth_(2. * M_PI / float(numPhiNonants_)),
-        // Radius from beamline with respect to which stub r coord. is measured.
-        chosenRofPhi_(settings->chosenRofPhi()),
-
-        // Number of q/Pt bins in Hough  transform array.
-        nbinsPt_((int)settings->houghNbinsPt()) {
-    // Calculate multipliers to digitize the floating point numbers.
-    phiSMult_ = pow(2, phiSBits_) / phiSRange_;
-    rtMult_ = pow(2, rtBits_) / rtRange_;
-    zMult_ = pow(2, zBits_) / zRange_;
-    phiOMult_ = pow(2, phiOBits_) / phiORange_;
-
-    bendMult_ =
-        4.;  // No precision lost by digitization, since original bend (after encoding) has steps of 0.25 (in units of pitch).
-    bendRange_ = round(pow(2, bendBits_) / bendMult_);  // discrete values, so digitisation different
-  }
-
+  //=== For TMTT tracking algorithm. 
   //=== Initialize stub with original, floating point stub coords,
   //=== range of m bin (= q/Pt bin) values allowed by bend filter,
   //=== normal & "reduced" tracker layer of stub, stub bend, and pitch & seperation of module,
   //=== and half-length of strip or pixel in r and in z, and if it's in barrel, tilted barrel and/or PS module.
 
-  void DigitalStub::init(float phi_orig,
+  DigitalStub::DigitalStub(const Settings* settings,
+			 float phi_orig,
                          float r_orig,
                          float z_orig,
                          unsigned int min_qOverPt_bin_orig,
@@ -132,12 +84,13 @@ namespace tmtt {
                          float bend_orig,
                          float pitch,
                          float sep,
-                         float rErr,
-                         float zErr,
                          bool barrel,
                          bool tiltedBarrel,
                          bool psModule) {
-    ranInit_ = true;  // Note we ran init().
+
+    // Set cfg params
+    this->setCfgParams(settings);
+
     // Variables in HT.
     phi_orig_ = phi_orig;
     r_orig_ = r_orig;
@@ -148,8 +101,6 @@ namespace tmtt {
     layerIDreduced_ = layerIDreduced;
     // Variables exclusively in GP.
     bend_orig_ = bend_orig;
-    rErr_orig_ = rErr;
-    zErr_orig_ = zErr;
 
     // Calculate unique module type ID, allowing pitch/sep of module to be determined.
     // (N.B. Module types 0 & 1 have identical pitch & sep, but one is tilted & one is flat barrel module).
@@ -176,8 +127,6 @@ namespace tmtt {
   //=== Digitize stub for input to Geographic Processor, with stub phi coord. measured relative to phi nonant that contains specified phi sector.
 
   void DigitalStub::makeGPinput(unsigned int iPhiSec) {
-    if (!ranInit_)
-      throw cms::Exception("LogicError") << "DigitalStub: You forgot to call init() before makeGPinput()!";
 
     unsigned int iPhiNon =
         floor(iPhiSec * numPhiNonants_ / numPhiSectors_);  // Find nonant corresponding to this sector.
@@ -223,8 +172,6 @@ namespace tmtt {
   //=== Digitize stub for input to Hough transform, with stub phi coord. measured relative to specified phi sector.
 
   void DigitalStub::makeHTinput(unsigned int iPhiSec) {
-    if (!ranInit_)
-      throw cms::Exception("LogicError") << "DigitalStub: You forgot to call init() before makeHTinput()!";
 
     // Digitize for GP input if not already done, since some variables are shared by GP & HT.
     this->makeGPinput(iPhiSec);
@@ -259,7 +206,7 @@ namespace tmtt {
     // Don't bother digitising here variables used by both GP & HT, as makeGPinput() will already have digitized them.
 
     // N.B. If using daisy-chain firmware, then should logically recalculate m bin range here, since it depends on the now
-    // digitized r and z coordinates. But too lazy to move code here from Stub::digitizeForHTinput(), where calculation
+    // digitized r and z coordinates. But too lazy to move code here from Stub::digitizeForHTinput(; where calculation
     // actually done.
 
     //--- Determine floating point stub coords. from digitized numbers (so with degraded resolution).
@@ -312,8 +259,6 @@ namespace tmtt {
   //=== N.B. This digitisation is done internally within the FPGA not for transmission along opto-links.
 
   void DigitalStub::makeSForTFinput(string SForTF) {
-    if (!ranInit_)
-      throw cms::Exception("LogicError") << "DigitalStub: You forgot to call init() before makeSForTFinput()!";
 
     // Save CPU by not digitizing stub again if already done.
     if (ranMakeSForTFinput_ != SForTF) {
@@ -339,29 +284,60 @@ namespace tmtt {
         iDigi_Z_KF_ = 0;  // Shoudln't be used in this case.
         z_ = (iDigi_Z_ + 0.5) / zMult_;
       }
-
-      if (SForTF == "SeedFilter") {
-        //--- Digitize variables used exclusively in seed filter.
-        // The stub (r,z) uncertainties are actually calculated inside the seed filter and not passed to it along optical links.
-        iDigi_rErr_ = ceil(rErr_orig_ * rtMult_);  // Round up to avoid zero uncertainty ...
-        iDigi_zErr_ = ceil(zErr_orig_ * zMult_);
-        //--- Determine floating point variables from digtized numbers
-        rErr_ = (iDigi_rErr_ - 0.5) / rtMult_;
-        zErr_ = (iDigi_zErr_ - 0.5) / zMult_;
-      } else {
-        // Restore original value. Although perhaps better to leave?
-        rErr_ = rErr_orig_;
-        zErr_ = zErr_orig_;
-      }
     }
   }
 
   void DigitalStub::makeDRinput(unsigned int stubId) {
-    if (!ranInit_)
-      throw cms::Exception("LogicError") << "DigitalStub: You forgot to call init() before makeDRinput()!";
 
     ranMakeDRinput_ = true;  // Note we ran makeDRinput().
     stubId_ = stubId;
+  }
+
+  //=== Set configuration parameters.
+
+void DigitalStub::setCfgParams(const Settings* settings) {
+        ranMakeGPinput_ = false;
+        ranMakeHTinput_ = false;
+        ranMakeSForTFinput_ = "";
+
+        // Digitization configuration parameters
+        phiSectorBits_ = settings->phiSectorBits();  // No. of bits to store phi sector number
+        //--- Parameters available in HT board.
+        phiSBits_ = settings->phiSBits();    // No. of bits to store phiS coord.
+        phiSRange_ = settings->phiSRange();  // Range of phiS coord. in radians.
+        rtBits_ = settings->rtBits();        // No. of bits to store rT coord.
+        rtRange_ = settings->rtRange();      // Range of rT coord. in cm.
+        zBits_ = settings->zBits();          // No. of bits to store z coord.
+        zRange_ = settings->zRange();        // Range of z coord in cm.
+        //--- Parameters available in GP board (excluding any in common with HT specified above).
+        phiOBits_ = settings->phiOBits();    // No. of bits to store phiO parameter.
+        phiORange_ = settings->phiORange();  // Range of phiO parameter
+        bendBits_ = settings->bendBits();    // No. of bits to store stub bend.
+
+        // Note if using reduced layer ID, so tracker layer can be encoded in 3 bits.
+        reduceLayerID_ = settings->reduceLayerID();
+
+        // Number of phi sectors and phi nonants.
+        numPhiSectors_ = settings->numPhiSectors();
+        numPhiNonants_ = settings->numPhiNonants();
+        // Phi sector and phi nonant width (radians)
+        phiSectorWidth_ = 2. * M_PI / float(numPhiSectors_);
+        phiNonantWidth_ = 2. * M_PI / float(numPhiNonants_);
+        // Radius from beamline with respect to which stub r coord. is measured.
+        chosenRofPhi_ = settings->chosenRofPhi();
+
+        // Number of q/Pt bins in Hough  transform array.
+        nbinsPt_ = (int)settings->houghNbinsPt(); 
+
+    // Calculate multipliers to digitize the floating point numbers.
+    phiSMult_ = pow(2, phiSBits_) / phiSRange_;
+    rtMult_ = pow(2, rtBits_) / rtRange_;
+    zMult_ = pow(2, zBits_) / zRange_;
+    phiOMult_ = pow(2, phiOBits_) / phiORange_;
+
+    bendMult_ =
+        4.;  // No precision lost by digitization, since original bend (after encoding) has steps of 0.25 (in units of pitch).
+    bendRange_ = round(pow(2, bendBits_) / bendMult_);  // discrete values, so digitisation different
   }
 
   //=== Redigitize stub for input to Geographic Processor, if it was previously digitized for a different phi sector.

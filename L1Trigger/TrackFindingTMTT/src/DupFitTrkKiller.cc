@@ -10,10 +10,9 @@ namespace tmtt {
 
   //=== Make available cfg parameters & specify which algorithm is to be used for duplicate track removal.
 
-  void DupFitTrkKiller::init(const Settings* settings, unsigned int dupTrkAlg) {
-    settings_ = settings;
-    dupTrkAlg_ = dupTrkAlg;
-  }
+DupFitTrkKiller::DupFitTrkKiller(const Settings* settings) :
+    settings_(settings), dupTrkAlg_(settings->dupTrkAlgFit())
+    {}
 
   //=== Eliminate duplicate tracks from the input collection, and so return a reduced list of tracks.
 

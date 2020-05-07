@@ -9,8 +9,6 @@
 #include "L1Trigger/TrackFindingTMTT/interface/Utility.h"
 #include "L1Trigger/TrackFindingTMTT/interface/TP.h"
 #include "L1Trigger/TrackFindingTMTT/interface/Stub.h"
-#include "L1Trigger/TrackFindingTMTT/interface/Sector.h"
-#include "L1Trigger/TrackFindingTMTT/interface/HTrphi.h"
 #include "L1Trigger/TrackFindingTMTT/interface/DigitalTrack.h"
 
 #include <vector>
@@ -188,18 +186,6 @@ namespace tmtt {
 
     bool accepted() const { return accepted_; }
 
-    //--- Functions to help eliminate duplicate tracks.
-
-    // Is the fitted track trajectory should lie within the same HT cell in which the track was originally found?
-
-    // Is the fitted track trajectory within the same (eta,phi) sector of the HT used to find it?
-    bool consistentSector() const {
-      bool insidePhi =
-          (std::abs(reco::deltaPhi(this->phiAtChosenR(done_bcon_), secTmp_.phiCentre())) < secTmp_.sectorHalfWidth());
-      bool insideEta = (this->zAtChosenR() > secTmp_.zAtChosenR_Min() && this->zAtChosenR() < secTmp_.zAtChosenR_Max());
-      return (insidePhi && insideEta);
-    }
-
     // Digitize track and degrade helix parameter resolution according to effect of digitisation.
     void digitizeTrack(const std::string& fitterName);
 
@@ -252,11 +238,6 @@ namespace tmtt {
 
     //--- Has the track fit declared this to be a valid track?
     bool accepted_;
-
-    //--- Sector class used to check if fitted track trajectory is in same sector as HT used to find it.
-    Sector secTmp_;
-    //--- r-phi HT class used to determine HT cell location that corresponds to fitted track helix parameters.
-    HTrphi htRphiTmp_;
 
     //--- Info specific to KF fitter.
     unsigned int nSkippedLayers_;

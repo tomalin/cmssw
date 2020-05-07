@@ -97,8 +97,8 @@ namespace tmtt {
     if (settings_->enableDigitize())
       err_digi2 = 0.15625 * 0.15625 / 12.0;
 
-    double a = stub->sigmaX() * stub->sigmaX();
-    double b = stub->sigmaZ() * stub->sigmaZ() + err_digi2;
+    double a = stub->sigmaPerp() * stub->sigmaPerp();
+    double b = stub->sigmaPar() * stub->sigmaPar() + err_digi2;
     double r2 = stub->r() * stub->r();
     double invr2 = 1. / r2;
 
@@ -128,7 +128,7 @@ namespace tmtt {
       }
 
       if (settings_->kalmanHOdodgy()) {
-        // Inaccurate calculation, but corresponds to current firmware.
+        // Use approximation corresponding to current firmware.
         vz = b;
       }
 
@@ -150,7 +150,7 @@ namespace tmtt {
         vcorr = b * (beta * tanl);
 
         if (settings_->kalmanHOdodgy()) {
-          // Use original (Dec. 2016) dodgy implementation was this.
+          // Use approximation corresponding to current firmware.
           vphi = (a * invr2) + (b * inv2R2) + sigmaScat2;
           vcorr = 0.;
           vz = (b * tanl2);
@@ -239,6 +239,7 @@ namespace tmtt {
     //  Layer   =    0      1      2     3     4      5      6
     ptTolerance = {999., 999., 0.1, 0.1, 0.05, 0.05, 0.05};
     d0Cut = {999., 999., 999., 10., 10., 10., 10.};  // Only used for 5 param fit.
+    // Chi2 cuts should be retuned if cfg param KalmanMultiScattTerm is changed!
     if (nPar_ == 5) {                                // specific cuts for displaced tracking case.
       //  Layer   =    0      1        2         3         4         5           6
       z0Cut = {
@@ -274,39 +275,8 @@ namespace tmtt {
 
     double chi2scaled = state.chi2scaled();  // chi2(r-phi) scaled down to improve electron performance.
 
-    if (settings_->kalmanMultiScattTerm() > 0.0001) {  // Scattering taken into account
-
-      if (chi2scaled > chi2Cut[nStubLayers])
-        goodState = false;  // No separate pT selection needed
-
-    } else {  // scattering ignored - HISTORIC
-
-      // N.B. Code below changed by Alexander Morton to allow tracking down to Pt = 2 GeV.
-      if (nStubLayers == 2) {
-        if (chi2scaled > 15.0)
-          goodState = false;  // No separate pT selection needed
-      } else if (nStubLayers == 3) {
-        if (chi2scaled > 100.0 && pt > 2.7)
-          goodState = false;
-        if (chi2scaled > 120.0 && pt <= 2.7)
-          goodState = false;
-      } else if (nStubLayers == 4) {
-        if (chi2scaled > 320.0 && pt > 2.7)
-          goodState = false;
-        if (chi2scaled > 1420.0 && pt <= 2.7)
-          goodState = false;
-      } else if (nStubLayers == 5) {  // NEEDS TUNING FOR 5 OR 6 LAYERS !!!
-        if (chi2scaled > 480.0 && pt > 2.7)
-          goodState = false;
-        if (chi2scaled > 2130.0 && pt <= 2.7)
-          goodState = false;
-      } else if (nStubLayers >= 6) {  // NEEDS TUNING FOR 5 OR 6 LAYERS !!!
-        if (chi2scaled > 640.0 && pt > 2.7)
-          goodState = false;
-        if (chi2scaled > 2840.0 && pt <= 2.7)
-          goodState = false;
-      }
-    }
+    if (chi2scaled > chi2Cut[nStubLayers])
+      goodState = false;  // No separate pT selection needed
 
     const bool countUpdateCalls = false;  // Print statement to count calls to Updator.
 

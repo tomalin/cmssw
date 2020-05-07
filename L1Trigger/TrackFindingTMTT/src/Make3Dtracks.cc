@@ -13,26 +13,26 @@ namespace tmtt {
 
   //=== Initialization
 
-  void Make3Dtracks::init(const Settings* settings,
+  Make3Dtracks::Make3Dtracks(const Settings* settings,
                           unsigned int iPhiSec,
                           unsigned int iEtaReg,
                           float etaMinSector,
                           float etaMaxSector,
-                          float phiCentreSector) {
+			     float phiCentreSector) : 
     // Store config params & arguments.
-    settings_ = settings;
-    iPhiSec_ = iPhiSec;  // Sector number
-    iEtaReg_ = iEtaReg;
-    etaMinSector_ = etaMinSector;        // Range of eta sector
-    etaMaxSector_ = etaMaxSector;        // Range of eta sector
-    phiCentreSector_ = phiCentreSector;  // Centre of phi sector
+    settings_(settings),
+    iPhiSec_(iPhiSec),  // Sector number
+    iEtaReg_(iEtaReg),
+    etaMinSector_(etaMinSector),        // Range of eta sector
+    etaMaxSector_(etaMaxSector),        // Range of eta sector
+    phiCentreSector_(phiCentreSector),  // Centre of phi sector
 
     // Note if any fitters require an r-z track filter to be run.
-    runRZfilter_ = (settings->useRZfilter().size() > 0);
-
+    runRZfilter_(settings->useRZfilter().size() > 0)
+    {
     // Initialize any track filters (e.g. r-z) run after the r-phi Hough transform.
     if (runRZfilter_)
-      rzFilter_.init(settings_, iPhiSec_, iEtaReg_, etaMinSector_, etaMaxSector_, phiCentreSector_);
+      rzFilter_ = std::make_unique<TrkRZfilter>(settings_, iPhiSec_, iEtaReg_, etaMinSector_, etaMaxSector_, phiCentreSector_);
   }
 
   //=== Convert 2D tracks found by HT within the current sector to 3D tracks, without running any r-z track filter.
@@ -90,7 +90,7 @@ namespace tmtt {
   //=== The r-z filter also adds an estimate of the r-z helix parameters to each track.
 
   void Make3Dtracks::makeRZfilteredTrks(const vector<L1track2D>& vecTracksRphi) {
-    vecTracks3D_rzFiltered_ = rzFilter_.filterTracks(vecTracksRphi);
+    vecTracks3D_rzFiltered_ = rzFilter_->filterTracks(vecTracksRphi);
 
     // Optionally use MC truth to eliminate all fake tracks & all incorrect stubs assigned to tracks
     // before doing fit (for debugging).

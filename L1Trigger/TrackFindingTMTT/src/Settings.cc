@@ -57,7 +57,6 @@ namespace tmtt {
     chosenRofPhi_ = 67.240;
     chosenRofZ_ = 50.0;
     houghNbinsPt_ = 48;  // Mini HT bins in 2 GeV HT array
-    handleStripsPhiSec_ = 1;
     useApproxB_ = true;
     kalmanHOtilted_ = true;
     kalmanHOhelixExp_ = true;
@@ -66,14 +65,13 @@ namespace tmtt {
     kalmanHOprojZcorr_ = 1;
     bApprox_gradient_ = 0.886454;
     bApprox_intercept_ = 0.504148;
-    handleStripsEtaSec_ = false;
     kalmanMultiScattTerm_ = 0.00075;
     kalmanChi2RphiScale_ = 8;
     //
     // Cfg params & constants required only for HYBRID tracking (as taken from DB for TMTT).
     //
     hybrid_ = true;
-    psStripPitch_ = 0.01;
+    psPixelPitch_ = 0.01;
     psNStrips_ = 960;
     psPixelLength_ = 0.1467;
     ssStripPitch_ = 0.009;
@@ -195,20 +193,17 @@ namespace tmtt {
         useStubPhiTrk_(phiSectors_.getParameter<bool>("UseStubPhiTrk")),
         assumedPhiTrkRes_(phiSectors_.getParameter<double>("AssumedPhiTrkRes")),
         calcPhiTrkRes_(phiSectors_.getParameter<bool>("CalcPhiTrkRes")),
-        handleStripsPhiSec_(phiSectors_.getParameter<bool>("HandleStripsPhiSec")),
 
         //=== Division of Tracker into eta sectors.
         etaRegions_(etaSectors_.getParameter<vector<double>>("EtaRegions")),
         chosenRofZ_(etaSectors_.getParameter<double>("ChosenRofZ")),
         beamWindowZ_(etaSectors_.getParameter<double>("BeamWindowZ")),
-        handleStripsEtaSec_(etaSectors_.getParameter<bool>("HandleStripsEtaSec")),
         allowOver2EtaSecs_(etaSectors_.getParameter<bool>("AllowOver2EtaSecs")),
 
         //=== r-phi Hough transform array specifications.
         houghMinPt_(htArraySpecRphi_.getParameter<double>("HoughMinPt")),
         houghNbinsPt_(htArraySpecRphi_.getParameter<unsigned int>("HoughNbinsPt")),
         houghNbinsPhi_(htArraySpecRphi_.getParameter<unsigned int>("HoughNbinsPhi")),
-        houghNcellsRphi_(htArraySpecRphi_.getParameter<int>("HoughNcellsRphi")),
         enableMerge2x2_(htArraySpecRphi_.getParameter<bool>("EnableMerge2x2")),
         maxPtToMerge2x2_(htArraySpecRphi_.getParameter<double>("MaxPtToMerge2x2")),
         numSubSecsEta_(htArraySpecRphi_.getParameter<unsigned int>("NumSubSecsEta")),
@@ -222,7 +217,6 @@ namespace tmtt {
         miniHoughLoadBalance_(htArraySpecRphi_.getParameter<unsigned int>("MiniHoughLoadBalance")),
 
         //=== Rules governing how stubs are filled into the r-phi Hough Transform array.
-        handleStripsRphiHT_(htFillingRphi_.getParameter<bool>("HandleStripsRphiHT")),
         killSomeHTCellsRphi_(htFillingRphi_.getParameter<unsigned int>("KillSomeHTCellsRphi")),
         useBendFilter_(htFillingRphi_.getParameter<bool>("UseBendFilter")),
         maxStubsInCell_(htFillingRphi_.getParameter<unsigned int>("MaxStubsInCell")),
@@ -239,7 +233,7 @@ namespace tmtt {
         //=== Options controlling r-z track filters (or any other track filters run after the Hough transform, as opposed to inside it).
 
         rzFilterName_(rzFilterOpts_.getParameter<string>("RZFilterName")),
-        seedResolution_(rzFilterOpts_.getParameter<double>("SeedResolution")),
+        seedResCut_(rzFilterOpts_.getParameter<double>("SeedResCut")),
         keepAllSeed_(rzFilterOpts_.getParameter<bool>("KeepAllSeed")),
         maxSeedCombinations_(rzFilterOpts_.getParameter<unsigned int>("MaxSeedCombinations")),
         maxGoodSeedCombinations_(rzFilterOpts_.getParameter<unsigned int>("MaxGoodSeedCombinations")),
@@ -278,18 +272,6 @@ namespace tmtt {
         killTrackFitWorstHit_(trackFitSettings_.getParameter<bool>("KillTrackFitWorstHit")),
         generalResidualCut_(trackFitSettings_.getParameter<double>("GeneralResidualCut")),
         killingResidualCut_(trackFitSettings_.getParameter<double>("KillingResidualCut")),
-        maxIterationsLR_(trackFitSettings_.getParameter<unsigned int>("MaxIterationsLR")),
-        combineResiduals_(trackFitSettings_.getParameter<bool>("CombineResiduals")),
-        lineariseStubPosition_(trackFitSettings_.getParameter<bool>("LineariseStubPosition")),
-        checkSectorConsistency_(trackFitSettings_.getParameter<bool>("CheckSectorConsistency")),
-        checkHTCellConsistency_(trackFitSettings_.getParameter<bool>("CheckHTCellConsistency")),
-        minPSLayers_(trackFitSettings_.getParameter<unsigned int>("MinPSLayers")),
-        digitizeLR_(trackFitSettings_.getParameter<bool>("DigitizeLR")),
-        PhiPrecision_(trackFitSettings_.getParameter<double>("PhiPrecision")),
-        RPrecision_(trackFitSettings_.getParameter<double>("RPrecision")),
-        ZPrecision_(trackFitSettings_.getParameter<double>("ZPrecision")),
-        ZSlopeWidth_(trackFitSettings_.getParameter<unsigned int>("ZSlopeWidth")),
-        ZInterceptWidth_(trackFitSettings_.getParameter<unsigned int>("ZInterceptWidth")),
         //
         digitizeSLR_(trackFitSettings_.getParameter<bool>("DigitizeSLR")),
         dividerBitsHelix_(trackFitSettings_.getParameter<unsigned int>("DividerBitsHelix")),
@@ -372,7 +354,7 @@ namespace tmtt {
 
         // Hybrid tracking
         hybrid_(iConfig.getParameter<bool>("Hybrid")),
-        psStripPitch_(0.),
+        psPixelPitch_(0.),
         psNStrips_(0.),
         psPixelLength_(0.),
         ssStripPitch_(0.),

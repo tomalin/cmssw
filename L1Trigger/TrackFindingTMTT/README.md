@@ -53,9 +53,7 @@ to the agree common TTTrack format, with this conversion done by the "ConverterT
 
 2) Class "InputData" -- This unpacks the most useful information from the Stubs and Tracking Particle 
 (truth particles) collections in the MC dataset, and it for convenient access in the "Stub" and "TP"
-classes. The "Stub" class uses a class called "DigitalStub" to digitize and then undigitize again
-the stub data. This process degrades slightly the resolution, as would happen in the real firmware.
-The digitisation is optional. It is called from TMTrackProducer after the stubs have been assigned to
+classes. Info about tracker silicon modules is stored in "ModuleInfo". The "Stub" class uses a class called "DigitalStub" to digitize and then undigitize again the stub data. This process degrades slightly the resolution, as would happen in the real firmware. The digitisation is optional. It is called from TMTrackProducer after the stubs have been assigned to
 sectors.
 
 3) Class "Sector" -- This knows about the division of the Tracker into (phi,eta) sectors that we use

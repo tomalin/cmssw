@@ -7,6 +7,7 @@
 #include "boost/numeric/ublas/matrix.hpp"
 #include <vector>
 #include <utility>
+#include <memory>
 
 using boost::numeric::ublas::matrix;
 
@@ -21,23 +22,12 @@ namespace tmtt {
 
   class HTbase {
   public:
-    HTbase() {}
-    virtual ~HTbase() {}
 
     // Initialization.
-    virtual void init(const Settings* settings,
-                      unsigned int iPhiSec,
-                      unsigned int iEtaReg,
-                      float etaMinSector,
-                      float etaMaxSector,
-                      float) = 0;
+    HTbase(const Settings* settings, unsigned int iPhiSec, unsigned int iEtaReg, 
+	   unsigned int nBinsX, unsigned int nBinsY);
 
-    void init(const Settings* settings, unsigned int iPhiSec, unsigned int iEtaReg) {
-      settings_ = settings;
-      iPhiSec_ = iPhiSec;
-      iEtaReg_ = iEtaReg;
-      optoLinkID_ = this->calcOptoLinkID();
-    }
+    virtual ~HTbase() {}
 
     // Termination. Causes HT array to search for tracks etc.
     virtual void end();
@@ -54,7 +44,7 @@ namespace tmtt {
 
     // Get all the cells that make up the array, which in turn give access to the stubs inside them.
     // N.B. You can use allCells().size1() and allCells().size2() to get the dimensions ofthe array.
-    virtual const matrix<HTcell>& allCells() const { return htArray_; }
+    virtual const matrix<std::unique_ptr<HTcell>>& allCells() const { return htArray_; }
 
     //=== Info about track candidates found.
 
@@ -137,11 +127,14 @@ namespace tmtt {
     unsigned int iPhiSec_;  // Sector number.
     unsigned int iEtaReg_;
 
-    unsigned int optoLinkID_;  // ID of opto-link from HT to Track Fitter.
+    unsigned int nBinsX_; // Bins in HT array.
+    unsigned int nBinsY_;
 
     // Hough transform array.
     // This has two dimensions, representing the two track helix parameters being varied.
-    matrix<HTcell> htArray_;
+    matrix<std::unique_ptr<HTcell>> htArray_;
+
+    unsigned int optoLinkID_;  // ID of opto-link from HT to Track Fitter.
 
     // List of all track candidates found by HT & their associated properties.
     // If a duplicate track filter was run inside the HT, this will contain the reduced list of tracks passing this filter.

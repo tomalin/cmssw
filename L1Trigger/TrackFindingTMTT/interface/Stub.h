@@ -14,12 +14,14 @@
 #include "L1Trigger/TrackFindingTMTT/interface/DigitalStub.h"
 #include "L1Trigger/TrackFindingTMTT/interface/StubWindowSuggest.h"
 #include "L1Trigger/TrackFindingTMTT/interface/DegradeBend.h"
+#include "L1Trigger/TrackFindingTMTT/interface/ModuleInfo.h"
 #include "L1Trigger/TrackFindingTMTT/interface/StubKiller.h"
 
 #include <vector>
 #include <set>
 #include <array>
 #include <map>
+#include <memory>
 
 class TrackerGeometry;
 class TrackerTopology;
@@ -45,7 +47,7 @@ namespace tmtt {
          double r,
          double z,
          double bend,
-         int layerid,
+         unsigned int layerId,
          bool psModule,
          bool barrel,
          unsigned int iphi,
@@ -61,12 +63,16 @@ namespace tmtt {
          const Settings* settings,
          const TrackerGeometry* trackerGeometry,
          const TrackerTopology* trackerTopology,
+	 const ModuleInfo* moduleInfo,
 	 const StubKiller* stubKiller);
 
     ~Stub() {}
 
     // Return reference to original TTStub.
     const TTStubRef& ttStubRef() const { return ttStubRef_; }
+
+    // Info about tracker module containing stub.
+    const ModuleInfo* moduleInfo() const { return moduleInfo_; }
 
     bool operator==(const Stub& stubOther) { return (this->index() == stubOther.index()); }
 
@@ -121,7 +127,7 @@ namespace tmtt {
     float theta() const { return atan2(r_, z_); }
     float eta() const { return asinh(z_ / r_); }
     // Access to digitized version of stub coords.
-    const DigitalStub& digitalStub() const { return digitalStub_; }
+    const DigitalStub* digitalStub() const { return digitalStub_.get(); }
     // Access to booleans indicating if the stub has been digitized.
     bool digitizedForGPinput() const { return digitizedForGPinput_; }
     bool digitizedForHTinput() const { return digitizedForHTinput_; }
@@ -188,26 +194,6 @@ namespace tmtt {
     // Indicates if stub would have passed front-end cuts, were it not for window size encoded in DegradeBend.h
     bool stubFailedDegradeWindow() const { return stubFailedDegradeWindow_; }
 
-    //--- Quantities common to all stubs in a given module ---
-
-    // Unique identifier for each stacked module, allowing one to check which stubs are on the same module.
-    unsigned int idDet() const { return idDet_.rawId(); }
-    // Uncertainty in stub coordinates due to strip length, assumed equal to 0.5*strip-or-pixel-length
-    float rErr() const { return rErr_; }
-    float zErr() const { return zErr_; }
-    // Coordinates of centre of two sensors in (r,phi,z)
-    float minR() const { return moduleMinR_; }
-    float maxR() const { return moduleMaxR_; }
-    float minPhi() const { return moduleMinPhi_; }
-    float maxPhi() const { return moduleMaxPhi_; }
-    float minZ() const { return moduleMinZ_; }
-    float maxZ() const { return moduleMaxZ_; }
-    // Angle between normal to module and beam-line along +ve z axis. (In range -PI/2 to +PI/2).
-    float moduleTilt() const { return moduleTilt_; }
-    // Which of two sensors in module is furthest from beam-line?
-    bool outerModuleAtSmallerR() const { return outerModuleAtSmallerR_; }
-    // Sensor pitch over separation.
-    float pitchOverSep() const { return pitchOverSep_; }
     // Location of stub in module in units of strip number (or pixel number along finest granularity axis).
     // Range from 0 to (nStrips - 1) inclusive.
     unsigned int iphi() const { return iphi_; }
@@ -215,35 +201,6 @@ namespace tmtt {
     // (If true hit at larger r than stub r by deltaR, then stub phi needs correcting by +alpha*deltaR).
     // *** TO DO *** : Digitize this.
     float alpha() const { return alpha_; }
-    // Module type: PS or 2S?
-    bool psModule() const { return psModule_; }
-    // Tracker layer ID number (1-6 = barrel layer; 11-15 = endcap A disk; 21-25 = endcap B disk)
-    unsigned int layerId() const { return layerId_; }
-    // Reduced layer ID (in range 1-7). This encodes the layer ID in only 3 bits (to simplify firmware) by merging some barrel layer and endcap disk layer IDs into a single ID.
-    unsigned int layerIdReduced() const;
-    // Endcap ring of module (returns zero in case of barrel)
-    unsigned int endcapRing() const { return endcapRing_; }
-    bool barrel() const { return barrel_; }
-    // True if stub is in tilted barrel module.
-    bool tiltedBarrel() const { return tiltedBarrel_; }
-    // Strip pitch (or pixel pitch along shortest axis).
-    float stripPitch() const { return stripPitch_; }
-    // Strip length (or pixel pitch along longest axis).
-    float stripLength() const { return stripLength_; }
-    // No. of strips in sensor.
-    unsigned int nStrips() const { return nStrips_; }
-    // Width of sensitive region of sensor.
-    float sensorWidth() const { return sensorWidth_; }
-    // Hit resolution perpendicular to strip (or to longest pixel axis) = pitch/sqrt(12). Measures phi.
-    float sigmaPerp() const { return sigmaPerp_; }
-    // Hit resolution parallel to strip (or to longest pixel axis) = length/sqrt(12). Measures r or z.
-    float sigmaPar() const { return sigmaPar_; }
-
-    // Clone a few of the above functions with the less helpful names expected by the track fitting code. (Try to phase these out with time ...)
-    unsigned int nstrip() const { return this->nStrips(); }
-    float width() const { return this->sensorWidth(); }
-    float sigmaX() const { return this->sigmaPerp(); }
-    float sigmaZ() const { return this->sigmaPar(); }
 
     //--- Truth info
 
@@ -272,9 +229,52 @@ namespace tmtt {
     float bendInFrontend() const { return bendInFrontend_; }
     float bendResInFrontend() const { return settings_->bendResolution(); }
 
-    // Return tracker geometry (T3, T4, T5 ...)
-    // See https://github.com/cms-sw/cmssw/blob/CMSSW_9_1_X/Configuration/Geometry/README.md
-    unsigned int trackerGeometryVersion() const { return trackerGeometryVersion_.load(); }
+    //--- Quantities common to all stubs in a given module ---
+
+    // Unique identifier for lower sensor in module
+    unsigned int detIdRaw() const { return moduleInfo_->rawDetId(); }
+    // Uncertainty in stub (r,z)
+    float sigmaR() const { return (barrel() ? 0. : sigmaPar()); }
+    float sigmaZ() const { return (barrel() ? sigmaPar() : 0.); }
+    // Coordinates of centre of two sensors in (r,phi,z)
+    float minR() const { return moduleInfo_->minR(); }
+    float maxR() const { return moduleInfo_->maxR(); }
+    float minPhi() const { return moduleInfo_->minPhi(); }
+    float maxPhi() const { return moduleInfo_->maxPhi(); }
+    float minZ() const { return moduleInfo_->minZ(); }
+    float maxZ() const { return moduleInfo_->maxZ(); }
+    // Angle between normal to module and beam-line along +ve z axis. (In range -PI/2 to +PI/2).
+    float moduleTilt() const { return moduleInfo_->moduleTilt(); }
+    // Which of two sensors in module is furthest from beam-line?
+    bool outerModuleAtSmallerR() const { return moduleInfo_->outerModuleAtSmallerR(); }
+    // Sensor pitch over separation.
+    float pitchOverSep() const { return moduleInfo_->pitchOverSep(); }
+    // Width of sensitive region of sensor.
+    float sensorWidth() const { return  moduleInfo_->sensorWidth(); }
+    // Hit resolution perpendicular to strip. Measures phi.
+    float sigmaPerp() const { constexpr float f = sqrt(1./12); return f * stripPitch_; }
+    // Hit resolution parallel to strip. Measures r or z.
+    float sigmaPar() const { constexpr float f = sqrt(1./12.); return f * stripLength_; }
+
+    //--- These module variables could be taken directly from moduleInfo_, were it not for need
+    //--- to support Hybrid.
+    // Module type: PS or 2S?
+    bool psModule() const { return psModule_; }
+    // Tracker layer ID number (1-6 = barrel layer; 11-15 = endcap A disk; 21-25 = endcap B disk)
+    unsigned int layerId() const { return layerId_; }
+    // Reduced layer ID (in range 1-7). This encodes the layer ID in only 3 bits (to simplify firmware) by merging some barrel layer and endcap disk layer IDs into a single ID.
+    unsigned int layerIdReduced() const {return layerIdReduced_;}
+    // Endcap ring of module (returns zero in case of barrel)
+    unsigned int endcapRing() const { return endcapRing_; }
+    bool barrel() const { return barrel_; }
+    // True if stub is in tilted barrel module.
+    bool tiltedBarrel() const { return tiltedBarrel_; }
+    // Strip pitch (or pixel pitch along shortest axis).
+    float stripPitch() const { return stripPitch_; }
+    // Strip length (or pixel pitch along longest axis).
+    float stripLength() const { return stripLength_; }
+    // No. of strips in sensor.
+    unsigned int nStrips() const { return  nStrips_; }
 
   private:
     // Degrade assumed stub bend resolution.
@@ -296,6 +296,9 @@ namespace tmtt {
 
     // Function to calculate approximation for dphiOverBendCorrection aka B
     double approxB();
+
+    // Calculate variables giving ratio of track intercept angle to stub bend.
+    void calcDphiOverBend();
 
     // After GP, firmware can't access directly the stub bend or dphi info.
     void check() const {
@@ -326,32 +329,9 @@ namespace tmtt {
     std::array<float, 2> localU_cluster_;
     std::array<float, 2> localV_cluster_;
 
-    //--- Parameters common to all stubs in a given module.
-    DetId idDet_;
-    float rErr_;
-    float zErr_;
-    float moduleMinR_;
-    float moduleMaxR_;
-    float moduleMinPhi_;
-    float moduleMaxPhi_;
-    float moduleMinZ_;
-    float moduleMaxZ_;
-    float moduleTilt_;
-    float pitchOverSep_;
     unsigned int iphi_;
     float alpha_;
-    bool psModule_;
-    unsigned int layerId_;
-    unsigned int endcapRing_;
-    bool barrel_;
-    bool tiltedBarrel_;
-    float sigmaPerp_;
-    float sigmaPar_;
-    float stripPitch_;
-    float stripLength_;
-    unsigned int nStrips_;
-    float sensorWidth_;
-    bool outerModuleAtSmallerR_;
+
     //--- Truth info about stub.
     const TP* assocTP_;
     std::set<const TP*> assocTPs_;
@@ -367,7 +347,7 @@ namespace tmtt {
     // Used for stub bend resolution degrading.
     unsigned int numMergedBend_;
 
-    DigitalStub digitalStub_;   // Class used to digitize stub if required.
+    std::shared_ptr<DigitalStub> digitalStub_;   // Class used to digitize stub if required.
     bool digitizedForGPinput_;  // Has this stub been digitized for GP input?
     bool digitizedForHTinput_;  // Has this stub been digitized for HT input?
     // Has this stub been digitized for SF/TF input? If so, this was SF/TF name.
@@ -378,11 +358,26 @@ namespace tmtt {
     // Which tracker geometry is this?
     static std::atomic<unsigned int> trackerGeometryVersion_;
 
+    // Info about tracker module containing stub.
+    const ModuleInfo* moduleInfo_;
+
     // Used to provide TMTT recommendations for stub window sizes that CMS should use.
     StubWindowSuggest stubWindowSuggest_;
 
     // Used to degrade stub bend information.
     DegradeBend degradeBend_;
+
+    // These module variables are needed only to support the Hybrid stub constructor.
+    // (Otherwise, they could be taken from moduleInfo_).
+    bool psModule_;
+    unsigned int layerId_;
+    unsigned int layerIdReduced_;
+    unsigned int endcapRing_;
+    bool barrel_;
+    bool tiltedBarrel_;
+    float stripPitch_;
+    float stripLength_;
+    unsigned int nStrips_;
   };
 
 }  // namespace tmtt

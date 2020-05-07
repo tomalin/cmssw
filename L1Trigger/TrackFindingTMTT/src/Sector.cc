@@ -10,46 +10,42 @@ namespace tmtt {
 
   //=== Initialise
 
-  void Sector::init(const Settings* settings, unsigned int iPhiSec, unsigned int iEtaReg) {
-    settings_ = settings;
+Sector::Sector(const Settings* settings, unsigned int iPhiSec, unsigned int iEtaReg) :
+  settings_(settings),
+  // Sector number
+  iPhiSec_(iPhiSec),
+  iEtaReg_(iEtaReg),
 
-    // Should algorithm allow for uncertainty in stub (r,z) coordinate caused by length of 2S module strips when assigning stubs to sectors?
-    handleStripsPhiSec_ = settings->handleStripsPhiSec();
-    handleStripsEtaSec_ = settings->handleStripsEtaSec();
+  beamWindowZ_(settings->beamWindowZ()),  // Assumed half-length of beam-spot
 
-    //===  Characteristics of this eta region.
+  //===  Characteristics of this eta region.
+  // Using lines of specified rapidity drawn from centre of CMS, determine the z coords at which   
+  // they cross the radius chosenRofZ_.
+  etaMin_(settings->etaRegions()[iEtaReg]),
+  etaMax_(settings->etaRegions()[iEtaReg + 1]),
+  chosenRofZ_(settings->chosenRofZ()),
+  // Get range in z of tracks covered by this sector at chosen radius from beam-line
+  zOuterMin_(chosenRofZ_ / tan(2. * atan(exp(-etaMin_)))),
+  zOuterMax_(chosenRofZ_ / tan(2. * atan(exp(-etaMax_)))),
 
-    iPhiSec_ = iPhiSec;
-    iEtaReg_ = iEtaReg;
-    // Using lines of specified rapidity drawn from centre of CMS, determine the z coords at which
-    // they cross the radius rChosenRofZ_.
-    etaMin_ = settings->etaRegions()[iEtaReg];
-    etaMax_ = settings->etaRegions()[iEtaReg + 1];
-    chosenRofZ_ = settings->chosenRofZ();
-    // Get range in z of tracks covered by this sector at chosen radius from beam-line
-    zOuterMin_ = chosenRofZ_ / tan(2. * atan(exp(-etaMin_)));
-    zOuterMax_ = chosenRofZ_ / tan(2. * atan(exp(-etaMax_)));
-    beamWindowZ_ = settings->beamWindowZ();  // Assumed half-length of beam-spot
-
-    //=== Characteristics of this phi region.
-    //unsigned int numPhiSecPerNonant = (settings->numPhiSectors()) / (settings->numPhiNonants());
+  //=== Characteristics of this phi region.
+  chosenRofPhi_(settings->chosenRofPhi()),
+  useStubPhi_(settings->useStubPhi()),
+  minPt_(settings->houghMinPt()),  // Min Pt covered by  HT array.
+  useStubPhiTrk_(settings->useStubPhiTrk()),
+  assumedPhiTrkRes_(settings->assumedPhiTrkRes()),
+  calcPhiTrkRes_(settings->calcPhiTrkRes()),
+  //=== Check if subsectors in eta are being used within each sector.
+  numSubSecsEta_(settings->numSubSecsEta())
+{
     // Centre of phi (tracking) nonant zero must be along x-axis to be consistent with tracker cabling map.
     // Define phi sector zero  to start at lower end of phi range in nonant 0.
     float phiCentreSec0 = -M_PI / float(settings->numPhiNonants()) + M_PI / float(settings->numPhiSectors());
-    phiCentre_ =
-        2. * M_PI * float(iPhiSec) / float(settings->numPhiSectors()) + phiCentreSec0;  // Centre of sector in phi
+    // Centre of sector in phi
+    phiCentre_ = 2. * M_PI * float(iPhiSec) / float(settings->numPhiSectors()) + phiCentreSec0;  
     sectorHalfWidth_ = M_PI / float(settings->numPhiSectors());  // Sector half width excluding overlaps.
-    chosenRofPhi_ = settings->chosenRofPhi();
-    useStubPhi_ = settings->useStubPhi();
-    minPt_ = settings->houghMinPt();  // Min Pt covered by  HT array.
-    useStubPhiTrk_ = settings->useStubPhiTrk();
-    assumedPhiTrkRes_ = settings->assumedPhiTrkRes();
-    calcPhiTrkRes_ = settings->calcPhiTrkRes();
 
-    //=== Check if subsectors in eta are being used within each sector.
-    numSubSecsEta_ = settings->numSubSecsEta();
-
-    // If subsectors have equal width in rapidity, do this.
+    // If eta subsectors have equal width in rapidity, do this.
     float subSecWidth = (etaMax_ - etaMin_) / float(numSubSecsEta_);
     for (unsigned int i = 0; i < numSubSecsEta_; i++) {
       float subSecEtaMin = etaMin_ + i * subSecWidth;
@@ -76,7 +72,7 @@ namespace tmtt {
   vector<bool> Sector::insideEtaSubSecs(const Stub* stub) const {
     if (settings_->enableDigitize() && numSubSecsEta_ == 2) {
       // Use (complicated) digitized firmware emulation
-      return subEtaFwCalc(stub->digitalStub().iDigi_Rt(), stub->digitalStub().iDigi_Z());
+      return subEtaFwCalc(stub->digitalStub()->iDigi_Rt(), stub->digitalStub()->iDigi_Z());
 
     } else {
       // Use (simpler) floating point calculation.
@@ -100,44 +96,14 @@ namespace tmtt {
     // Upper edge of this eta region defined by line from (r,z) = (0, beamWindowZ) to (chosenRofZ_, zRangeMax).
 
     float zMin, zMax;
-
     bool inside;
 
-    if (!handleStripsEtaSec_) {
-      //--- Don't modify algorithm to allow for uncertainty in stub (r,z) coordinates caused by 2S module strip length?
+    // Calculate z coordinate of lower edge of this eta region, evaluated at radius of stub.
+    zMin = (zRangeMin * stub->r() - beamWindowZ_ * std::abs(stub->r() - chosenRofZ_)) / chosenRofZ_;
+    // Calculate z coordinate of upper edge of this eta region, evaluated at radius of stub.
+    zMax = (zRangeMax * stub->r() + beamWindowZ_ * std::abs(stub->r() - chosenRofZ_)) / chosenRofZ_;
 
-      // Calculate z coordinate of lower edge of this eta region, evaluated at radius of stub.
-      zMin = (zRangeMin * stub->r() - beamWindowZ_ * std::abs(stub->r() - chosenRofZ_)) / chosenRofZ_;
-      // Calculate z coordinate of upper edge of this eta region, evaluated at radius of stub.
-      zMax = (zRangeMax * stub->r() + beamWindowZ_ * std::abs(stub->r() - chosenRofZ_)) / chosenRofZ_;
-
-      inside = (stub->z() > zMin && stub->z() < zMax);
-
-    } else {
-      //--- Do modify algorithm to allow for uncertainty in stub (r,z) coordinates caused by 2S module strip length?
-
-      float stubMinR = stub->r() - stub->rErr();
-      float stubMaxR = stub->r() + stub->rErr();
-      float stubMinZ = stub->z() - stub->zErr();
-      float stubMaxZ = stub->z() + stub->zErr();
-
-      // Calculate z coordinate of lower edge of this eta region, evaluated at radius of stub.
-      float rStubA =
-          (zRangeMin + beamWindowZ_) >= 0
-              ? stubMinR
-              : stubMaxR;  // stub r coordinate uncertain (especially in endcap), so use one which gives most -ve zMin.
-      zMin = -beamWindowZ_ + (rStubA / chosenRofZ_) * (zRangeMin + beamWindowZ_);
-
-      // Calculate z coordinate of upper edge of this eta region, evaluated at radius of stub.
-      float rStubB =
-          (zRangeMax - beamWindowZ_) >= 0
-              ? stubMaxR
-              : stubMinR;  // stub r coordinate uncertain (especially in endcap), so use one which gives most +ve zMax.
-      zMax = beamWindowZ_ + (rStubB / chosenRofZ_) * (zRangeMax - beamWindowZ_);
-
-      inside = (stubMaxZ > zMin && stubMinZ < zMax);
-    }
-
+    inside = (stub->z() > zMin && stub->z() < zMax);
     return inside;
   }
 
@@ -176,13 +142,6 @@ namespace tmtt {
       }
       float outsidePhiTrk = std::abs(delPhiTrk) - sectorHalfWidth_ -
                             tolerancePhiTrk;  // If > 0, then stub is not compatible with being inside this sector.
-
-      // Modify algorithm to allow for uncertainty due to 2S module strip length, if requested.
-      if (handleStripsPhiSec_) {
-        float chosenStubPhiErr =
-            stub->trkPhiAtR(chosenRofPhi_).second;  // The "Err" here is uncertainty due to 2S strip length.
-        outsidePhiTrk -= chosenStubPhiErr;
-      }
 
       if (outsidePhiTrk > 0)
         okPhiTrk = false;

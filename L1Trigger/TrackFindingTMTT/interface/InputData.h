@@ -3,10 +3,11 @@
 
 #include "FWCore/Framework/interface/EDAnalyzer.h"
 #include "L1Trigger/TrackFindingTMTT/interface/TP.h"
+#include "L1Trigger/TrackFindingTMTT/interface/ModuleInfo.h"
 #include "L1Trigger/TrackFindingTMTT/interface/Stub.h"
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/Utilities/interface/InputTag.h"
-#include <vector>
+#include <list>
 
 namespace tmtt {
 
@@ -28,34 +29,31 @@ namespace tmtt {
               const edm::EDGetTokenT<TTClusterAssMap> clusterTruthToken,
               const edm::EDGetTokenT<reco::GenJetCollection> genJetToken);
 
+    // Info about each tracker module
+    const std::list<ModuleInfo>& trackerModules() const { return trackerModules_; };
+
     // Get tracking particles
-    const std::vector<TP>& getTPs() const { return vTPs_; }
+    const std::list<TP>& getTPs() const { return vTPs_; }
     // Get stubs that would be output by the front-end readout electronics
-    const std::vector<const Stub*>& stubs() const { return vStubs_; }
+    const std::list<const Stub*>& stubs() const { return vStubs_; }
 
     //--- of minor importance ...
 
     // Get number of stubs prior to applying tighted front-end readout electronics cuts specified in section StubCuts of Analyze_Defaults_cfi.py. (Only used to measure the efficiency of these cuts).
-    const std::vector<Stub>& getAllStubs() const { return vAllStubs_; }
-
-  private:
-    // Can optionally be used to sort stubs by bend.
-    struct SortStubsInBend {
-      inline bool operator()(const Stub* stub1, const Stub* stub2) {
-        return (std::abs(stub1->bend()) < std::abs(stub2->bend()));
-      }
-    };
+    const std::list<Stub>& allStubs() const { return vAllStubs_; }
 
   private:
     bool enableMCtruth_;  // Notes if job will use MC truth info.
 
-    std::vector<TP> vTPs_;             // tracking particles
-    std::vector<const Stub*> vStubs_;  // stubs that would be output by the front-end readout electronics.
+    std::list<ModuleInfo> trackerModules_; // Info about each tracker module.
+
+    std::list<TP> vTPs_;             // tracking particles
+    std::list<const Stub*> vStubs_;  // stubs that would be output by the front-end readout electronics.
 
     //--- Used for a few minor studies ...
 
     // all stubs, even those that would fail any tightened front-end readout electronic cuts specified in section StubCuts of Analyze_Defaults_cfi.py. (Only used to measure the efficiency of these cuts).
-    std::vector<Stub> vAllStubs_;
+    std::list<Stub> vAllStubs_;
   };
 
 }  // namespace tmtt

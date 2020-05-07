@@ -222,10 +222,8 @@ namespace tmtt {
       bool genuine = (matchedTP_ != nullptr);
 
       if (genuine && matchedTP_->useForAlgEff()) {
-        Sector secTmp;
-        HTrphi htRphiTmp;
-        secTmp.init(settings_, iPhiSec_, iEtaReg_);
-        htRphiTmp.init(settings_, iPhiSec_, iEtaReg_, secTmp.etaMin(), secTmp.etaMax(), secTmp.phiCentre());
+        Sector secTmp(settings_, iPhiSec_, iEtaReg_);
+        HTrphi htRphiTmp(settings_, iPhiSec_, iEtaReg_, secTmp.etaMin(), secTmp.etaMax(), secTmp.phiCentre());
         std::pair<unsigned int, unsigned int> trueCell = htRphiTmp.trueCell(matchedTP_);
 
         std::pair<unsigned int, unsigned int> htCell = this->cellLocationHT();

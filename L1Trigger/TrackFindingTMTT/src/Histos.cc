@@ -25,7 +25,9 @@
 #include <algorithm>
 #include <array>
 #include <unordered_set>
+#include <list>
 #include <atomic>
+#include <memory>
 
 using namespace std;
 
@@ -52,7 +54,7 @@ namespace tmtt {
 
   void Histos::book() {
     // Don't bother booking histograms if user didn't request them via TFileService in their cfg.
-    if (!this->enabled())
+    if (not this->enabled())
       return;
 
     oldSumW2opt_ = TH1::GetDefaultSumw2();
@@ -79,12 +81,12 @@ namespace tmtt {
   //=== Fill all histograms
 
   void Histos::fill(const InputData& inputData,
-                    const matrix<Sector>& mSectors,
-                    const matrix<HTrphi>& mHtRphis,
-                    const matrix<Make3Dtracks> mMake3Dtrks,
+                    const matrix<unique_ptr<Sector>>& mSectors,
+                    const matrix<unique_ptr<HTrphi>>& mHtRphis,
+                    const matrix<unique_ptr<Make3Dtracks>>& mMake3Dtrks,
                     const std::map<std::string, std::vector<L1fittedTrack>>& fittedTracks) {
     // Don't bother filling histograms if user didn't request them via TFileService in their cfg.
-    if (!this->enabled())
+    if (not this->enabled())
       return;
 
     // Fill histograms about input data.
@@ -101,8 +103,8 @@ namespace tmtt {
     bool withRZfilter = false;
     for (unsigned int iEtaReg = 0; iEtaReg < numEtaRegions_; iEtaReg++)
       for (unsigned int iPhiSec = 0; iPhiSec < numPhiSectors_; iPhiSec++) {
-        const Make3Dtracks& make3Dtrk = mMake3Dtrks(iPhiSec, iEtaReg);
-        const std::vector<L1track3D>& tracks = make3Dtrk.trackCands3D(withRZfilter);
+        const Make3Dtracks* make3Dtrk = mMake3Dtrks(iPhiSec, iEtaReg).get();
+        const std::vector<L1track3D>& tracks = make3Dtrk->trackCands3D(withRZfilter);
         tracksHT.insert(tracksHT.end(), tracks.begin(), tracks.end());
       }
     this->fillTrackCands(inputData, tracksHT, "HT");
@@ -112,8 +114,8 @@ namespace tmtt {
       bool withRZfilter = true;
       for (unsigned int iEtaReg = 0; iEtaReg < numEtaRegions_; iEtaReg++)
         for (unsigned int iPhiSec = 0; iPhiSec < numPhiSectors_; iPhiSec++) {
-          const Make3Dtracks& make3Dtrk = mMake3Dtrks(iPhiSec, iEtaReg);
-          const std::vector<L1track3D>& tracks = make3Dtrk.trackCands3D(withRZfilter);
+          const Make3Dtracks* make3Dtrk = mMake3Dtrks(iPhiSec, iEtaReg).get();
+          const std::vector<L1track3D>& tracks = make3Dtrk->trackCands3D(withRZfilter);
           tracksRZ.insert(tracksRZ.end(), tracks.begin(), tracks.end());
         }
       this->fillTrackCands(inputData, tracksRZ, "RZ");
@@ -354,8 +356,8 @@ namespace tmtt {
   //=== Fill histograms using input stubs and tracking particles.
 
   void Histos::fillInputData(const InputData& inputData) {
-    const vector<const Stub*>& vStubs = inputData.stubs();
-    const vector<TP>& vTPs = inputData.getTPs();
+    const list<const Stub*>& vStubs = inputData.stubs();
+    const list<TP>& vTPs = inputData.getTPs();
 
     hisNumEvents_->Fill(0.);
 
@@ -418,7 +420,7 @@ namespace tmtt {
 
     // Study efficiency of stubs to pass front-end electronics cuts.
 
-    const vector<Stub>& vAllStubs = inputData.getAllStubs();  // Get all stubs prior to FE cuts to do this.
+    const list<Stub>& vAllStubs = inputData.allStubs();  // Get all stubs prior to FE cuts to do this.
     for (const Stub& s : vAllStubs) {
       unsigned int layerOrTenPlusRing = s.barrel() ? s.layerId() : 10 + s.endcapRing();
       // Fraction of all stubs (good and bad) failing tightened front-end electronics cuts.
@@ -553,8 +555,8 @@ namespace tmtt {
 
       // Check how strip number correlates with phi coordinate relative to module centre.
       // (Useful for "alpha" correction for non-radial strips in endcap 2S modules).
-      float fracPosInModule = (float(2 * stub->iphi()) - float(stub->nstrip())) / float(stub->nstrip());
-      float phiFromStrip = 0.5 * stub->width() * fracPosInModule / stub->r();
+      float fracPosInModule = (float(2 * stub->iphi()) - float(stub->nStrips())) / float(stub->nStrips());
+      float phiFromStrip = 0.5 * stub->sensorWidth() * fracPosInModule / stub->r();
       if (stub->z() < 0 && (not stub->barrel()))
         phiFromStrip *= -1;
       if (stub->outerModuleAtSmallerR())
@@ -570,7 +572,7 @@ namespace tmtt {
       map<ClusterLocation, unsigned int> commonClusterMap;
       for (const Stub* stub : vStubs) {
         // Encode detector ID & strip (or pixel) numbers in both dimensions.
-        const ClusterLocation loc(stub->idDet(),
+        const ClusterLocation loc(stub->moduleInfo()->detId(),
                                   pair<float, float>(stub->localU_cluster()[iClus], stub->localV_cluster()[iClus]));
         if (commonClusterMap.find(loc) == commonClusterMap.end()) {
           commonClusterMap[loc] = 1;
@@ -627,7 +629,7 @@ namespace tmtt {
     for (const Stub* stub : vStubs) {
       float r = stub->r();
       float z = std::abs(stub->z());
-      unsigned int modType = stub->digitalStub().moduleType();
+      unsigned int modType = stub->digitalStub()->moduleType();
       // Do something ugly, as modules in 1-2nd & 3-4th endcap wheels are different to those in wheel 5 ...
       // And boundary between flat & tilted modules in barrel layers 1-3 varies in z.
       if (stub->barrel() && stub->layerId() == 1) {  // barrel layer 1
@@ -721,14 +723,13 @@ namespace tmtt {
         // Check which eta and phi sectors this TP is in.
         int iPhiSec_TP = -1;
         int iEtaReg_TP = -1;
-        Sector sectorTmp;
         for (unsigned int iPhiSec = 0; iPhiSec < numPhiSectors_; iPhiSec++) {
-          sectorTmp.init(settings_, iPhiSec, 0);
+          Sector sectorTmp(settings_, iPhiSec, 0);
           if (sectorTmp.insidePhiSec(tp))
             iPhiSec_TP = iPhiSec;
         }
         for (unsigned int iEtaReg = 0; iEtaReg < numEtaRegions_; iEtaReg++) {
-          sectorTmp.init(settings_, 0, iEtaReg);
+          Sector sectorTmp(settings_, 0, iEtaReg);
           if (sectorTmp.insideEtaReg(tp))
             iEtaReg_TP = iEtaReg;
         }
@@ -810,9 +811,9 @@ namespace tmtt {
 
   //=== Fill histograms checking if (eta,phi) sector definition choices are good.
 
-  void Histos::fillEtaPhiSectors(const InputData& inputData, const matrix<Sector>& mSectors) {
-    const vector<const Stub*>& vStubs = inputData.stubs();
-    const vector<TP>& vTPs = inputData.getTPs();
+void Histos::fillEtaPhiSectors(const InputData& inputData, const matrix<unique_ptr<Sector>>& mSectors) {
+    const list<const Stub*>& vStubs = inputData.stubs();
+    const list<TP>& vTPs = inputData.getTPs();
 
     //=== Loop over good tracking particles, looking for the (eta,phi) sector in which each has the most stubs.
     //=== and checking what fraction of its stubs were in this sector.
@@ -829,12 +830,12 @@ namespace tmtt {
         // Loop over (eta, phi) sectors.
         for (unsigned int iPhiSec = 0; iPhiSec < numPhiSectors_; iPhiSec++) {
           for (unsigned int iEtaReg = 0; iEtaReg < numEtaRegions_; iEtaReg++) {
-            const Sector& sector = mSectors(iPhiSec, iEtaReg);
+            const Sector* sector = mSectors(iPhiSec, iEtaReg).get();
 
             // Count number of stubs in given tracking particle which are inside this (phi,eta) sector;
             // or inside it if only the eta cuts are applied; or inside it if only the phi cuts are applied.
             unsigned int nStubsInSec, nStubsInEtaSec, nStubsInPhiSec;
-            sector.numStubsInside(tp, nStubsInSec, nStubsInEtaSec, nStubsInPhiSec);
+            sector->numStubsInside(tp, nStubsInSec, nStubsInEtaSec, nStubsInPhiSec);
 
             // Note best results obtained in any sector.
             nStubsInBestSec = max(nStubsInBestSec, nStubsInSec);
@@ -861,19 +862,19 @@ namespace tmtt {
       // Loop over (eta, phi) sectors.
       for (unsigned int iPhiSec = 0; iPhiSec < numPhiSectors_; iPhiSec++) {
         for (unsigned int iEtaReg = 0; iEtaReg < numEtaRegions_; iEtaReg++) {
-          const Sector& sector = mSectors(iPhiSec, iEtaReg);
+          const Sector* sector = mSectors(iPhiSec, iEtaReg).get();
 
           // Check if sector contains stub stub, and if so count it.
           // Take care to just use one eta (phi) typical region when counting phi (eta) sectors.
-          if (sector.inside(stub))
+          if (sector->inside(stub))
             nSecs++;
-          if (iPhiSec == 0 && sector.insideEta(stub))
+          if (iPhiSec == 0 && sector->insideEta(stub))
             nEtaSecs++;
-          if (iEtaReg == 0 && sector.insidePhi(stub))
+          if (iEtaReg == 0 && sector->insidePhi(stub))
             nPhiSecs++;
 
           // Also note which tracker layers are present in each eta sector.
-          if (iPhiSec == 0 && sector.insideEta(stub)) {
+          if (iPhiSec == 0 && sector->insideEta(stub)) {
             const TP* assocTP = stub->assocTP();
             if (assocTP != nullptr) {
               if (assocTP->useForAlgEff()) {
@@ -907,11 +908,11 @@ namespace tmtt {
     for (unsigned int iEtaReg = 0; iEtaReg < numEtaRegions_; iEtaReg++) {
       unsigned int nStubsInEtaSec = 0;  // Also counts stubs in eta sector, summed over all phi.
       for (unsigned int iPhiSec = 0; iPhiSec < numPhiSectors_; iPhiSec++) {
-        const Sector& sector = mSectors(iPhiSec, iEtaReg);
+        const Sector* sector = mSectors(iPhiSec, iEtaReg).get();
 
         unsigned int nStubs = 0;
         for (const Stub* stub : vStubs) {
-          if (sector.inside(stub))
+          if (sector->inside(stub))
             nStubs++;
         }
         hisNumStubsPerSec_->Fill(nStubs);
@@ -952,17 +953,17 @@ namespace tmtt {
 
   //=== Fill histograms checking filling of r-phi HT array.
 
-  void Histos::fillRphiHT(const matrix<HTrphi>& mHtRphis) {
+  void Histos::fillRphiHT(const matrix<unique_ptr<HTrphi>>& mHtRphis) {
     //--- Loop over (eta,phi) sectors, counting the number of stubs in the HT array of each.
 
     for (unsigned int iEtaReg = 0; iEtaReg < numEtaRegions_; iEtaReg++) {
       for (unsigned int iPhiSec = 0; iPhiSec < numPhiSectors_; iPhiSec++) {
-        const HTrphi& htRphi = mHtRphis(iPhiSec, iEtaReg);
+        const HTrphi* htRphi = mHtRphis(iPhiSec, iEtaReg).get();
 
         // Here, if a stub appears in multiple cells, it is counted multiple times.
-        hisIncStubsPerHT_->Fill(htRphi.numStubsInc());
+        hisIncStubsPerHT_->Fill(htRphi->numStubsInc());
         // Here, if a stub appears in multiple cells, it is counted only once.
-        hisExcStubsPerHT_->Fill(htRphi.numStubsExc());
+        hisExcStubsPerHT_->Fill(htRphi->numStubsExc());
       }
     }
 
@@ -973,7 +974,7 @@ namespace tmtt {
     for (unsigned int iEtaReg = 0; iEtaReg < numEtaRegions_; iEtaReg++) {
       // Get dimensions of HT array (assumed same for all phi sectors)
       unsigned int iPhiSecDummy = 0;
-      const matrix<HTcell>& rphiHTcellsDummy = mHtRphis(iPhiSecDummy, iEtaReg).allCells();
+      const matrix<unique_ptr<HTcell>>& rphiHTcellsDummy = mHtRphis(iPhiSecDummy, iEtaReg)->allCells();
       const unsigned int nbins1 = rphiHTcellsDummy.size1();
       const unsigned int nbins2 = rphiHTcellsDummy.size2();
       // Loop over cells inside HT array
@@ -982,9 +983,9 @@ namespace tmtt {
           // Loop over phi sectors
           unsigned int nStubsInCellPhiSum = 0;
           for (unsigned int iPhiSec = 0; iPhiSec < numPhiSectors_; iPhiSec++) {
-            const HTrphi& htRphi = mHtRphis(iPhiSec, iEtaReg);
-            const matrix<HTcell>& rphiHTcells = htRphi.allCells();
-            nStubsInCellPhiSum += rphiHTcells(m, n).numStubs();
+            const HTrphi* htRphi = mHtRphis(iPhiSec, iEtaReg).get();
+            const matrix<unique_ptr<HTcell>>& rphiHTcells = htRphi->allCells();
+            nStubsInCellPhiSum += rphiHTcells(m, n)->numStubs();
           }
           // Plot total number of stubs in this cell, summed over all phi sectors.
           hisNumStubsInCellVsEta_->Fill(nStubsInCellPhiSum, iEtaReg);
@@ -996,10 +997,10 @@ namespace tmtt {
     //--- or rz HT has been run).
     for (unsigned int iEtaReg = 0; iEtaReg < numEtaRegions_; iEtaReg++) {
       for (unsigned int iPhiSec = 0; iPhiSec < numPhiSectors_; iPhiSec++) {
-        const HTrphi& htRphi = mHtRphis(iPhiSec, iEtaReg);
-        hisStubsOnRphiTracksPerHT_->Fill(htRphi.numStubsOnTrackCands2D());
+        const HTrphi* htRphi = mHtRphis(iPhiSec, iEtaReg).get();
+        hisStubsOnRphiTracksPerHT_->Fill(htRphi->numStubsOnTrackCands2D());
         // Also note cell location of HT tracks.
-        for (const L1track2D& trk : htRphi.trackCands2D()) {
+        for (const L1track2D& trk : htRphi->trackCands2D()) {
           hisHTstubsPerTrack_->Fill(trk.numStubs());
           hisHTmBin_->Fill(trk.cellLocationHT().first);
           hisHTcBin_->Fill(trk.cellLocationHT().second);
@@ -1026,20 +1027,20 @@ namespace tmtt {
 
   //=== Fill histograms about r-z track filters.
 
-  void Histos::fillRZfilters(const matrix<Make3Dtracks>& mMake3Dtrks) {
+  void Histos::fillRZfilters(const matrix<unique_ptr<Make3Dtracks>>& mMake3Dtrks) {
     for (unsigned int iEtaReg = 0; iEtaReg < numEtaRegions_; iEtaReg++) {
       for (unsigned int iPhiSec = 0; iPhiSec < numPhiSectors_; iPhiSec++) {
-        const Make3Dtracks& make3Dtrk = mMake3Dtrks(iPhiSec, iEtaReg);
+        const Make3Dtracks* make3Dtrk = mMake3Dtrks(iPhiSec, iEtaReg).get();
 
         //--- Histograms for Seed Filter
         if (settings_->rzFilterName() == "SeedFilter") {
           // Check number of track seeds per sector that r-z "seed" filter checked.
-          const vector<unsigned int> numSeedComb = make3Dtrk.rzFilter().numSeedCombsPerTrk();
+          const vector<unsigned int> numSeedComb = make3Dtrk->rzFilter()->numSeedCombsPerTrk();
           for (const unsigned int& num : numSeedComb) {
             hisNumSeedCombinations_->Fill(num);
           }
           // Same again, but this time only considering seeds the r-z filters defined as "good".
-          const vector<unsigned int> numGoodSeedComb = make3Dtrk.rzFilter().numGoodSeedCombsPerTrk();
+          const vector<unsigned int> numGoodSeedComb = make3Dtrk->rzFilter()->numGoodSeedCombsPerTrk();
           for (const unsigned int& num : numGoodSeedComb) {
             hisNumGoodSeedCombinations_->Fill(num);
           }
@@ -1282,7 +1283,7 @@ namespace tmtt {
 
     // Now fill histograms for studying tracking in general.
 
-    const vector<TP>& vTPs = inputData.getTPs();
+    const list<TP>& vTPs = inputData.getTPs();
 
     // Debug histogram for LR track fitter.
     for (const L1track3D& t : tracks) {
@@ -1575,14 +1576,13 @@ namespace tmtt {
         // Check which eta and phi sectors this TP is in.
         int iPhiSec_TP = -1;
         int iEtaReg_TP = -1;
-        Sector sectorTmp;
         for (unsigned int iPhiSec = 0; iPhiSec < numPhiSectors_; iPhiSec++) {
-          sectorTmp.init(settings_, iPhiSec, 0);
+          Sector sectorTmp(settings_, iPhiSec, 0);
           if (sectorTmp.insidePhiSec(tp))
             iPhiSec_TP = iPhiSec;
         }
         for (unsigned int iEtaReg = 0; iEtaReg < numEtaRegions_; iEtaReg++) {
-          sectorTmp.init(settings_, 0, iEtaReg);
+          Sector sectorTmp(settings_, 0, iEtaReg);
           if (sectorTmp.insideEtaReg(tp))
             iEtaReg_TP = iEtaReg;
         }
@@ -1668,7 +1668,7 @@ namespace tmtt {
   // (If string = "mystery", reason for loss unknown. This may be a result of reconstruction of one
   // track candidate preventing reconstruction of another. e.g. Due to duplicate track removal).
 
-  map<const TP*, string> Histos::diagnoseTracking(const vector<TP>& allTPs,
+  map<const TP*, string> Histos::diagnoseTracking(const list<TP>& allTPs,
                                                   const vector<L1track3D>& tracks,
                                                   bool withRZfilter) const {
     map<const TP*, string> diagnosis;
@@ -1714,8 +1714,7 @@ namespace tmtt {
             vector<Sector> sectorBest;
             for (unsigned int iPhiSec = 0; iPhiSec < numPhiSectors_; iPhiSec++) {
               for (unsigned int iEtaReg = 0; iEtaReg < numEtaRegions_; iEtaReg++) {
-                Sector sectorTmp;
-                sectorTmp.init(settings_, iPhiSec, iEtaReg);
+                Sector sectorTmp(settings_, iPhiSec, iEtaReg);
 
                 // Get stubs on given tracking particle which are inside this (phi,eta) sector;
                 vector<const Stub*> insideSecStubsTmp;
@@ -1771,8 +1770,7 @@ namespace tmtt {
               bool rphiHTunfilteredPass = false;
               for (unsigned int iSec = 0; iSec < sectorBest.size(); iSec++) {
                 const Sector& secBest = sectorBest[iSec];
-                HTrphi htRphiUnfiltered;
-                htRphiUnfiltered.init(settings_,
+                HTrphi htRphiUnfiltered(settings_,
                                       secBest.iPhiSec(),
                                       secBest.iEtaReg(),
                                       secBest.etaMin(),
@@ -1801,8 +1799,7 @@ namespace tmtt {
                 bool rzFilterPass = false;
                 for (unsigned int iSec = 0; iSec < sectorBest.size(); iSec++) {
                   const Sector& secBest = sectorBest[iSec];
-                  HTrphi htRphiTmp;
-                  htRphiTmp.init(settings_,
+                  HTrphi htRphiTmp(settings_,
                                  secBest.iPhiSec(),
                                  secBest.iEtaReg(),
                                  secBest.etaMin(),
@@ -1824,8 +1821,7 @@ namespace tmtt {
                     const vector<L1track2D>& trksRphi = htRphiTmp.trackCands2D();
 
                     // Initialize utility for making 3D tracks from 2S ones.
-                    Make3Dtracks make3DtrkTmp;
-                    make3DtrkTmp.init(settings_,
+                    Make3Dtracks make3DtrkTmp(settings_,
                                       secBest.iPhiSec(),
                                       secBest.iEtaReg(),
                                       secBest.etaMin(),
@@ -2288,7 +2284,7 @@ namespace tmtt {
   //=== Fill histograms for studying track fitting.
 
   void Histos::fillTrackFitting(const InputData& inputData, const map<string, vector<L1fittedTrack>>& mFittedTracks) {
-    const vector<TP>& vTPs = inputData.getTPs();
+    const list<TP>& vTPs = inputData.getTPs();
 
     // Loop over all the fitting algorithms we are trying.
     for (const string& fitName : trackFitters_) {
@@ -2755,14 +2751,12 @@ namespace tmtt {
           int iEtaReg_TP = -1;
           int iPhiSec_TP = -1;
           for (unsigned int iPhiSec = 0; iPhiSec < numPhiSectors_; iPhiSec++) {
-            Sector secTmp;
-            secTmp.init(settings_, iPhiSec, 0);
+            Sector secTmp(settings_, iPhiSec, 0);
             if (secTmp.insidePhiSec(tp))
               iPhiSec_TP = iPhiSec;
           }
           for (unsigned int iEtaReg = 0; iEtaReg < numEtaRegions_; iEtaReg++) {
-            Sector secTmp;
-            secTmp.init(settings_, 0, iEtaReg);
+            Sector secTmp(settings_, 0, iEtaReg);
             if (secTmp.insideEtaReg(tp))
               iEtaReg_TP = iEtaReg;
           }
@@ -3267,7 +3261,7 @@ namespace tmtt {
 
   void Histos::endJobAnalysis() {
     // Don't bother producing summary if user didn't request histograms via TFileService in their cfg.
-    if (!this->enabled())
+    if (not this->enabled())
       return;
 
     // Protection when running in wierd mixed hybrid-TMTT modes.
@@ -3416,7 +3410,7 @@ namespace tmtt {
 
   void Histos::trackerGeometryAnalysis(const TrackerGeometryInfo trackerGeometryInfo) {
     // Don't bother producing summary if user didn't request histograms via TFileService in their cfg.
-    if (!this->enabled())
+    if (not this->enabled())
       return;
 
     PrintL1trk() << "\n =========================================================================";

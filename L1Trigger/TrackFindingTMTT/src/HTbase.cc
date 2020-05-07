@@ -11,13 +11,26 @@ using namespace std;
 
 namespace tmtt {
 
+  // Initialization.
+HTbase::HTbase(const Settings* settings, unsigned int iPhiSec, unsigned int iEtaReg,
+	       unsigned int nBinsX, unsigned int nBinsY) : 
+      settings_(settings),
+      iPhiSec_(iPhiSec),
+      iEtaReg_(iEtaReg),
+      nBinsX_(nBinsX),
+      nBinsY_(nBinsY),
+      htArray_(nBinsX, nBinsY),
+      optoLinkID_(this->calcOptoLinkID())
+    {}
+
+
   //=== Termination. Causes HT array to search for tracks etc.
 
   void HTbase::end() {
     // Calculate useful info about each cell in array.
-    for (unsigned int i = 0; i < htArray_.size1(); i++) {
-      for (unsigned int j = 0; j < htArray_.size2(); j++) {
-        htArray_(i, j).end();  // Calls HTcell::end()
+    for (unsigned int i = 0; i < nBinsX_; i++) {
+      for (unsigned int j = 0; j < nBinsY_; j++) {
+        htArray_(i, j)->end();  // Calls HTcell::end()
       }
     }
 
@@ -38,9 +51,9 @@ namespace tmtt {
     unsigned int nStubs = 0;
 
     // Loop over cells in HT array.
-    for (unsigned int i = 0; i < htArray_.size1(); i++) {
-      for (unsigned int j = 0; j < htArray_.size2(); j++) {
-        nStubs += htArray_(i, j).numStubs();  // Calls HTcell::numStubs()
+    for (unsigned int i = 0; i < nBinsX_; i++) {
+      for (unsigned int j = 0; j < nBinsY_; j++) {
+        nStubs += htArray_(i, j)->numStubs();  // Calls HTcell::numStubs()
       }
     }
 
@@ -53,10 +66,10 @@ namespace tmtt {
     unordered_set<unsigned int> stubIDs;  // Each ID stored only once, no matter how often it is added.
 
     // Loop over cells in HT array.
-    for (unsigned int i = 0; i < htArray_.size1(); i++) {
-      for (unsigned int j = 0; j < htArray_.size2(); j++) {
+    for (unsigned int i = 0; i < nBinsX_; i++) {
+      for (unsigned int j = 0; j < nBinsY_; j++) {
         // Loop over stubs in each cells, storing their IDs.
-        const vector<const Stub*>& vStubs = htArray_(i, j).stubs();  // Calls HTcell::stubs()
+        const vector<const Stub*>& vStubs = htArray_(i, j)->stubs();  // Calls HTcell::stubs()
         for (const Stub* stub : vStubs) {
           stubIDs.insert(stub->index());
         }
@@ -112,9 +125,9 @@ namespace tmtt {
 
   void HTbase::disableBendFilter() {
     // Loop over cells in HT array.
-    for (unsigned int i = 0; i < htArray_.size1(); i++) {
-      for (unsigned int j = 0; j < htArray_.size2(); j++) {
-        htArray_(i, j).disableBendFilter();
+    for (unsigned int i = 0; i < nBinsX_; i++) {
+      for (unsigned int j = 0; j < nBinsY_; j++) {
+        htArray_(i, j)->disableBendFilter();
       }
     }
   }
@@ -188,27 +201,24 @@ namespace tmtt {
   vector<L1track2D> HTbase::calcTrackCands2D() const {
     vector<L1track2D> trackCands2D;
 
-    const unsigned int numRows = htArray_.size1();
-    const unsigned int numCols = htArray_.size2();
-
     // Check if the hardware processes rows of the HT array in a specific order when outputting track candidates.
     // Currently this is by decreasing Pt for r-phi HT and unordered for r-z HT.
-    const vector<unsigned int> iOrder = this->rowOrder(numRows);
+    const vector<unsigned int> iOrder = this->rowOrder(nBinsX_);
     bool wantOrdering = (iOrder.size() > 0);
 
     // Loop over cells in HT array.
-    for (unsigned int i = 0; i < numRows; i++) {
+    for (unsigned int i = 0; i < nBinsX_; i++) {
       // Access rows in specific order if required.
       unsigned int iPos = wantOrdering ? iOrder[i] : i;
 
-      for (unsigned int j = 0; j < numCols; j++) {
-        if (htArray_(iPos, j).trackCandFound()) {  // track candidate found in this cell.
+      for (unsigned int j = 0; j < nBinsY_; j++) {
+        if (htArray_(iPos, j)->trackCandFound()) {  // track candidate found in this cell.
 
           // Note if this corresponds to a merged HT cell (e.g. 2x2).
-          const bool merged = htArray_(iPos, j).mergedCell();
+          const bool merged = htArray_(iPos, j)->mergedCell();
 
           // Get stubs on this track candidate.
-          const vector<const Stub*>& stubs = htArray_(iPos, j).stubs();
+          const vector<const Stub*>& stubs = htArray_(iPos, j)->stubs();
 
           // And note location of cell inside HT array.
           const pair<unsigned int, unsigned int> cellLocation(iPos, j);

@@ -40,7 +40,7 @@ namespace tmtt {
 
   //=== Fill truth info with association from tracking particle to stubs.
 
-  void TP::fillTruth(const vector<Stub>& vStubs) {
+  void TP::fillTruth(const list<Stub>& vStubs) {
     for (const Stub& s : vStubs) {
       for (const TP* tp_i : s.assocTPs()) {
         if (tp_i->index() == this->index())

@@ -4,6 +4,7 @@
 #include "L1Trigger/TrackFindingTMTT/interface/HTrphi.h"
 
 using boost::numeric::ublas::matrix;
+#include <memory>
 
 namespace tmtt {
 
@@ -15,7 +16,7 @@ namespace tmtt {
 
     ~MiniHTstage(){};
 
-    void exec(matrix<HTrphi>& mHtRphis);
+    void exec(matrix<std::unique_ptr<HTrphi>>& mHtRphis);
 
   private:
     // Do load balancing

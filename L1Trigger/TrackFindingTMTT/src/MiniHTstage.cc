@@ -42,7 +42,7 @@ namespace tmtt {
     }
   }
 
-  void MiniHTstage::exec(matrix<HTrphi>& mHtRphis) {
+void MiniHTstage::exec(matrix<unique_ptr<HTrphi>>& mHtRphis) {
     for (unsigned int iPhiNon = 0; iPhiNon < numPhiNonants_; iPhiNon++) {
       map<pair<unsigned int, unsigned int>, unsigned int>
           numStubsPerLinkStage1;  // Indices are ([link ID, MHT cell], #stubs).
@@ -52,11 +52,10 @@ namespace tmtt {
       for (unsigned int iSecInNon = 0; iSecInNon < numPhiSecPerNon_; iSecInNon++) {
         unsigned int iPhiSec = iPhiNon * numPhiSecPerNon_ + iSecInNon;
         for (unsigned int iEtaReg = 0; iEtaReg < numEtaRegions_; iEtaReg++) {
-          Sector sector;
-          sector.init(settings_, iPhiSec, iEtaReg);
+          Sector sector(settings_, iPhiSec, iEtaReg);
           const float& phiCentre = sector.phiCentre();
-          HTrphi& htRphi = mHtRphis(iPhiSec, iEtaReg);
-          const vector<L1track2D>& roughTracks = htRphi.trackCands2D();
+          HTrphi* htRphi = mHtRphis(iPhiSec, iEtaReg).get();
+          const vector<L1track2D>& roughTracks = htRphi->trackCands2D();
           vector<L1track2D> fineTracks;
 
           for (const L1track2D& roughTrk : roughTracks) {
@@ -78,10 +77,9 @@ namespace tmtt {
                   float phiBin = reco::deltaPhi(roughTrkPhi - binSizePhiTrkAxis_ / 2. +
                                                     (cBin + .5) * binSizePhiTrkAxis_ / settings_->miniHoughNbinsPhi(),
                                                 0.);
-                  HTcell htCell;
                   const bool mergedCell = false;  // This represents mini cell.
                   const bool miniHTcell = true;
-                  htCell.init(settings_,
+                  HTcell htCell(settings_,
                               iPhiSec,
                               iEtaReg,
                               sector.etaMin(),
@@ -171,7 +169,7 @@ namespace tmtt {
             }
           }
           // Replace all existing tracks inside HT array with new ones.
-          htRphi.replaceTrackCands2D(fineTracks);
+          htRphi->replaceTrackCands2D(fineTracks);
         }
       }
     }

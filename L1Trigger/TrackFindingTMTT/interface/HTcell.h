@@ -19,29 +19,12 @@ namespace tmtt {
 
   class HTcell {
   public:
-    // Null constructor.
-    HTcell()
-        : settings_(nullptr),
-          iPhiSec_(0),
-          iEtaReg_(0),
-          etaMinSector_(0),
-          etaMaxSector_(0),
-          qOverPtCell_(0),
-          ibin_qOverPt_(0),
-          mergedCell_(false),
-          miniHTcell_(false),
-          invPtToDphi_(0),
-          useBendFilter_(false),
-          maxStubsInCell_(0),
-          numSubSecs_(0),
-          numFilteredLayersInCell_(0),
-          numFilteredLayersInCellBestSubSec_(0) {}
 
     // Initialization with cfg params,
     // sector number, rapidity range of current sector, estimated q/Pt of cell,
     // and the bin number of the cell along the q/Pt axis of the r-phi HT array,
     // and a flag indicating if this cell is the merge of smaller HT cells.
-    void init(const Settings* settings,
+    HTcell(const Settings* settings,
               unsigned int iPhiSec,
               unsigned int iEtaReg,
               float etaMinSector,

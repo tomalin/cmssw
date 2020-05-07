@@ -19,6 +19,7 @@
 #include "boost/numeric/ublas/matrix.hpp"
 #include <iostream>
 #include <vector>
+#include <list>
 #include <set>
 
 using namespace std;
@@ -106,15 +107,15 @@ namespace tmtt {
                         clusterTruthToken_,
                         genJetToken_);
 
-    const vector<TP>& vTPs = inputData.getTPs();
-    const vector<const Stub*>& vStubs = inputData.stubs();
+    const list<TP>& vTPs = inputData.getTPs();
+    const list<const Stub*>& vStubs = inputData.stubs();
 
     // Creates matrix of Sector objects, which decide which stubs are in which (eta,phi) sector
-    matrix<Sector> mSectors(settings_.numPhiSectors(), settings_.numEtaRegions());
+    matrix<unique_ptr<Sector>> mSectors(settings_.numPhiSectors(), settings_.numEtaRegions());
     // Create matrix of r-phi Hough-Transform arrays, with one-to-one correspondence to sectors.
-    matrix<HTrphi> mHtRphis(settings_.numPhiSectors(), settings_.numEtaRegions());
+    matrix<unique_ptr<HTrphi>> mHtRphis(settings_.numPhiSectors(), settings_.numEtaRegions());
     // Create matrix of Make3Dtracks objects, to run optional r-z track filter, with one-to-one correspondence to sectors.
-    matrix<Make3Dtracks> mMake3Dtrks(settings_.numPhiSectors(), settings_.numEtaRegions());
+    matrix<unique_ptr<Make3Dtracks>> mMake3Dtrks(settings_.numPhiSectors(), settings_.numEtaRegions());
 
     //=== Initialization
     // Create utility for converting L1 tracks from our private format to official CMSSW EDM format.
@@ -135,12 +136,13 @@ namespace tmtt {
     // Fill Hough-Transform arrays with stubs.
     for (unsigned int iPhiSec = 0; iPhiSec < settings_.numPhiSectors(); iPhiSec++) {
       for (unsigned int iEtaReg = 0; iEtaReg < settings_.numEtaRegions(); iEtaReg++) {
-        Sector& sector = mSectors(iPhiSec, iEtaReg);
-        HTrphi& htRphi = mHtRphis(iPhiSec, iEtaReg);
-
+	
         // Initialize constants for this sector.
-        sector.init(&settings_, iPhiSec, iEtaReg);
-        htRphi.init(&settings_, iPhiSec, iEtaReg, sector.etaMin(), sector.etaMax(), sector.phiCentre());
+	mSectors(iPhiSec, iEtaReg) = std::make_unique<Sector>(&settings_, iPhiSec, iEtaReg);
+        Sector* sector = mSectors(iPhiSec, iEtaReg).get();
+
+	mHtRphis(iPhiSec, iEtaReg) = std::make_unique<HTrphi>(&settings_, iPhiSec, iEtaReg, sector->etaMin(), sector->etaMax(), sector->phiCentre());
+        HTrphi* htRphi = mHtRphis(iPhiSec, iEtaReg).get();
 
         // Check sector is enabled (always true, except if user disabled some for special studies).
         if (settings_.isHTRPhiEtaRegWhitelisted(iEtaReg)) {
@@ -148,28 +150,29 @@ namespace tmtt {
             // Digitize stub as would be at input to GP. This doesn't need the nonant number, since we assumed an integer number of
             // phi digitisation  bins inside an nonant. N.B. This changes the coordinates & bend stored in the stub.
             // The cast allows us to ignore the "const".
+
             if (settings_.enableDigitize())
               (const_cast<Stub*>(stub))->digitizeForGPinput(iPhiSec);
 
             // Check if stub is inside this sector
-            bool inside = sector.inside(stub);
+            bool inside = sector->inside(stub);
 
             if (inside) {
               // Check which eta subsectors within the sector the stub is compatible with (if subsectors being used).
-              const vector<bool> inEtaSubSecs = sector.insideEtaSubSecs(stub);
+              const vector<bool> inEtaSubSecs = sector->insideEtaSubSecs(stub);
 
               // Digitize stub if as would be at input to HT, which slightly degrades its coord. & bend resolution, affecting the HT performance.
               if (settings_.enableDigitize())
                 (const_cast<Stub*>(stub))->digitizeForHTinput(iPhiSec);
 
               // Store stub in Hough transform array for this sector, indicating its compatibility with eta subsectors with sector.
-              htRphi.store(stub, inEtaSubSecs);
+              htRphi->store(stub, inEtaSubSecs);
             }
           }
         }
 
         // Find tracks in r-phi HT array.
-        htRphi.end();  // Calls htArrayRphi_.end() -> HTBase::end()
+        htRphi->end();  // Calls htArrayRphi_.end() -> HTBase::end()
       }
     }
 
@@ -191,31 +194,31 @@ namespace tmtt {
 
     for (unsigned int iPhiSec = 0; iPhiSec < settings_.numPhiSectors(); iPhiSec++) {
       for (unsigned int iEtaReg = 0; iEtaReg < settings_.numEtaRegions(); iEtaReg++) {
-        const Sector& sector = mSectors(iPhiSec, iEtaReg);
+        const Sector* sector = mSectors(iPhiSec, iEtaReg).get();
 
         // Get tracks found by r-phi HT.
-        const HTrphi& htRphi = mHtRphis(iPhiSec, iEtaReg);
-        const vector<L1track2D>& vecTracksRphi = htRphi.trackCands2D();
+        const HTrphi* htRphi = mHtRphis(iPhiSec, iEtaReg).get();
+        const vector<L1track2D>& vecTracksRphi = htRphi->trackCands2D();
 
-        Make3Dtracks& make3Dtrk = mMake3Dtrks(iPhiSec, iEtaReg);
         // Initialize utility for making 3D tracks from 2D ones.
-        make3Dtrk.init(&settings_, iPhiSec, iEtaReg, sector.etaMin(), sector.etaMax(), sector.phiCentre());
+        mMake3Dtrks(iPhiSec, iEtaReg) = std::make_unique<Make3Dtracks>(&settings_, iPhiSec, iEtaReg, sector->etaMin(), sector->etaMax(), sector->phiCentre());
+        Make3Dtracks* make3Dtrk = mMake3Dtrks(iPhiSec, iEtaReg).get();
 
         // Convert 2D tracks found by HT to 3D tracks (optionally by running r-z filters & duplicate track removal)
-        make3Dtrk.run(vecTracksRphi);
+        make3Dtrk->run(vecTracksRphi);
 
 	if (settings_.enableOutputIntermediateTTTracks()) {
 
         // Convert these tracks to EDM format for output (used for collaborative work outside TMTT group).
         // Do this for tracks output by HT & optionally also for those output by r-z track filter.
-        const vector<L1track3D>& vecTrk3D_ht = make3Dtrk.trackCands3D(false);
+        const vector<L1track3D>& vecTrk3D_ht = make3Dtrk->trackCands3D(false);
         for (const L1track3D& trk : vecTrk3D_ht) {
           TTTrack<Ref_Phase2TrackerDigi_> htTTTrack = converter.makeTTTrack(&trk, iPhiSec, iEtaReg);
           htTTTracksForOutput->push_back(htTTTrack);
         }
 
         if (runRZfilter_) {
-          const vector<L1track3D>& vecTrk3D_rz = make3Dtrk.trackCands3D(true);
+          const vector<L1track3D>& vecTrk3D_rz = make3Dtrk->trackCands3D(true);
           for (const L1track3D& trk : vecTrk3D_rz) {
             TTTrack<Ref_Phase2TrackerDigi_> rzTTTrack = converter.makeTTTrack(&trk, iPhiSec, iEtaReg);
             rzTTTracksForOutput->push_back(rzTTTrack);
@@ -226,8 +229,7 @@ namespace tmtt {
     }
 
     // Initialize the duplicate track removal algorithm that can optionally be run after the track fit.
-    DupFitTrkKiller killDupFitTrks;
-    killDupFitTrks.init(&settings_, settings_.dupTrkAlgFit());
+    DupFitTrkKiller killDupFitTrks(&settings_);
 
     //=== Do a helix fit to all the track candidates.
 
@@ -239,7 +241,7 @@ namespace tmtt {
 
     for (unsigned int iPhiSec = 0; iPhiSec < settings_.numPhiSectors(); iPhiSec++) {
       for (unsigned int iEtaReg = 0; iEtaReg < settings_.numEtaRegions(); iEtaReg++) {
-        const Make3Dtracks& make3Dtrk = mMake3Dtrks(iPhiSec, iEtaReg);
+        const Make3Dtracks* make3Dtrk = mMake3Dtrks(iPhiSec, iEtaReg).get();
 
         // Loop over all the fitting algorithms we are trying.
         for (const string& fitterName : trackFitters_) {
@@ -247,7 +249,7 @@ namespace tmtt {
           bool useRZfilt = (std::count(useRZfilter_.begin(), useRZfilter_.end(), fitterName) > 0);
 
           // Get 3D track candidates found by Hough transform (plus optional r-z filters/duplicate removal) in this sector.
-          const vector<L1track3D>& vecTrk3D = make3Dtrk.trackCands3D(useRZfilt);
+          const vector<L1track3D>& vecTrk3D = make3Dtrk->trackCands3D(useRZfilt);
 
           // Fit all tracks in this sector
           vector<L1fittedTrack> fittedTracksInSec;
@@ -294,8 +296,8 @@ namespace tmtt {
       unsigned int numHTtracks = 0;
       for (unsigned int iPhiSec = 0; iPhiSec < settings_.numPhiSectors(); iPhiSec++) {
         for (unsigned int iEtaReg = 0; iEtaReg < settings_.numEtaRegions(); iEtaReg++) {
-          const Make3Dtracks& make3Dtrk = mMake3Dtrks(iPhiSec, iEtaReg);
-          numHTtracks += make3Dtrk.trackCands3D(false).size();
+          const Make3Dtracks* make3Dtrk = mMake3Dtrks(iPhiSec, iEtaReg).get();
+          numHTtracks += make3Dtrk->trackCands3D(false).size();
         }
       }
       PrintL1trk() << "Number of tracks after HT = " << numHTtracks;

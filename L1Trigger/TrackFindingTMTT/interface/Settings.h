@@ -100,62 +100,42 @@ namespace tmtt {
     unsigned int numPhiNonants() const { return numPhiNonants_; }
     unsigned int numPhiSectors() const { return numPhiSectors_; }
     // Use phi of track at this radius as sector hourglass reference radius.
-    double chosenRofPhi() const {
-      return chosenRofPhi_;
-    }  
-    bool useStubPhi() const {
-      return useStubPhi_;
-    }  // Require stub phi to be consistent with track of Pt > HTArraySpec.HoughMinPt that crosses HT phi axis?
-    bool useStubPhiTrk() const {
-      return useStubPhiTrk_;
-    }  // Require stub phi0 (or phi65 etc.) as estimated from stub bend, to lie within HT phi axis, allowing tolerance specified below?
-    double assumedPhiTrkRes() const {
-      return assumedPhiTrkRes_;
-    }  // Tolerance in stub phi0 (or phi65) assumed to be this fraction of phi sector width. (N.B. If > 0.5, then stubs can be shared by more than 2 phi sectors).
-    bool calcPhiTrkRes() const {
-      return calcPhiTrkRes_;
-    }  // If true, tolerance in stub phi0 (or phi65 etc.) will be reduced below AssumedPhiTrkRes if stub bend resolution specified in StubCuts.BendResolution suggests it is safe to do so.
-    bool handleStripsPhiSec() const {
-      return handleStripsPhiSec_;
-    }  // Should algorithm allow for uncertainty in stub (r,z) coordinate caused by length of 2S module strips when assigning stubs to phi sectors?
-
+    double chosenRofPhi() const {return chosenRofPhi_;}  
+    // Require stub phi to be consistent with track of Pt > HTArraySpec.HoughMinPt that crosses HT phi axis?
+    bool useStubPhi() const {return useStubPhi_;}  
+    // Require stub phi0 (or phi65 etc.) as estimated from stub bend, to lie within HT phi axis, allowing tolerance specified below?
+    bool useStubPhiTrk() const {return useStubPhiTrk_;}   
+    // Tolerance in stub phi0 (or phi65) assumed to be this fraction of phi sector width. (N.B. If > 0.5, then stubs can be shared by more than 2 phi sectors).
+    double assumedPhiTrkRes() const {return assumedPhiTrkRes_;}  
+    // If true, tolerance in stub phi0 (or phi65 etc.) will be reduced below AssumedPhiTrkRes if stub bend resolution specified in StubCuts.BendResolution suggests it is safe to do so.
+    bool calcPhiTrkRes() const {return calcPhiTrkRes_;}  
+  
     //=== Definition of eta sectors.
 
     const std::vector<double>& etaRegions() const { return etaRegions_; }  // Boundaries of eta regions de
     unsigned int numEtaRegions() const { return (etaRegions_.size() - 1); }
-    double chosenRofZ() const {
-      return chosenRofZ_;
-    }  // Use z of track at this radius for assignment of stubs to phi sectors & also for one of the axes of the r-z HT.
-    double beamWindowZ() const { return beamWindowZ_; }  // Half-width of window supposed to contain beam-spot in z.
-    bool handleStripsEtaSec() const {
-      return handleStripsEtaSec_;
-    }  // Should algorithm allow for uncertainty in stub (r,z) coordinate caused by length of 2S module strips when assigning stubs to eta sectors?
-    bool allowOver2EtaSecs() const {
-      return allowOver2EtaSecs_;
-    }  // If True, the code will not throw an error if a stub is assigned to 3 or more eta sectors.
-
+    // Use z of track at this radius for assignment of stubs to phi sectors & also for one of the axes of the r-z HT.
+    double chosenRofZ() const {return chosenRofZ_;}  
+    // Half-width of window supposed to contain beam-spot in z.
+    double beamWindowZ() const { return beamWindowZ_; }  
+    // If True, the code will not throw an error if a stub is assigned to 3 or more eta sectors.
+    bool allowOver2EtaSecs() const {return allowOver2EtaSecs_;}
+  
     //=== r-phi Hough transform array specifications.
 
     double houghMinPt() const { return houghMinPt_; }
-    unsigned int houghNbinsPt() const {
-      return houghNbinsPt_;
-    }  // Dimension in any q/Pt related variable. Not valid if houghNcellsRphi() > 0. (If MiniHTstage = True, this refers to mini cells in whole HT array).
-    unsigned int houghNbinsPhi() const {
-      return houghNbinsPhi_;
-    }  // Dimension in any track-phi related variable. Not valid if houghNcellsRphi() > 0. (If MiniHTstage = True, this refers to mini cells in whole HT array).
-    int houghNcellsRphi() const {
-      return houghNcellsRphi_;
-    }  // Required no. of cells in r-phi HT array. If > 0, then parameters HoughNbinsPt and HoughNbinsPhi will be calculated from the constraints that their product should equal HoughNcellsRz and their ratio should make the maximum |gradient|" of stub lines in the HT array equal to 1. If <= 0, then HoughNbinsPt and HoughNbinsPhi will be taken from the values configured above.
-    bool enableMerge2x2() const {
-      return enableMerge2x2_;
-    }  // Groups of neighbouring 2x2 cells in HT will be treated as if they are a single large cell. (Also enabled in MiniHTstage = True).
-    double maxPtToMerge2x2() const {
-      return maxPtToMerge2x2_;
-    }  // but only cells with pt < maxPtToMerge2x2() will be merged in this way (irrelevant if enableMerge2x2() = false).
-    unsigned int numSubSecsEta() const {
-      return numSubSecsEta_;
-    }  // Subdivide each sector into this number of subsectors in eta within r-phi HT.
-    unsigned int shape() const { return shape_; }  // define cell shape (0 square, 1 diamond, 2 hexagon)
+    // Dimension in any q/Pt related variable. (If MiniHTstage = True, this refers to mini cells in whole HT array).
+    unsigned int houghNbinsPt() const {return houghNbinsPt_;}  
+    // Dimension in any track-phi related variable. (If MiniHTstage = True, this refers to mini cells in whole HT array).
+    unsigned int houghNbinsPhi() const {return houghNbinsPhi_;}  
+    // Groups of neighbouring 2x2 cells in HT will be treated as if they are a single large cell. (Also enabled in MiniHTstage = True).
+    bool enableMerge2x2() const {return enableMerge2x2_;}  
+    // but only cells with pt < maxPtToMerge2x2() will be merged in this way (irrelevant if enableMerge2x2() = false).
+    double maxPtToMerge2x2() const {return maxPtToMerge2x2_;}  
+    // Subdivide each sector into this number of subsectors in eta within r-phi HT.
+    unsigned int numSubSecsEta() const {return numSubSecsEta_;}  
+    // define cell shape (0 square, 1 diamond, 2 hexagon, 3 brick)
+    unsigned int shape() const { return shape_; }  
     // Run 2nd stage HT with mini cells inside each 1st stage normal HT cell. N.B. This automatically std::sets EnableMerge2x2 = True & MaxPtToMerge = 999999.
     bool miniHTstage() const { return miniHTstage_; }
     // Number of mini cells along q/Pt & phi axes inside each normal HT cell.
@@ -172,8 +152,6 @@ namespace tmtt {
 
     //=== Rules governing how stubs are filled into the r-phi Hough Transform array.
 
-    // Should algorithm allow for uncertainty in stub (r,z) coordinate caused by length of 2S module strips when filling stubs in r-phi HT?
-    bool handleStripsRphiHT() const { return handleStripsRphiHT_; }
     // Take all cells in HT array crossed by line corresponding to each stub (= 0) or take only some to reduce rate at cost
     // of efficiency ( > 0). If this option is > 0, it can be 1 or 2, corresponding to different algorithms for rejecting some of the cells.
     unsigned int killSomeHTCellsRphi() const { return killSomeHTCellsRphi_; }
@@ -208,8 +186,8 @@ namespace tmtt {
     // Specify preferred r-z filter (from those available inside TrkRZfilter.cc) - currently only "SeedFilter".
     const std::string& rzFilterName() const { return rzFilterName_; }
     // --- Options relevant for Seed filter, (so only relevant if rzFilterName()="SeedFilter").
-    // Added resolution beyond that estimated from hit resolution.
-    double seedResolution() const { return seedResolution_; }
+    // Cut at this many standard deviations on seed resolution.
+    double seedResCut() const { return seedResCut_; }
     // Store stubs compatible with all possible good seed (relevant for Seed filter)?
     bool keepAllSeed() const { return keepAllSeed_; }
     // Maximum number of seed combinations to check (relevant for Seed filter).
@@ -280,23 +258,6 @@ namespace tmtt {
     // "Killing" cut, the hit is killed even if that kills the track.
     double generalResidualCut() const { return generalResidualCut_; }
     double killingResidualCut() const { return killingResidualCut_; }
-
-    //--- Additional options for Thomas Schuh's Linear Regression track fitter ---
-
-    // Max allowed iterations.
-    unsigned int maxIterationsLR() const { return maxIterationsLR_; }
-    bool combineResiduals() const { return combineResiduals_; }
-    bool lineariseStubPosition() const { return lineariseStubPosition_; }
-    bool checkSectorConsistency() const { return checkSectorConsistency_; }
-    bool checkHTCellConsistency() const { return checkHTCellConsistency_; }
-    unsigned int minPSLayers() const { return minPSLayers_; }
-    // Digitization
-    bool digitizeLR() const { return digitizeLR_; }
-    float PhiPrecision() const { return PhiPrecision_; }
-    float RPrecision() const { return RPrecision_; }
-    float ZPrecision() const { return ZPrecision_; }
-    unsigned int ZSlopeWidth() const { return ZSlopeWidth_; }
-    unsigned int ZInterceptWidth() const { return ZInterceptWidth_; }
 
     //--- Additional options for Davide Cieri's Simple Linear Regression track fitter ---
 
@@ -446,7 +407,7 @@ namespace tmtt {
     double ssStripPitch() const { return ssStripPitch_; }
     double ssNStrips() const { return ssNStrips_; }
     double ssStripLength() const { return ssStripLength_; }
-    double psStripPitch() const { return psStripPitch_; }
+    double psPixelPitch() const { return psPixelPitch_; }
     double psNStrips() const { return psNStrips_; }
     double psPixelLength() const { return psPixelLength_; }
     // max z at which non-tilted modules are found in 3 barrel PS layers. (Element 0 not used).
@@ -530,20 +491,17 @@ namespace tmtt {
     bool useStubPhiTrk_;
     double assumedPhiTrkRes_;
     bool calcPhiTrkRes_;
-    bool handleStripsPhiSec_;
 
     // Definition of eta sectors.
     std::vector<double> etaRegions_;
     double chosenRofZ_;
     double beamWindowZ_;
-    bool handleStripsEtaSec_;
     bool allowOver2EtaSecs_;
 
     // r-phi Hough transform array specifications.
     double houghMinPt_;
     unsigned int houghNbinsPt_;
     unsigned int houghNbinsPhi_;
-    int houghNcellsRphi_;
     bool enableMerge2x2_;
     double maxPtToMerge2x2_;
     unsigned int numSubSecsEta_;
@@ -557,7 +515,6 @@ namespace tmtt {
     unsigned int miniHoughLoadBalance_;
 
     // Rules governing how stubs are filled into the r-phi Hough Transform array.
-    bool handleStripsRphiHT_;
     unsigned int killSomeHTCellsRphi_;
     bool useBendFilter_;
     unsigned int maxStubsInCell_;
@@ -573,7 +530,7 @@ namespace tmtt {
 
     // Options controlling r-z track filters (or any other track filters run after the Hough transform, as opposed to inside it).
     std::string rzFilterName_;
-    double seedResolution_;
+    double seedResCut_;
     bool keepAllSeed_;
     unsigned int maxSeedCombinations_;
     unsigned int maxGoodSeedCombinations_;
@@ -609,19 +566,6 @@ namespace tmtt {
     bool killTrackFitWorstHit_;
     double generalResidualCut_;
     double killingResidualCut_;
-    //
-    unsigned int maxIterationsLR_;
-    bool combineResiduals_;
-    bool lineariseStubPosition_;
-    bool checkSectorConsistency_;
-    bool checkHTCellConsistency_;
-    unsigned int minPSLayers_;
-    bool digitizeLR_;
-    float PhiPrecision_;
-    float RPrecision_;
-    float ZPrecision_;
-    unsigned int ZSlopeWidth_;
-    unsigned int ZInterceptWidth_;
     //
     bool digitizeSLR_;
     unsigned int dividerBitsHelix_;
@@ -704,7 +648,7 @@ namespace tmtt {
     // Hybrid tracking
     bool hybrid_;
 
-    double psStripPitch_;
+    double psPixelPitch_;
     double psNStrips_;
     double psPixelLength_;
     double ssStripPitch_;

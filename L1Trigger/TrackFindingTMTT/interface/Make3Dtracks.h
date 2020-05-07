@@ -6,13 +6,14 @@
 
 #include <vector>
 #include <utility>
+#include <memory>
 
 //=== This reconstructs 3D tracks from the 2D tracks found by the Hough transform.
 //=== It can do this by simply estimating the r-z helix parameters from the centre of the eta sector
 //=== and/or by running an r-z filter (e.g. Seed Filter), which also cleans up the tracks by
 //=== checking their stubs consistency with a straight line in the r-z plane.
 //===
-//=== To create 3D tracks, call the sequence init(), run(), and then get tracks via trackCands3D().
+//=== To create 3D tracks, call run() and then get tracks via trackCands3D().
 
 namespace tmtt {
 
@@ -22,25 +23,18 @@ namespace tmtt {
 
   class Make3Dtracks {
   public:
-    Make3Dtracks()
-        : settings_(nullptr),
-          iPhiSec_(0),
-          iEtaReg_(0),
-          etaMinSector_(0),
-          etaMaxSector_(0),
-          phiCentreSector_(0),
-          runRZfilter_(false) {}
-    ~Make3Dtracks() {}
 
-    //=== Main routines to make 3D tracks.
-
-    // Initialization
-    void init(const Settings* settings,
+    // Initialize
+    Make3Dtracks(const Settings* settings,
               unsigned int iPhiSec,
               unsigned int iEtaReg,
               float etaMinSector,
               float etaMaxSector,
-              float phiCentreSector);
+		 float phiCentreSector);
+
+    ~Make3Dtracks() {}
+
+    //=== Main routines to make 3D tracks.
 
     // Make 3D track collections.
     void run(const std::vector<L1track2D>& vecTracksRphi) {
@@ -71,7 +65,7 @@ namespace tmtt {
 
     bool ranRZfilter() const { return runRZfilter_; }  // Was r-z filter required/run?
 
-    const TrkRZfilter& rzFilter() const { return rzFilter_; }
+    const TrkRZfilter* rzFilter() const { return rzFilter_.get(); }
 
   private:
     // Convert 2D HT tracks within the current sector to 3D tracks,
@@ -95,7 +89,7 @@ namespace tmtt {
     bool runRZfilter_;  // Does r-z track filter need to be run.
 
     // Track filter(s), such as r-z filters, run after the r-phi Hough transform.
-    TrkRZfilter rzFilter_;
+    std::unique_ptr<TrkRZfilter> rzFilter_;
 
     // List of all found 3D track candidates and their associated properties.
     std::vector<L1track3D> vecTracks3D_rzFiltered_;  // After r-z filter run
