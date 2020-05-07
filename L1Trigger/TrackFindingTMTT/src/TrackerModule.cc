@@ -5,7 +5,7 @@
 #include "DataFormats/SiStripDetId/interface/StripSubdetector.h"
 #include "FWCore/Utilities/interface/Exception.h"
 
-#include "L1Trigger/TrackFindingTMTT/interface/ModuleInfo.h"
+#include "L1Trigger/TrackFindingTMTT/interface/TrackerModule.h"
 
 #include <iostream>
 
@@ -15,7 +15,7 @@ namespace tmtt {
 
   //=== Get info about tracker module (where detId is ID of lower sensor in stacked module).
 
-  ModuleInfo::ModuleInfo(const TrackerGeometry* trackerGeometry,
+  TrackerModule::TrackerModule(const TrackerGeometry* trackerGeometry,
                            const TrackerTopology* trackerTopology,
                            const DetId& detId) {
 
@@ -56,7 +56,7 @@ namespace tmtt {
       layerId_ = 10 * trackerTopology->side(detId) + trackerTopology->tidWheel(detId);
     }
     // Get reduced layer ID (in range 1-7), requiring only 3 bits for firmware.
-    layerIdReduced_ = ModuleInfo::calcLayerIdReduced(layerId_);
+    layerIdReduced_ = TrackerModule::calcLayerIdReduced(layerId_);
 
     // Note module ring in endcap
     endcapRing_ = barrel_ ? 0 : trackerTopology->tidRing(detId);
@@ -68,16 +68,16 @@ namespace tmtt {
         endcapRing_ += 3;
     }
 
-    // Note if tilted barrel module & get title angle (in range 0 to PI).
+    // Note if tilted barrel module & get tilt angle (in range 0 to PI).
     tiltedBarrel_ = barrel_ && (trackerTopology->tobSide(detId) != BarrelModuleType::flat);
     float deltaR = std::abs(R1 - R0);
     float deltaZ = (R1 - R0 > 0) ? (Z1 - Z0) : -(Z1 - Z0);
-    moduleTilt_ = atan2(deltaR, deltaZ);
+    tiltAngle_ = atan2(deltaR, deltaZ);
     // Put in range -PI/2 to +PI/2.
-    if (moduleTilt_ > M_PI / 2.)
-      moduleTilt_ -= M_PI;  
-    if (moduleTilt_ < -M_PI / 2.)
-      moduleTilt_ += M_PI;  
+    if (tiltAngle_ > M_PI / 2.)
+      tiltAngle_ -= M_PI;  
+    if (tiltAngle_ < -M_PI / 2.)
+      tiltAngle_ += M_PI;  
 
     // Get sensor strip or pixel pitch using innermost sensor of pair.
 
@@ -93,7 +93,7 @@ namespace tmtt {
 
    //=== Calculate reduced layer ID (in range 1-7), for  packing into 3 bits to simplify the firmware.
 
-  unsigned int ModuleInfo::calcLayerIdReduced(unsigned int layerId) {
+  unsigned int TrackerModule::calcLayerIdReduced(unsigned int layerId) {
     // Don't bother distinguishing two endcaps, as no track can have stubs in both.
     unsigned int lay = (layerId < 20) ? layerId : layerId - 10;
 
@@ -111,7 +111,7 @@ namespace tmtt {
       lay -= 8;
 
     if (lay < 1 || lay > 7)
-      throw cms::Exception("LogicError") << "ModuleInfo: Reduced layer ID out of expected range";
+      throw cms::Exception("LogicError") << "TrackerModule: Reduced layer ID out of expected range";
 
     return lay;
   }

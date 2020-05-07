@@ -1,5 +1,5 @@
-#ifndef L1Trigger_TrackFindingTMTT_ModuleInfo_h
-#define L1Trigger_TrackFindingTMTT_ModuleInfo_h
+#ifndef L1Trigger_TrackFindingTMTT_TrackerModule_h
+#define L1Trigger_TrackFindingTMTT_TrackerModule_h
 
 #include "DataFormats/DetId/interface/DetId.h"
 #include "DataFormats/Common/interface/Ref.h"
@@ -20,14 +20,14 @@ namespace tmtt {
 
   //=== Get info about tracker module 
 
-class ModuleInfo {
+class TrackerModule {
 
 public:
 
   enum BarrelModuleType { tiltedMinusZ = 1, tiltedPlusZ = 2, flat = 3 };
 
   // Here detId is ID of lower sensor in stacked module.
-  ModuleInfo(const TrackerGeometry* trackerGeometry, const TrackerTopology* trackerTopology,
+  TrackerModule(const TrackerGeometry* trackerGeometry, const TrackerTopology* trackerTopology,
 	     const DetId& detId);
 
     // Det ID of lower sensor in stacked module. 
@@ -46,8 +46,8 @@ public:
     float maxPhi() const { return moduleMaxPhi_; }
     float minZ() const { return moduleMinZ_; }
     float maxZ() const { return moduleMaxZ_; }
-    // Polar angle of module (in range -PI/2 to +PI/2). 
-    float theta() const { return atan(moduleMinR_/moduleMinZ_);}
+    // Polar angle of module. 
+    float theta() const { return atan2(moduleMinR_, moduleMinZ_);}
     // Which of two sensors in module is furthest from beam-line?
     bool outerModuleAtSmallerR() const { return outerModuleAtSmallerR_; }
     // Module type: PS or 2S?
@@ -62,7 +62,7 @@ public:
     // True if stub is in tilted barrel module.
     bool tiltedBarrel() const { return tiltedBarrel_; }
     // Angle between normal to module and beam-line along +ve z axis. (In range -PI/2 to +PI/2).
-    float moduleTilt() const { return moduleTilt_; }
+    float tiltAngle() const { return tiltAngle_; }
     // Width of sensitive region of sensor.
     float sensorWidth() const { return sensorWidth_; }
     // Sensor spacing in module
@@ -79,8 +79,8 @@ public:
     float sigmaPar() const { constexpr float f=sqrt(1./12.); return f * stripLength_; }
     // Sensor pitch over separation.
     float pitchOverSep() const { return stripPitch_/sensorSpacing_; }
-    // "B" correction for module tilt.
-  float correctionB() const { return std::abs(cos(std::abs(theta()) - moduleTilt()) / sin(theta())); }
+    // "B" parameter correction for module tilt.
+    float paramB() const { return std::abs(cos(theta() - tiltAngle()) / sin(theta())); }
 
   //--- Utilties
 
@@ -106,7 +106,7 @@ public:
     unsigned int layerIdReduced_;
     unsigned int endcapRing_;
     bool tiltedBarrel_;
-    float moduleTilt_;
+    float tiltAngle_;
     float sensorWidth_;
     float sensorSpacing_;
     unsigned int nStrips_;

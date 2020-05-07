@@ -90,7 +90,6 @@ namespace tmtt {
     // Get tracker geometry
     trackerGeometry_ = &(iSetup.getData(trackerGeometryToken_));
     trackerTopology_ = &(iSetup.getData(trackerTopologyToken_));
-    trackerGeometryInfo_.getTiltedModuleInfo(&settings_, trackerTopology_, trackerGeometry_);
 
     // Loop over tracker modules to get module info & stubs.
     
@@ -100,7 +99,7 @@ namespace tmtt {
       if (detId.subdetId() != StripSubdetector::TOB && detId.subdetId() != StripSubdetector::TID) continue;
       if ( trackerTopology_->isLower(detId) ) { // Select only lower of the two sensors in a module.
 	// Store info about this tracker module.
-	listModuleInfo_.emplace_back(trackerGeometry_, trackerTopology_, detId);
+	listTrackerModule_.emplace_back(trackerGeometry_, trackerTopology_, detId);
       }
     }
   }
@@ -113,7 +112,7 @@ namespace tmtt {
                         &settings_,
                         trackerGeometry_,
                         trackerTopology_,
-			listModuleInfo_,
+			listTrackerModule_,
                         tpToken_,
                         stubToken_,
                         stubTruthToken_,
@@ -348,7 +347,7 @@ namespace tmtt {
       StubWindowSuggest::printResults();
 
     // Print job summary
-    hists_.trackerGeometryAnalysis(trackerGeometryInfo_);
+    hists_.trackerGeometryAnalysis(listTrackerModule_);
     hists_.endJobAnalysis();
 
     PrintL1trk() << "\n Number of (eta,phi) sectors used = (" << settings_.numEtaRegions() << "," << settings_.numPhiSectors() << ")";

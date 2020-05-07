@@ -14,7 +14,7 @@
 #include "L1Trigger/TrackFindingTMTT/interface/DigitalStub.h"
 #include "L1Trigger/TrackFindingTMTT/interface/StubWindowSuggest.h"
 #include "L1Trigger/TrackFindingTMTT/interface/DegradeBend.h"
-#include "L1Trigger/TrackFindingTMTT/interface/ModuleInfo.h"
+#include "L1Trigger/TrackFindingTMTT/interface/TrackerModule.h"
 #include "L1Trigger/TrackFindingTMTT/interface/StubKiller.h"
 
 #include <vector>
@@ -61,7 +61,7 @@ namespace tmtt {
          unsigned int index_in_vStubs,
          const Settings* settings,
          const TrackerTopology* trackerTopology,
-	 const ModuleInfo* moduleInfo,
+	 const TrackerModule* trackerModule,
 	 const StubKiller* stubKiller);
 
     ~Stub() {}
@@ -70,7 +70,7 @@ namespace tmtt {
     const TTStubRef& ttStubRef() const { return ttStubRef_; }
 
     // Info about tracker module containing stub.
-    const ModuleInfo* moduleInfo() const { return moduleInfo_; }
+    const TrackerModule* trackerModule() const { return trackerModule_; }
 
     bool operator==(const Stub& stubOther) { return (this->index() == stubOther.index()); }
 
@@ -230,31 +230,31 @@ namespace tmtt {
     //--- Quantities common to all stubs in a given module ---
 
     // Unique identifier for lower sensor in module
-    unsigned int detIdRaw() const { return moduleInfo_->rawDetId(); }
+    unsigned int detIdRaw() const { return trackerModule_->rawDetId(); }
     // Uncertainty in stub (r,z)
     float sigmaR() const { return (barrel() ? 0. : sigmaPar()); }
     float sigmaZ() const { return (barrel() ? sigmaPar() : 0.); }
     // Coordinates of centre of two sensors in (r,phi,z)
-    float minR() const { return moduleInfo_->minR(); }
-    float maxR() const { return moduleInfo_->maxR(); }
-    float minPhi() const { return moduleInfo_->minPhi(); }
-    float maxPhi() const { return moduleInfo_->maxPhi(); }
-    float minZ() const { return moduleInfo_->minZ(); }
-    float maxZ() const { return moduleInfo_->maxZ(); }
+    float minR() const { return trackerModule_->minR(); }
+    float maxR() const { return trackerModule_->maxR(); }
+    float minPhi() const { return trackerModule_->minPhi(); }
+    float maxPhi() const { return trackerModule_->maxPhi(); }
+    float minZ() const { return trackerModule_->minZ(); }
+    float maxZ() const { return trackerModule_->maxZ(); }
     // Angle between normal to module and beam-line along +ve z axis. (In range -PI/2 to +PI/2).
-    float moduleTilt() const { return moduleInfo_->moduleTilt(); }
+    float tiltAngle() const { return trackerModule_->tiltAngle(); }
     // Which of two sensors in module is furthest from beam-line?
-    bool outerModuleAtSmallerR() const { return moduleInfo_->outerModuleAtSmallerR(); }
+    bool outerModuleAtSmallerR() const { return trackerModule_->outerModuleAtSmallerR(); }
     // Sensor pitch over separation.
-    float pitchOverSep() const { return moduleInfo_->pitchOverSep(); }
+    float pitchOverSep() const { return trackerModule_->pitchOverSep(); }
     // Width of sensitive region of sensor.
-    float sensorWidth() const { return  moduleInfo_->sensorWidth(); }
+    float sensorWidth() const { return  trackerModule_->sensorWidth(); }
     // Hit resolution perpendicular to strip. Measures phi.
     float sigmaPerp() const { constexpr float f = sqrt(1./12); return f * stripPitch_; }
     // Hit resolution parallel to strip. Measures r or z.
     float sigmaPar() const { constexpr float f = sqrt(1./12.); return f * stripLength_; }
 
-    //--- These module variables could be taken directly from moduleInfo_, were it not for need
+    //--- These module variables could be taken directly from trackerModule_, were it not for need
     //--- to support Hybrid.
     // Module type: PS or 2S?
     bool psModule() const { return psModule_; }
@@ -285,7 +285,7 @@ namespace tmtt {
     void setFrontend(bool rejectStub, const StubKiller* stubKiller);
 
     // Set info about the module that this stub is in.
-    void setModuleInfo(const TrackerGeometry* trackerGeometry,
+    void setTrackerModule(const TrackerGeometry* trackerGeometry,
                        const TrackerTopology* trackerTopology,
                        const DetId& detId);
 
@@ -351,7 +351,7 @@ namespace tmtt {
     bool digitizeWarningsOn_;   // Enable warnings about accessing non-digitized quantities.
 
     // Info about tracker module containing stub.
-    const ModuleInfo* moduleInfo_;
+    const TrackerModule* trackerModule_;
 
     // Used to provide TMTT recommendations for stub window sizes that CMS should use.
     StubWindowSuggest stubWindowSuggest_;
@@ -360,7 +360,7 @@ namespace tmtt {
     DegradeBend degradeBend_;
 
     // These module variables are needed only to support the Hybrid stub constructor.
-    // (Otherwise, they could be taken from moduleInfo_).
+    // (Otherwise, they could be taken from trackerModule_).
     bool psModule_;
     unsigned int layerId_;
     unsigned int layerIdReduced_;

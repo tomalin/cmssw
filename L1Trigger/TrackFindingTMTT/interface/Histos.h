@@ -5,13 +5,14 @@
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
 #include "L1Trigger/TrackFindingTMTT/interface/Settings.h"
 #include "L1Trigger/TrackFindingTMTT/interface/L1track3D.h"
-#include "L1Trigger/TrackFindingTMTT/interface/TrackerGeometryInfo.h"
+#include "L1Trigger/TrackFindingTMTT/interface/TrackerModule.h"
 
 #include "boost/numeric/ublas/matrix.hpp"
 using boost::numeric::ublas::matrix;
 
 #include <vector>
 #include <map>
+#include <list>
 #include <string>
 
 class TH1F;
@@ -52,7 +53,7 @@ namespace tmtt {
     virtual void endJobAnalysis();
 
     // Determine "B" parameter, used in GP firmware to allow for tilted modules.
-    virtual void trackerGeometryAnalysis(const TrackerGeometryInfo trackerGeometryInfo);
+    virtual void trackerGeometryAnalysis(const std::list<TrackerModule>& listTrackerModule);
 
     // Did user request output histograms via the TFileService in their cfg?
     virtual bool available() const { return fs_.isAvailable(); }

@@ -116,7 +116,7 @@ namespace tmtt {
           if (settings_->useApproxB()) {  // Simple firmware approximation
             scaleTilted = approxB(stub->z(), stub->r());
           } else {  // Exact C++ implementation.
-            float tilt = stub->moduleTilt();
+            float tilt = stub->tiltAngle();
             scaleTilted = sin(tilt) + cos(tilt) * tanl;
           }
         }

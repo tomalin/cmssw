@@ -43,7 +43,7 @@ namespace tmtt {
     // L1Trigger/TrackTrigger/src/TTStubAlgorithm_official.cc
     // The only exceptions are lines marked "Modified by TMTT group"
 
-    DetId stDetId(stub->moduleInfo()->detId());
+    DetId stDetId(stub->trackerModule()->detId());
 
     if (stDetId.subdetId() == StripSubdetector::TOB) {
       unsigned int layer = theTrackerTopo_->layer(stDetId);

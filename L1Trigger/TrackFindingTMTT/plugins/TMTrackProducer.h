@@ -1,6 +1,12 @@
 #ifndef L1Trigger_TrackFindingTMTT_TMTrackProducer_h
 #define L1Trigger_TrackFindingTMTT_TMTrackProducer_h
 
+#include "L1Trigger/TrackFindingTMTT/interface/Settings.h"
+#include "L1Trigger/TrackFindingTMTT/interface/Histos.h"
+#include "L1Trigger/TrackFindingTMTT/interface/Stub.h"
+#include "L1Trigger/TrackFindingTMTT/interface/L1track3D.h"
+#include "L1Trigger/TrackFindingTMTT/interface/TrackerModule.h"
+
 #include "FWCore/Framework/interface/EDProducer.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
@@ -11,12 +17,7 @@
 #include "SimDataFormats/TrackingAnalysis/interface/TrackingParticle.h"
 #include "SimTracker/TrackTriggerAssociation/interface/TTClusterAssociationMap.h"
 #include "SimTracker/TrackTriggerAssociation/interface/TTStubAssociationMap.h"
-#include "L1Trigger/TrackFindingTMTT/interface/Settings.h"
-#include "L1Trigger/TrackFindingTMTT/interface/Histos.h"
-#include "L1Trigger/TrackFindingTMTT/interface/Stub.h"
-#include "L1Trigger/TrackFindingTMTT/interface/L1track3D.h"
-#include "L1Trigger/TrackFindingTMTT/interface/ModuleInfo.h"
-#include "L1Trigger/TrackFindingTMTT/interface/TrackerGeometryInfo.h"
+#include "Geometry/Records/interface/TrackerDigiGeometryRecord.h"
 #include "MagneticField/Engine/interface/MagneticField.h"
 #include "MagneticField/Records/interface/IdealMagneticFieldRecord.h"
 
@@ -58,7 +59,7 @@ namespace tmtt {
     // Info about tracker geometry
     const TrackerGeometry *trackerGeometry_;
     const TrackerTopology *trackerTopology_;
-    std::list<ModuleInfo> listModuleInfo_;
+    std::list<TrackerModule> listTrackerModule_;
 
     // Configuration parameters
     Settings settings_;
@@ -68,8 +69,6 @@ namespace tmtt {
 
     Histos hists_;
     std::map<std::string, std::unique_ptr<TrackFitGeneric>> fitterWorkerMap_;
-
-    TrackerGeometryInfo trackerGeometryInfo_;
   };
 
 }  // namespace tmtt

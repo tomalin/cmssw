@@ -28,7 +28,7 @@ namespace tmtt {
                        Settings* settings,
                        const TrackerGeometry* trackerGeometry,
                        const TrackerTopology* trackerTopology,
-		       const list<ModuleInfo>& listModuleInfo,
+		       const list<TrackerModule>& listTrackerModule,
                        const edm::EDGetTokenT<TrackingParticleCollection> tpToken,
                        const edm::EDGetTokenT<TTStubDetSetVec> stubToken,
                        const edm::EDGetTokenT<TTStubAssMap> stubTruthToken,
@@ -97,9 +97,9 @@ namespace tmtt {
 
     // Loop over tracker modules to get module info & stubs.
     
-    for (const ModuleInfo& moduleInfo : listModuleInfo) {
+    for (const TrackerModule& trackerModule : listTrackerModule) {
 
-      const DetId& stackedDetId = moduleInfo.stackedDetId();
+      const DetId& stackedDetId = trackerModule.stackedDetId();
       TTStubDetSetVec::const_iterator p_module = ttStubHandle->find(stackedDetId);
       if (p_module != ttStubHandle->end()) {
         for (TTStubDetSet::const_iterator p_ttstub = p_module->begin(); p_ttstub != p_module->end(); p_ttstub++) {
@@ -107,7 +107,7 @@ namespace tmtt {
           const unsigned int stubIndex = vAllStubs_.size();
 
           // Store the Stub info, using class Stub to provide easy access to the most useful info.
-          vAllStubs_.emplace_back(ttStubRef, stubIndex, settings, trackerTopology, &moduleInfo, stubKiller.get());
+          vAllStubs_.emplace_back(ttStubRef, stubIndex, settings, trackerTopology, &trackerModule, stubKiller.get());
 
           // Also fill truth associating stubs to tracking particles.
           if (enableMCtruth_) {

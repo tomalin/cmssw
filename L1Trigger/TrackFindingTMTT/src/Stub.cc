@@ -39,7 +39,7 @@ namespace tmtt {
         stubWindowSuggest_(settings),
         psModule_(psModule),
         layerId_(layerId),
-        layerIdReduced_(ModuleInfo::calcLayerIdReduced(layerId)),
+        layerIdReduced_(TrackerModule::calcLayerIdReduced(layerId)),
         endcapRing_(0),
         barrel_(barrel)
   {  //work in progress on better constructor for new hybrid
@@ -68,7 +68,7 @@ namespace tmtt {
              unsigned int index_in_vStubs,
              const Settings* settings,
              const TrackerTopology* trackerTopology,
-	     const ModuleInfo* moduleInfo,
+	     const TrackerModule* trackerModule,
 	     const StubKiller* stubKiller)
       : ttStubRef_(ttStubRef),
         settings_(settings),
@@ -78,25 +78,25 @@ namespace tmtt {
         digitizedForHTinput_(false),  // Has stub been digitized for HT input?
         digitizedForSForTFinput_(""),  // Has stub been digitized for SF/TF input?
         digitizeWarningsOn_(true),
-        moduleInfo_(moduleInfo),  // Info about tracker module containing stub 
+        trackerModule_(trackerModule),  // Info about tracker module containing stub 
         stubWindowSuggest_(settings, trackerTopology),  // TMTT recommended stub window sizes.
         degradeBend_(trackerTopology),                   // Used to degrade stub bend information.
   // Module related variables (need to be stored for Hybrid)
-    psModule_(moduleInfo->psModule()),
-    layerId_(moduleInfo->layerId()),
-    layerIdReduced_(moduleInfo->layerIdReduced()),
-    endcapRing_(moduleInfo->endcapRing()),
-    barrel_(moduleInfo->barrel()),
-    tiltedBarrel_(moduleInfo->tiltedBarrel()),
-    stripPitch_(moduleInfo->stripPitch()),
-    stripLength_(moduleInfo->stripLength()),
-    nStrips_(moduleInfo->nStrips())
+    psModule_(trackerModule->psModule()),
+    layerId_(trackerModule->layerId()),
+    layerIdReduced_(trackerModule->layerIdReduced()),
+    endcapRing_(trackerModule->endcapRing()),
+    barrel_(trackerModule->barrel()),
+    tiltedBarrel_(trackerModule->tiltedBarrel()),
+    stripPitch_(trackerModule->stripPitch()),
+    stripLength_(trackerModule->stripLength()),
+    nStrips_(trackerModule->nStrips())
   {
     // Get coordinates of stub.
     const TTStub<Ref_Phase2TrackerDigi_>* ttStubP = ttStubRef_.get();
 
-    const PixelGeomDetUnit* specDet = moduleInfo_->specDet();
-    const PixelTopology* specTopol = moduleInfo_->specTopol();
+    const PixelGeomDetUnit* specDet = trackerModule_->specDet();
+    const PixelTopology* specTopol = trackerModule_->specTopol();
     MeasurementPoint measurementPoint = ttStubRef_->clusterRef(0)->findAverageLocalCoordinatesCentered();
     LocalPoint clustlp = specTopol->localPosition(measurementPoint);
     GlobalPoint pos = specDet->surface().toGlobal(clustlp);
@@ -109,7 +109,7 @@ namespace tmtt {
         std::abs(z_) > settings_->trackerHalfLength()) {
       throw cms::Exception("BadConfig") << "Stub: Stub found outside assumed tracker volume. Please update tracker "
                                            "dimensions specified in Settings.h!"
-                                        << " r=" << r_ << " z=" << z_ << " id=" << moduleInfo_->detId().subdetId();
+                                        << " r=" << r_ << " z=" << z_ << " id=" << trackerModule_->detId().subdetId();
     }
 
     // Get the coordinates of the two clusters that make up this stub, measured in units of strip pitch, and measured
@@ -132,7 +132,7 @@ namespace tmtt {
       float phiRelToModule = sensorWidth() * fracPosInModule / r_;
       if (z_ < 0)
         phiRelToModule *= -1;
-      if (moduleInfo_->outerModuleAtSmallerR())
+      if (trackerModule_->outerModuleAtSmallerR())
         phiRelToModule *= -1;  // Module flipped.
       // If true hit at larger r than stub r by deltaR, then stub phi needs correcting by +alpha*deltaR.
       alpha_ = -phiRelToModule / r_;
@@ -182,10 +182,10 @@ namespace tmtt {
                       min_qOverPt_bin_,
                       max_qOverPt_bin_,
                       layerId(),
-                      moduleInfo_->layerIdReduced(),
+                      trackerModule_->layerIdReduced(),
                       bend_,
                       stripPitch(),
-                      moduleInfo_->sensorSpacing(),
+                      trackerModule_->sensorSpacing(),
                       barrel(),
                       tiltedBarrel(),
 		      psModule());
@@ -376,7 +376,7 @@ namespace tmtt {
     }
 
     static std::atomic<bool> firstErr = true;
-    degradeBend_.degrade(bend, psModule(), moduleInfo_->detId(), windowFE, degradedBend, reject, num);
+    degradeBend_.degrade(bend, psModule(), trackerModule_->detId(), windowFE, degradedBend, reject, num);
   }
 
   //=== Set flag indicating if stub will be output by front-end readout electronics
@@ -431,12 +431,12 @@ namespace tmtt {
 
   void Stub::calcDphiOverBend() {
    // Uses stub (r,z) instead of module (r,z). Logically correct but has negligable effect on results.
-    dphiOverBendCorrection_ = std::abs(cos(this->theta() - moduleInfo_->moduleTilt()) / sin(this->theta()));
+    dphiOverBendCorrection_ = std::abs(cos(this->theta() - trackerModule_->tiltAngle()) / sin(this->theta()));
     dphiOverBendCorrection_approx_ = approxB();
     if (settings_->useApproxB()) {
-      dphiOverBend_ = moduleInfo_->pitchOverSep() * dphiOverBendCorrection_approx_;
+      dphiOverBend_ = trackerModule_->pitchOverSep() * dphiOverBendCorrection_approx_;
     } else {
-      dphiOverBend_ = moduleInfo_->pitchOverSep() * dphiOverBendCorrection_;
+      dphiOverBend_ = trackerModule_->pitchOverSep() * dphiOverBendCorrection_;
     }
 
     } 

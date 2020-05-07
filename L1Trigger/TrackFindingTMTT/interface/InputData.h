@@ -3,7 +3,7 @@
 
 #include "FWCore/Framework/interface/EDAnalyzer.h"
 #include "L1Trigger/TrackFindingTMTT/interface/TP.h"
-#include "L1Trigger/TrackFindingTMTT/interface/ModuleInfo.h"
+#include "L1Trigger/TrackFindingTMTT/interface/TrackerModule.h"
 #include "L1Trigger/TrackFindingTMTT/interface/Stub.h"
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/Utilities/interface/InputTag.h"
@@ -23,7 +23,7 @@ namespace tmtt {
               Settings* settings,
               const TrackerGeometry* trackerGeometry,
               const TrackerTopology* trackerTopology,
-	      const std::list<ModuleInfo>& listModuleInfo,
+	      const std::list<TrackerModule>& listTrackerModule,
               const edm::EDGetTokenT<TrackingParticleCollection> tpToken,
               const edm::EDGetTokenT<TTStubDetSetVec> stubToken,
               const edm::EDGetTokenT<TTStubAssMap> stubTruthToken,
@@ -31,7 +31,7 @@ namespace tmtt {
               const edm::EDGetTokenT<reco::GenJetCollection> genJetToken);
 
     // Info about each tracker module
-    const std::list<ModuleInfo>& trackerModules() const { return trackerModules_; };
+    const std::list<TrackerModule>& trackerModules() const { return trackerModules_; };
 
     // Get tracking particles
     const std::list<TP>& getTPs() const { return vTPs_; }
@@ -46,7 +46,7 @@ namespace tmtt {
   private:
     bool enableMCtruth_;  // Notes if job will use MC truth info.
 
-    std::list<ModuleInfo> trackerModules_; // Info about each tracker module.
+    std::list<TrackerModule> trackerModules_; // Info about each tracker module.
 
     std::list<TP> vTPs_;             // tracking particles
     std::list<const Stub*> vStubs_;  // stubs that would be output by the front-end readout electronics.

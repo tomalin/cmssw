@@ -36,7 +36,7 @@ namespace tmtt {
   //=== Store cfg parameters.
 
   Histos::Histos(const Settings* settings)
-      : settings_(settings), oldSumW2opt_(false), plotFirst_(true), bApproxMistake_(false) {
+    : settings_(settings), oldSumW2opt_(false), plotFirst_(true), bApproxMistake_(false) {
     genMinStubLayers_ = settings->genMinStubLayers();
     numPhiSectors_ = settings->numPhiSectors();
     numEtaRegions_ = settings->numEtaRegions();
@@ -387,8 +387,8 @@ namespace tmtt {
       hisStubsModuleVsRVsZ_->Fill(stub->minZ(), stub->minR());
       hisStubsModuleVsRVsZ_->Fill(stub->maxZ(), stub->maxR());
 
-      hisStubsModuleTiltVsZ_->Fill(stub->minZ(), stub->moduleTilt());
-      hisStubsModuleTiltVsZ_->Fill(stub->maxZ(), stub->moduleTilt());
+      hisStubsModuleTiltVsZ_->Fill(stub->minZ(), stub->tiltAngle());
+      hisStubsModuleTiltVsZ_->Fill(stub->maxZ(), stub->tiltAngle());
 
       if (stub->barrel() && stub->outerModuleAtSmallerR()) {
         hisStubsVsRVsZ_outerModuleAtSmallerR_->Fill(stub->z(), stub->r());
@@ -483,7 +483,7 @@ namespace tmtt {
           hisPtResStub_->Fill(stub->qOverPt() - tp.charge() / tp.pt());
           hisDelPhiResStub_->Fill(stub->dphi() - tp.dphi(stub->r()));
 
-          if (stub->moduleTilt() > M_PI / 2 - 0.1 || !stub->barrel()) {
+          if (stub->tiltAngle() > M_PI / 2 - 0.1 || !stub->barrel()) {
             hisDelPhiResStub_notTilted_->Fill(stub->dphi() - tp.dphi(stub->r()));
           } else {
             hisDelPhiResStub_tilted_->Fill(stub->dphi() - tp.dphi(stub->r()));
@@ -572,7 +572,7 @@ namespace tmtt {
       map<ClusterLocation, unsigned int> commonClusterMap;
       for (const Stub* stub : vStubs) {
         // Encode detector ID & strip (or pixel) numbers in both dimensions.
-        const ClusterLocation loc(stub->moduleInfo()->detId(),
+        const ClusterLocation loc(stub->trackerModule()->detId(),
                                   pair<float, float>(stub->localU_cluster()[iClus], stub->localV_cluster()[iClus]));
         if (commonClusterMap.find(loc) == commonClusterMap.end()) {
           commonClusterMap[loc] = 1;
@@ -2530,7 +2530,7 @@ void Histos::fillEtaPhiSectors(const InputData& inputData, const matrix<unique_p
             double phiExtra2 = phiExtra * phiExtra;
             float sigmaPhi2 = sigmaPhi2_raw + phiExtra2;
             if (s->tiltedBarrel()) {
-              float tilt = s->moduleTilt();
+              float tilt = s->tiltAngle();
               float scaleTilted = sin(tilt) + cos(tilt) * (tp->tanLambda());
               float scaleTilted2 = scaleTilted * scaleTilted;
               sigmaZ2 *= scaleTilted2;
@@ -3408,41 +3408,56 @@ void Histos::fillEtaPhiSectors(const InputData& inputData, const matrix<unique_p
 
   //=== Determine "B" parameter, used in GP firmware to allow for tilted modules.
 
-  void Histos::trackerGeometryAnalysis(const TrackerGeometryInfo trackerGeometryInfo) {
+void Histos::trackerGeometryAnalysis(const list<TrackerModule>& listTrackerModule) {
+
     // Don't bother producing summary if user didn't request histograms via TFileService in their cfg.
     if (not this->enabled())
       return;
 
+    map<float,float> dataForGraph;
+    for (const TrackerModule& trackerModule : listTrackerModule) {
+      if (trackerModule.tiltedBarrel()) {
+	float paramB = trackerModule.paramB();
+	float zOverR = std::abs(trackerModule.minZ())/trackerModule.minR();
+	dataForGraph[paramB] = zOverR; // Only store each unique paramB once, to get better histo weights.
+      }
+    }
+
+    const int nEntries = dataForGraph.size();
+    vector<float> vecParamB(nEntries);
+    vector<float> vecZoverR(nEntries);
+    unsigned int i = 0;
+    for (const auto& p : dataForGraph) {
+      vecParamB[i] = p.first;
+      vecZoverR[i] = p.second;
+      i++;
+    }
+
     PrintL1trk() << "\n =========================================================================";
     PrintL1trk() << "--- Fit to cfg params for FPGA-friendly approximation to B parameter in GP & KF ---";
     PrintL1trk() << "--- (used to allowed for tilted barrel modules)                                 ---";
-    // Check that info on the correct number of modules has been stored
-    if (trackerGeometryInfo.moduleZoR().size() !=
-        trackerGeometryInfo.barrelNTiltedModules() * trackerGeometryInfo.barrelNLayersWithTiltedModules() * 2) {
-      PrintL1trk() << "WARNING : Expected "
-           << trackerGeometryInfo.barrelNTiltedModules() * trackerGeometryInfo.barrelNLayersWithTiltedModules() * 2
-           << " modules, but only recorded info on " << trackerGeometryInfo.moduleZoR().size();
-    }
 
     TFileDirectory inputDir = fs_->mkdir("InputData");
-    graphBVsZoverR_ = inputDir.make<TGraph>(
-        trackerGeometryInfo.moduleZoR().size(), &trackerGeometryInfo.moduleZoR()[0], &trackerGeometryInfo.moduleB()[0]);
+    graphBVsZoverR_ = inputDir.make<TGraph>(nEntries, &vecZoverR[0], &vecParamB[0]);
     graphBVsZoverR_->SetNameTitle("B vs module Z/R", "; Module Z/R; B");
     graphBVsZoverR_->Fit("pol1", "q");
     TF1* fittedFunction = graphBVsZoverR_->GetFunction("pol1");
     double gradient = fittedFunction->GetParameter(1);
     double intercept = fittedFunction->GetParameter(0);
-    PrintL1trk() << "         BApprox_gradient (fitted)  = " << gradient;
-    PrintL1trk() << "         BApprox_intercept (fitted) = " << intercept;
+    double gradient_err = fittedFunction->GetParError(1);
+    double intercept_err = fittedFunction->GetParError(0);
+    PrintL1trk() << "         BApprox_gradient (fitted)  = " << gradient << " +- " << gradient_err;
+    PrintL1trk() << "         BApprox_intercept (fitted) = " << intercept << " +- "<< intercept_err;
     // Check fitted params consistent with those assumed in cfg file.
     if (settings_->useApproxB()) {
       double gradientDiff = std::abs(gradient - settings_->bApprox_gradient());
       double interceptDiff = std::abs(intercept - settings_->bApprox_intercept());
-      if (gradientDiff > 0.001 || interceptDiff > 0.001) {  // Uncertainty independent of number of events
+      constexpr unsigned int nSigma = 5;
+      if (gradientDiff > nSigma*gradient_err || interceptDiff > nSigma*intercept_err) {  // Uncertainty independent of number of events
         PrintL1trk() << "\n WARNING: fitted parameters inconsistent with those specified in cfg file:";
         PrintL1trk() << "         BApprox_gradient  (cfg) = " << settings_->bApprox_gradient();
         PrintL1trk() << "         BApprox_intercept (cfg) = " << settings_->bApprox_intercept();
-        bApproxMistake_ = true;  // Note that problem has occurred.
+	bApproxMistake_ = true; // Note that problem has occurred.
       }
     }
   }
