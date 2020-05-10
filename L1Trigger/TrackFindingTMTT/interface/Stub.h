@@ -243,8 +243,6 @@ namespace tmtt {
     float z_;
     float bend_;                           // bend of stub.
     float dphiOverBend_;                   // related to rho parameter.
-    float dphiOverBendCorrection_;         // Correction from tilt of module
-    float dphiOverBendCorrection_approx_;  // Correction from tilt of module
     unsigned int min_qOverPt_bin_;         // Range in q/Pt bins in HT array compatible with stub bend.
     unsigned int max_qOverPt_bin_;
 

@@ -186,8 +186,8 @@ namespace tmtt {
 
   void Stub::calcQoverPtrange() {
     // First determine bin range along q/Pt axis of HT array
-    const int nbinsPt =
-        (int)settings_->houghNbinsPt();  // Use "int" as nasty things happen if multiply "int" and "unsigned int".
+    // (Use "int" as nasty things happen if multiply "int" and "unsigned int").
+    const int nbinsPt = (int)settings_->houghNbinsPt();  
     const int min_array_bin = 0;
     const int max_array_bin = nbinsPt - 1;
     // Now calculate range of q/Pt bins allowed by bend filter.
@@ -203,7 +203,6 @@ namespace tmtt {
     // with the stub bend. Instead using "tmp = 0.0" accepts cells if q/Pt at any point in cell is consistent with bend.
     // So if you use change from -0.5 to 0.0, you have to tighten the bend cut (by ~0.05) to get similar performance.
     // Decision to set tmp = 0.0 taken in softare & GP firmware on 9th August 2016.
-    //float tmp = ( settings_->shape() == 2 || settings_->shape() == 1 || settings_->shape() == 3 ) ? 1. : -0.5;
 
     float tmp = (settings_->shape() == 2 || settings_->shape() == 1 || settings_->shape() == 3) ? 1. : 0.;
     int min_bin = std::floor(-tmp + (qOverPtMin + houghMaxInvPt) / qOverPtBinSize);
@@ -345,11 +344,11 @@ void Stub::digitize(unsigned int iPhiSec, Stub::DigiStage digiStep, string nameS
 
   void Stub::calcDphiOverBend() {
    // Uses stub (r,z) instead of module (r,z). Logically correct but has negligable effect on results.
-    dphiOverBendCorrection_ = std::abs(cos(this->theta() - trackerModule_->tiltAngle()) / sin(this->theta()));
-    dphiOverBendCorrection_approx_ = approxB();
     if (settings_->useApproxB()) {
+      float dphiOverBendCorrection_approx_ = approxB();
       dphiOverBend_ = trackerModule_->pitchOverSep() * dphiOverBendCorrection_approx_;
     } else {
+      float dphiOverBendCorrection_ = std::abs(cos(this->theta() - trackerModule_->tiltAngle()) / sin(this->theta()));
       dphiOverBend_ = trackerModule_->pitchOverSep() * dphiOverBendCorrection_;
     }
 
