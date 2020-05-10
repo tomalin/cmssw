@@ -105,14 +105,12 @@ namespace tmtt {
       numStubs++;
 
       if (digitize_) {
-        (const_cast<Stub*>(stub))->digitizeForHTinput(l1track3D.iPhiSec());
-        (const_cast<Stub*>(stub))->digitizeForSFinput();
         const DigitalStub* digiStub = stub->digitalStub();
 
-        SumRPhi = SumRPhi + digiStub->rt() * digiStub->phiS();
-        SumR = SumR + digiStub->rt();
+        SumRPhi = SumRPhi + digiStub->rt_SF_TF() * digiStub->phiS();
+        SumR = SumR + digiStub->rt_SF_TF();
         SumPhi = SumPhi + digiStub->phiS();
-        SumR2 = SumR2 + digiStub->rt() * digiStub->rt();
+        SumR2 = SumR2 + digiStub->rt_SF_TF() * digiStub->rt_SF_TF();
         if (debug_)
           PrintL1trk() << "Input stub (digi): phiS " << digiStub->iDigi_PhiS() << " rT " << digiStub->iDigi_Rt() << " z " << digiStub->iDigi_Z();
       } else {
@@ -188,8 +186,6 @@ namespace tmtt {
       double ResPhi;
 
       if (digitize_) {
-        (const_cast<Stub*>(stub))->digitizeForHTinput(l1track3D.iPhiSec());
-        (const_cast<Stub*>(stub))->digitizeForSFinput();
         const DigitalStub* digiStub = stub->digitalStub();
 
         ResPhi =
@@ -272,17 +268,16 @@ namespace tmtt {
 
       numStubs++;
       if (digitize_) {
-        (const_cast<Stub*>(stub))->digitizeForHTinput(l1track3D.iPhiSec());
         const DigitalStub* digiStub = stub->digitalStub();
-        SumRPhi += digiStub->rt() * digiStub->phiS();
-        SumR += digiStub->rt();
+        SumRPhi += digiStub->rt_SF_TF() * digiStub->phiS();
+        SumR += digiStub->rt_SF_TF();
         SumPhi += digiStub->phiS();
-        SumR2 += digiStub->rt() * digiStub->rt();
+        SumR2 += digiStub->rt_SF_TF() * digiStub->rt_SF_TF();
         if (stub->psModule()) {
-          SumRZ += digiStub->rt() * digiStub->z();
+          SumRZ += digiStub->rt_SF_TF() * digiStub->z();
           SumZ += digiStub->z();
-          SumR_ps += digiStub->rt();
-          SumR2_ps += digiStub->rt() * digiStub->rt();
+          SumR_ps += digiStub->rt_SF_TF();
+          SumR2_ps += digiStub->rt_SF_TF() * digiStub->rt_SF_TF();
         }
         if (debug_) {
           PrintL1trk() << "phiS " << digiStub->iDigi_PhiS() << " rT " << digiStub->iDigi_Rt() << " z " << digiStub->iDigi_Z();
@@ -385,11 +380,9 @@ namespace tmtt {
       double ResPhi = 0.;
       double ResZ = 0.;
       if (digitize_) {
-        (const_cast<Stub*>(stub))->digitizeForHTinput(l1track3D.iPhiSec());
-        (const_cast<Stub*>(stub))->digitizeForSFinput();
         const DigitalStub* digiStub = stub->digitalStub();
-        ResPhi = digiStub->phiS() - phiT - qOverPt * digiStub->rt();
-        ResZ = digiStub->z() - zT - tanLambda * digiStub->rt();
+        ResPhi = digiStub->phiS() - phiT - qOverPt * digiStub->rt_SF_TF();
+        ResZ = digiStub->z() - zT - tanLambda * digiStub->rt_SF_TF();
       } else {
         ResPhi = reco::deltaPhi(stub->phi(), phi0 + qOverPt * stub->r());
         ResZ = stub->z() - z0 - tanLambda * stub->r();
@@ -449,7 +442,7 @@ namespace tmtt {
       // Create the L1fittedTrack object
       const unsigned int hitPattern = 0;  // FIX: Needs setting
       L1fittedTrack fitTrk(
-          settings_, l1track3D, fitStubs, hitPattern, qOverPt, 0., phi0, z0, tanLambda, chi2_phi, chi2_z, nHelixPar);
+          settings_, &l1track3D, fitStubs, hitPattern, qOverPt, 0., phi0, z0, tanLambda, chi2_phi, chi2_z, nHelixPar);
 
       if (settings_->enableDigitize())
         fitTrk.digitizeTrack("SimpleLR4");
@@ -460,8 +453,8 @@ namespace tmtt {
              << int(l1track3D.cellLocationHT().second) - 32 << " iPhi " << l1track3D.iPhiSec() << " iEta "
              << l1track3D.iEtaReg();
         PrintL1trk() << setw(10) << "First Helix parameters: qOverPt = " << fitTrk.qOverPt() << " oneOver2r "
-             << fitTrk.digitaltrack().oneOver2r() << " (" << floor(fitTrk.digitaltrack().oneOver2r() * qOverPtMult_)
-             << "), phi0 = " << fitTrk.digitaltrack().phi0() << " (" << fitTrk.digitaltrack().iDigi_phi0rel()
+             << fitTrk.digitaltrack()->oneOver2r() << " (" << floor(fitTrk.digitaltrack()->oneOver2r() * qOverPtMult_)
+             << "), phi0 = " << fitTrk.digitaltrack()->phi0() << " (" << fitTrk.digitaltrack()->iDigi_phi0rel()
              << "), zT = " << zT << " (" << floor(zT * z0Mult_) << "), tanLambda = " << tanLambda << " ("
              << floor(tanLambda * tanLambdaMult_) << ")";
       }

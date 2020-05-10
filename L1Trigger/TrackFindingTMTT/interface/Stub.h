@@ -42,7 +42,7 @@ namespace tmtt {
 
   class Stub {
   public:
-    // Store useful info about the stub (for use with HYBRID code), with hard-wired constants to allow use outside CMSSW.
+    // Hybrid L1 tracking: stub constructor.
     Stub(double phi,
          double r,
          double z,
@@ -56,7 +56,7 @@ namespace tmtt {
          unsigned int ID,
          unsigned int iPhiSec);
 
-    // Store useful info about stub (for use with TMTT code).
+    // TMTT L1 tracking: stub constructor.
     Stub(const TTStubRef& ttStubRef,
          unsigned int index_in_vStubs,
          const Settings* settings,
@@ -66,48 +66,31 @@ namespace tmtt {
 
     ~Stub() {}
 
+    bool operator==(const Stub& stubOther) { return (this->index() == stubOther.index()); }
+
     // Return reference to original TTStub.
     const TTStubRef& ttStubRef() const { return ttStubRef_; }
 
     // Info about tracker module containing stub.
     const TrackerModule* trackerModule() const { return trackerModule_; }
 
-    bool operator==(const Stub& stubOther) { return (this->index() == stubOther.index()); }
-
     // Fill truth info with association from stub to tracking particles.
-    // The 1st argument is a std::map relating TrackingParticles to TP.
     void fillTruth(const std::map<edm::Ptr<TrackingParticle>, const TP*>& translateTP,
                    const edm::Handle<TTStubAssMap>& mcTruthTTStubHandle,
                    const edm::Handle<TTClusterAssMap>& mcTruthTTClusterHandle);
 
-    // Calculate bin range along q/Pt axis of r-phi Hough transform array consistent with bend of this stub.
+    // Calculate HT m-bin range consistent with bend.
     void calcQoverPtrange();
 
-    // Digitize stub for input to Geographic Processor, with digitized phi coord. measured relative to closest phi sector.
-    // (This approximation is valid if their are an integer number of digitisation bins inside each phi nonant).
-    // However, you should also call digitizeForHTinput() before accessing digitized stub data, even if you only care about that going into GP! Otherwise, you will not identify stubs assigned to more than one nonant.
-    void digitizeForGPinput(unsigned int iPhiSec);
-
-    // Digitize stub for input to Hough transform, with digitized phi coord. measured relative to specified phi sector.
-    void digitizeForHTinput(unsigned int iPhiSec);
-
-    // Digitize stub for input to r-z Seed Filter.
-    // (Kept for backwards compatibility.)
-    void digitizeForSFinput() { this->digitizeForSForTFinput("SeedFilter"); }
-
-    // Digitize stub for input to r-z Seed Filter or Track Fitter.
-    // Argument is "SeedFilter" or name of Track Fitter.
-    void digitizeForSForTFinput(std::string SForTF);
-
-    // Digitize stub for input to Duplicate Removal .
-    void digitizeForDRinput(unsigned int stubId);
+    // Digitize stub for input to GP, HT, SF/TF
+    enum class DigiStage {NONE, GP, HT, SFTF};
+    void digitize(unsigned int iPhiSec, DigiStage digiStep, std::string nameSForTF="");
 
     // Control warning messages about accessing non-digitized quantities.
     void setDigitizeWarningsOn(bool newVal) { digitizeWarningsOn_ = newVal; }
 
-    // Restore stub to pre-digitized state. i.e. Undo what function digitize() did.
-
-    void reset_digitize();
+    // Access to digitized version of stub coords.
+    const DigitalStub* digitalStub() const { return digitalStub_.get(); }
 
     // === Functions for returning info about reconstructed stubs ===
 
@@ -117,88 +100,62 @@ namespace tmtt {
     //--- Stub data and quantities derived from it ---
 
     // Stub coordinates (optionally after digitisation, if digitisation requested via cfg).
-    // N.B. Digitisation is not run when the stubs are created, but later, after stubs are assigned to sectors.
-    // Until then, these functions return the original coordinates.
+    // N.B. Digitisation is only run if Stub::digitize() is called.
     float phi() const { return phi_; }
     float r() const { return r_; }
     float z() const { return z_; }
     float theta() const { return atan2(r_, z_); }
     float eta() const { return asinh(z_ / r_); }
-    // Access to digitized version of stub coords.
-    const DigitalStub* digitalStub() const { return digitalStub_.get(); }
-    // Access to booleans indicating if the stub has been digitized.
-    bool digitizedForGPinput() const { return digitizedForGPinput_; }
-    bool digitizedForHTinput() const { return digitizedForHTinput_; }
-    const std::string& digitizedForSForTFinput() const {
-      return digitizedForSForTFinput_;
-    }  // Returns which SF or TF digitisation was done for, if any.
-    bool digitizedForDRinput() const { return digitizedForDRinput_; }
 
-    // Get stub bend (i.e. displacement between two hits in stub in units of strip pitch) and its estimated resolution.
-    float bend() const {
-      this->check();
-      return bend_;
-    }
-    // The bend resolution has a contribution from the sensor and a contribution from encoding the bend into
-    // a reduced number of bits.
-    float bendRes() const {
-      return (settings_->bendResolution() + (numMergedBend_ - 1) * settings_->bendResolutionExtra());
-    }
-    // Number of bend values which loss of bit to store bend resulted in being merged into this bend value.
-    float numMergedBend() const { return numMergedBend_; }
-    // Bend angle of track measured by stub and its estimated resolution.
-    float dphi() const {
-      this->check();
-      return (bend_ * dphiOverBend());
-    }
-    float dphiRes() const { return (dphiOverBend() * this->bendRes()); }
-    // Estimated track q/Pt based on stub bend info.
-    float qOverPt() const { return (this->qOverPtOverBend() * this->bend()); }
-    float qOverPtres() const { return (this->qOverPtOverBend() * this->bendRes()); }
-    // Range in q/Pt bins in HT array compatible with stub bend.
-    unsigned int min_qOverPt_bin() const { return min_qOverPt_bin_; }
-    unsigned int max_qOverPt_bin() const { return max_qOverPt_bin_; }
-    // Estimated phi0 of track at beam-line based on stub bend info.
-    float beta() const { return (phi_ + dphi()); }
-    // Estimated phi angle at which track intercepts a given radius rad, based on stub bend info. Also estimate uncertainty on this angle due to endcap 2S module strip length.
-    // This is identical to beta() if rad=0.
-    std::pair<float, float> trkPhiAtR(float rad) const;
-    // Estimated resolution in trkPhiAtR(rad) based on nominal stub bend resolution.
-    float trkPhiAtRres(float rad) const { return this->dphiRes() * std::abs(1 - rad / r_); }
-    // Difference in phi between stub and angle at which track crosses given radius, assuming track has given Pt.
-    float phiDiff(float rad, float Pt) const { return std::abs(r_ - rad) * (settings_->invPtToDphi()) / Pt; }
-    // -- conversion factors
-    // Ratio of bend angle to bend, where bend is the displacement in strips between the two hits making up stub.
-    float dphiOverBend() const {
-      this->check();
-      return dphiOverBend_;
-    }
-    // Correction factor that was used when calculating dPhiOverBend, due to tilt of module.
-    float dphiOverBendCorrection() const { return dphiOverBendCorrection_; }
-    // Approximation of dphiOverBendCorrection, used in firmware.
-    float dphiOverBendCorrectionApprox() const { return dphiOverBendCorrection_approx_; }
-    // Ratio of q/Pt to bend, where bend is the displacement in strips between the two hits making up stub.
-    float qOverPtOverBend() const { return this->dphiOverBend() / (r_ * settings_->invPtToDphi()); }
-
-    //--- Info about the two clusters that make up the stub.
-    // Coordinates in frame of sensor, measured in units of strip pitch along two orthogonal axes running perpendicular and parallel to longer axis of pixels/strips (U & V).
-    std::array<float, 2> localU_cluster() const { return localU_cluster_; }
-    std::array<float, 2> localV_cluster() const { return localV_cluster_; }
-
-    //--- Check if this stub will be output by front-end readout electronics,
-    //--- (where we can reconfigure the stub window size and rapidity cut).
-    //--- Don't use stubs failing this cut.
-    bool frontendPass() const { return frontendPass_; }
-    // Indicates if stub would have passed front-end cuts, were it not for window size encoded in DegradeBend.h
-    bool stubFailedDegradeWindow() const { return stubFailedDegradeWindow_; }
-
-    // Location of stub in module in units of strip number (or pixel number along finest granularity axis).
+    // Location of stub in module in units of strip/pixel number in phi direction.
     // Range from 0 to (nStrips - 1) inclusive.
     unsigned int iphi() const { return iphi_; }
     // alpha correction for non-radial strips in endcap 2S modules.
     // (If true hit at larger r than stub r by deltaR, then stub phi needs correcting by +alpha*deltaR).
     // *** TO DO *** : Digitize this.
     float alpha() const { return alpha_; }
+
+    // Get stub bend and its resolution, as available within the front end chip (i.e. prior to loss of bits
+    // or digitisation).
+    float bendInFrontend() const { return bendInFrontend_; }
+    float bendResInFrontend() const { return settings_->bendResolution(); }
+    // Get stub bend (i.e. displacement between two hits in stub in units of strip pitch). 
+    float bend() const {return bend_;}
+    // Bend resolution.
+    float bendRes() const {
+      return (settings_->bendResolution() + (numMergedBend_ - 1) * settings_->bendResolutionExtra());
+    }
+    // No. of bend values merged into FE bend encoding of this stub.
+    float numMergedBend() const { return numMergedBend_; }
+    // Estimated track q/Pt based on stub bend info.
+    float qOverPt() const { return (this->qOverPtOverBend() * this->bend()); }
+    float qOverPtres() const { return (this->qOverPtOverBend() * this->bendRes()); }
+    // Range in q/Pt bins in HT array compatible with stub bend.
+    unsigned int min_qOverPt_bin() const { return min_qOverPt_bin_; }
+    unsigned int max_qOverPt_bin() const { return max_qOverPt_bin_; }
+    // Difference in phi between stub and angle at which track crosses given radius, assuming track has given Pt.
+    float phiDiff(float rad, float Pt) const { return std::abs(r_ - rad) * (settings_->invPtToDphi()) / Pt; }
+    // Phi angle at which particle consistent with this stub & its bend cross specified radius.
+    float trkPhiAtR(float rad) const {return phi_ + (bend_*dphiOverBend_)*(1. - rad/r_);}
+    // Its resolution
+    float trkPhiAtRres(float rad) const {return (bendRes()*dphiOverBend_)*std::abs(1. - rad/r_);} 
+
+    // -- conversion factors
+    // Ratio of track crossing angle to bend.
+    float dphiOverBend() const { return dphiOverBend_;}    
+    // Ratio of q/Pt to bend.
+    float qOverPtOverBend() const { return dphiOverBend_ / (r_ * settings_->invPtToDphi()); }
+
+    //--- Info about the two clusters that make up the stub.
+
+    // Coordinates in frame of sensor, measured in units of strip pitch along two orthogonal axes running perpendicular and parallel to longer axis of pixels/strips (U & V).
+    std::array<float, 2> localU_cluster() const { return localU_cluster_; }
+    std::array<float, 2> localV_cluster() const { return localV_cluster_; }
+
+    //--- Check if this stub will be output by FE. Stub failing this not used for L1 tracks.
+    bool frontendPass() const { return frontendPass_; }
+    // Indicates if stub would have passed DE cuts, were it not for window size encoded in DegradeBend.h
+    bool stubFailedDegradeWindow() const { return stubFailedDegradeWindow_; }
 
     //--- Truth info
 
@@ -219,36 +176,14 @@ namespace tmtt {
       return assocTPofCluster_;
     }  // Which TP made each cluster. Warning: If cluster was not produced by a single TP, then returns nullptr! (P.S. If both clusters match same TP, then this will equal assocTP()).
 
-    // Note if stub is a crazy distance from the tracking particle trajectory that produced it. (e.g. perhaps produced by delta ray)
-    bool crazyStub() const;
-
-    // Get stub bend and its resolution, as available within the front end chip (i.e. prior to loss of bits
-    // or digitisation).
-    float bendInFrontend() const { return bendInFrontend_; }
-    float bendResInFrontend() const { return settings_->bendResolution(); }
-
     //--- Quantities common to all stubs in a given module ---
+    // N.B. Not taken from trackerModule_ to cope with Hybrid tracking.
 
-    // Unique identifier for lower sensor in module
-    unsigned int detIdRaw() const { return trackerModule_->rawDetId(); }
+    // Angle between normal to module and beam-line along +ve z axis. (In range -PI/2 to +PI/2).
+    float tiltAngle() const { return tiltAngle_; }
     // Uncertainty in stub (r,z)
     float sigmaR() const { return (barrel() ? 0. : sigmaPar()); }
     float sigmaZ() const { return (barrel() ? sigmaPar() : 0.); }
-    // Coordinates of centre of two sensors in (r,phi,z)
-    float minR() const { return trackerModule_->minR(); }
-    float maxR() const { return trackerModule_->maxR(); }
-    float minPhi() const { return trackerModule_->minPhi(); }
-    float maxPhi() const { return trackerModule_->maxPhi(); }
-    float minZ() const { return trackerModule_->minZ(); }
-    float maxZ() const { return trackerModule_->maxZ(); }
-    // Angle between normal to module and beam-line along +ve z axis. (In range -PI/2 to +PI/2).
-    float tiltAngle() const { return trackerModule_->tiltAngle(); }
-    // Which of two sensors in module is furthest from beam-line?
-    bool outerModuleAtSmallerR() const { return trackerModule_->outerModuleAtSmallerR(); }
-    // Sensor pitch over separation.
-    float pitchOverSep() const { return trackerModule_->pitchOverSep(); }
-    // Width of sensitive region of sensor.
-    float sensorWidth() const { return  trackerModule_->sensorWidth(); }
     // Hit resolution perpendicular to strip. Measures phi.
     float sigmaPerp() const { constexpr float f = sqrt(1./12); return f * stripPitch_; }
     // Hit resolution parallel to strip. Measures r or z.
@@ -262,8 +197,6 @@ namespace tmtt {
     unsigned int layerId() const { return layerId_; }
     // Reduced layer ID (in range 1-7). This encodes the layer ID in only 3 bits (to simplify firmware) by merging some barrel layer and endcap disk layer IDs into a single ID.
     unsigned int layerIdReduced() const {return layerIdReduced_;}
-    // Endcap ring of module (returns zero in case of barrel)
-    unsigned int endcapRing() const { return endcapRing_; }
     bool barrel() const { return barrel_; }
     // True if stub is in tilted barrel module.
     bool tiltedBarrel() const { return tiltedBarrel_; }
@@ -295,13 +228,8 @@ namespace tmtt {
     // Calculate variables giving ratio of track intercept angle to stub bend.
     void calcDphiOverBend();
 
-    // After GP, firmware can't access directly the stub bend or dphi info.
-    void check() const {
-      if (digitizeWarningsOn_ && digitizedForHTinput_)
-        throw cms::Exception("LogicError") << "Stub: no access digitized bend or dphi variables after GP!";
-    }
-
   private:
+
     TTStubRef ttStubRef_;  // Reference to original TTStub
 
     const Settings* settings_;  // configuration parameters.
@@ -327,12 +255,6 @@ namespace tmtt {
     unsigned int iphi_;
     float alpha_;
 
-    //--- Truth info about stub.
-    const TP* assocTP_;
-    std::set<const TP*> assocTPs_;
-    //--- Truth info about the two clusters that make up the stub
-    std::array<const TP*, 2> assocTPofCluster_;
-
     // Would front-end electronics output this stub?
     bool frontendPass_;
     // Did stub fail window cuts assumed in DegradeBend.h?
@@ -342,13 +264,15 @@ namespace tmtt {
     // Used for stub bend resolution degrading.
     unsigned int numMergedBend_;
 
+    //--- Truth info about stub.
+    const TP* assocTP_;
+    std::set<const TP*> assocTPs_;
+    //--- Truth info about the two clusters that make up the stub
+    std::array<const TP*, 2> assocTPofCluster_;
+
     std::unique_ptr<DigitalStub> digitalStub_;   // Class used to digitize stub if required.
-    bool digitizedForGPinput_;  // Has this stub been digitized for GP input?
-    bool digitizedForHTinput_;  // Has this stub been digitized for HT input?
-    // Has this stub been digitized for SF/TF input? If so, this was SF/TF name.
-    std::string digitizedForSForTFinput_;  
-    bool digitizedForDRinput_;  // Has this stub been digitized for seed filter input?
     bool digitizeWarningsOn_;   // Enable warnings about accessing non-digitized quantities.
+    DigiStage lastDigiStep_;
 
     // Info about tracker module containing stub.
     const TrackerModule* trackerModule_;
@@ -364,9 +288,9 @@ namespace tmtt {
     bool psModule_;
     unsigned int layerId_;
     unsigned int layerIdReduced_;
-    unsigned int endcapRing_;
     bool barrel_;
     bool tiltedBarrel_;
+    float tiltAngle_;
     float stripPitch_;
     float stripLength_;
     unsigned int nStrips_;

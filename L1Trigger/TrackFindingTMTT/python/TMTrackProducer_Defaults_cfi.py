@@ -79,15 +79,27 @@ TMTrackProducer_params = cms.PSet(
      PhiSBits        = cms.uint32(14),   # Bits used to store phiS coord. (13 enough?)
      PhiSRange       = cms.double(0.698131700),  # Range phiS coord. covers in radians.
      RtBits          = cms.uint32(12),   # Bits used to store Rt coord.
-      RtRange        = cms.double(91.652837), # Range Rt coord. covers in units of cm.
+     RtRange         = cms.double(91.652837), # Range Rt coord. covers in units of cm.
      ZBits           = cms.uint32(14),   # Bits used to store z coord.
-      ZRange          = cms.double(733.2227), # Range z coord. covers in units of cm.
+     ZRange          = cms.double(733.2227), # Range z coord. covers in units of cm.
      #
      #--- Parameters available in GP board (excluding any in common with MP specified above).
      #
-     PhiOBits        = cms.uint32(15),      # Bits used to store PhiO parameter.
-     PhiORange      = cms.double(1.3962634), # Range PhiO parameter covers.
+     PhiNBits        = cms.uint32(15),      # Bits used to store PhiO parameter.
+     PhiNRange       = cms.double(1.3962634), # Range PhiO parameter covers.
      BendBits        = cms.uint32(6)        # Bits used to store stub bend.
+  ),
+
+  #=== Configuration of tracker module type. Only provides test data for firmware.
+
+  TrackerModuleType = cms.PSet(
+    # Modules matching these criteria are type 0, 1, 2, 3 ...
+    PitchVsType  = cms.vdouble(0.0099, 0.0099, 0.0099, 0.0099, 0.0089, 0.0099, 0.0089, 0.0089),
+    SpaceVsType  = cms.vdouble(0.26  , 0.26  , 0.16  , 0.4   , 0.18  , 0.4   , 0.18  , 0.4   ),
+    # (Type vbool not implemented, so use vuint32 instead ...)
+    BarrelVsType = cms.vuint32( 1    , 1     , 1     , 1     , 1     , 0     , 0     , 0 ),
+    PSVsType     = cms.vuint32( 1    , 1     , 1     , 1     , 0     , 1     , 0     , 0 ),
+    TiltedVsType = cms.vuint32( 0    , 1     , 0     , 1     , 0     , 0     , 0     , 0 ) 
   ),
 
   #=== Configuration of Geometric Processor.

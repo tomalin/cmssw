@@ -15,7 +15,7 @@ using namespace std;
 
 namespace tmtt {
 
-  //=== Store useful info about the stub (for use with HYBRID code), with hard-wired constants to allow use outside CMSSW.
+  //=== Hybrid L1 tracking: stub constructor.
 
   Stub::Stub(double phi,
              double r,
@@ -40,7 +40,6 @@ namespace tmtt {
         psModule_(psModule),
         layerId_(layerId),
         layerIdReduced_(TrackerModule::calcLayerIdReduced(layerId)),
-        endcapRing_(0),
         barrel_(barrel)
   {  //work in progress on better constructor for new hybrid
     if (psModule && barrel) {
@@ -50,6 +49,7 @@ namespace tmtt {
     } else {
       tiltedBarrel_ = false;
     }
+    tiltAngle_ = 0.; // Not used if cfg uses "ApproxB".
     if (psModule) {
       stripPitch_ = settings->psPixelPitch();
       stripLength_ = settings->psPixelLength();
@@ -62,7 +62,7 @@ namespace tmtt {
     index_in_vStubs_ = ID;  // A unique ID to label the stub.
   }
 
-  //=== Store useful info about stub (for use with TMTT tracking).
+  //=== TMTT L1 tracking: stub constructor.
 
   Stub::Stub(const TTStubRef& ttStubRef,
              unsigned int index_in_vStubs,
@@ -74,10 +74,8 @@ namespace tmtt {
         settings_(settings),
         index_in_vStubs_(index_in_vStubs),
         assocTP_(nullptr),  // Initialize in case job is using no MC truth info.
-        digitizedForGPinput_(false),  // Has stub has been digitized for GP input?
-        digitizedForHTinput_(false),  // Has stub been digitized for HT input?
-        digitizedForSForTFinput_(""),  // Has stub been digitized for SF/TF input?
         digitizeWarningsOn_(true),
+	lastDigiStep_(Stub::DigiStage::NONE),
         trackerModule_(trackerModule),  // Info about tracker module containing stub 
         stubWindowSuggest_(settings, trackerTopology),  // TMTT recommended stub window sizes.
         degradeBend_(trackerTopology),                   // Used to degrade stub bend information.
@@ -85,9 +83,9 @@ namespace tmtt {
     psModule_(trackerModule->psModule()),
     layerId_(trackerModule->layerId()),
     layerIdReduced_(trackerModule->layerIdReduced()),
-    endcapRing_(trackerModule->endcapRing()),
     barrel_(trackerModule->barrel()),
     tiltedBarrel_(trackerModule->tiltedBarrel()),
+    tiltAngle_(trackerModule->tiltAngle()),
     stripPitch_(trackerModule->stripPitch()),
     stripLength_(trackerModule->stripLength()),
     nStrips_(trackerModule->nStrips())
@@ -129,7 +127,7 @@ namespace tmtt {
     alpha_ = 0.;
     if ((not barrel()) && (not psModule())) {
       float fracPosInModule = (float(iphi_) - 0.5 * float(nStrips())) / float(nStrips());
-      float phiRelToModule = sensorWidth() * fracPosInModule / r_;
+      float phiRelToModule = trackerModule_->sensorWidth() * fracPosInModule / r_;
       if (z_ < 0)
         phiRelToModule *= -1;
       if (trackerModule_->outerModuleAtSmallerR())
@@ -173,22 +171,6 @@ namespace tmtt {
 
     // Calculate bin range along q/Pt axis of r-phi Hough transform array consistent with bend of this stub.
     this->calcQoverPtrange();
-
-    // Initialize class used to produce digital version of stub, with original stub parameters pre-digitization.
-    digitalStub_ = std::make_unique<DigitalStub>(settings_, 
-		      phi_,
-                      r_,
-                      z_,
-                      min_qOverPt_bin_,
-                      max_qOverPt_bin_,
-                      layerId(),
-                      trackerModule_->layerIdReduced(),
-                      bend_,
-                      stripPitch(),
-                      trackerModule_->sensorSpacing(),
-                      barrel(),
-                      tiltedBarrel(),
-		      psModule());
 
     // Update recommended stub window sizes that TMTT recommends that CMS should use in FE electronics.
     if (settings_->printStubWindows())
@@ -242,118 +224,50 @@ namespace tmtt {
 
   //=== Digitize stub for input to Geographic Processor, with digitized phi coord. measured relative to closest phi sector.
   //=== (This approximation is valid if their are an integer number of digitisation bins inside each phi nonant).
-  //=== However, you should also call digitizeForHTinput() before accessing digitized stub data, even if you only care about that going into GP! Otherwise, you will not identify stubs assigned to more than one nonant.
 
-  void Stub::digitizeForGPinput(unsigned int iPhiSec) {
+void Stub::digitize(unsigned int iPhiSec, Stub::DigiStage digiStep, string nameSForTF) {
     if (settings_->enableDigitize()) {
-      // Save CPU by not redoing digitization if stub was already digitized for this phi sector.
-      if (!(digitizedForGPinput_ && digitalStub_->iGetNonant(iPhiSec) == digitalStub_->iDigi_Nonant())) {
-        // Digitize
-        digitalStub_->makeGPinput(iPhiSec);
 
-        // Replace stub coordinates with those degraded by digitization process.
-        phi_ = digitalStub_->phi();
-        r_ = digitalStub_->r();
+      bool updated = true;
+      if (not digitalStub_) {
+	// Digitize stub if not yet done.
+        digitalStub_ = std::make_unique<DigitalStub>(settings_, 
+		      phi_,
+                      r_,
+                      z_,
+                      min_qOverPt_bin_,
+                      max_qOverPt_bin_,
+                      bend_,
+		      iPhiSec);
+      } else {
+	// If digitization already done, redo phi digi if phi sector has changed.
+	updated = digitalStub_->changePhiSec(iPhiSec);
+      }
+
+      // Save CPU by only updating if something has changed.
+      if (updated || digiStep != lastDigiStep_) {
+	lastDigiStep_ = digiStep;
+
+        // Replace stub coords with those degraded by digitization process.
+	if (digiStep == DigiStage::GP) {
+          phi_ = digitalStub_->phi_GP();
+	} else {
+          phi_ = digitalStub_->phi_HT_TF();
+	}
+	if (digiStep == DigiStage::GP || digiStep == DigiStage::HT) {
+          r_ = digitalStub_->r_GP_HT();
+	} else {
+          r_ = digitalStub_->r_SF_TF();
+	}
         z_ = digitalStub_->z();
         bend_ = digitalStub_->bend();
 
-        // If the Stub class contains any data members that are not input to the GP, but are derived from variables that
-        // are, then be sure to update these here too, unless Stub.h uses the check*() functions to declare them invalid.
-
-        // Update variables giving ratio of track intercept angle to stub bend.
-        this->calcDphiOverBend();
-
-        // Note that stub has been digitized for GP input
-        digitizedForGPinput_ = true;
-      }
-      digitizedForHTinput_ = false;
-    }
-  }
-
-  //=== Digitize stub for input to Hough transform, with digitized phi coord. measured relative to specified phi sector.
-
-  void Stub::digitizeForHTinput(unsigned int iPhiSec) {
-    if (settings_->enableDigitize()) {
-      // Save CPU by not redoing digitization if stub was already digitized for this phi sector.
-      if (!(digitizedForHTinput_ && iPhiSec == digitalStub_->iDigi_PhiSec())) {
-        // Call digitization for GP in case not already done. (Needed for variables that are common to GP & HT).
-        this->digitizeForGPinput(iPhiSec);
-
-        // Digitize
-        digitalStub_->makeHTinput(iPhiSec);
-
-        // Since GP and HT use same digitisation in r and z, don't bother updating their values.
-        // (Actually, the phi digitisation boundaries also match, except for systolic array, so could skip updating phi too).
-
-        // Replace stub coordinates and bend with those degraded by digitization process. (Don't bother with r & z, as already done by GP digitisation).
-        phi_ = digitalStub_->phi();
-
-        // Recalculate bin range along q/Pt axis of r-phi Hough transform array
-        // consistent with bend of this stub, since it depends on r & z which have now been digitized.
-        // (This recalculation should really be done in DigitalStub::makeHTinput(), but too lazy to move it there ...).
-        this->calcQoverPtrange();
-
-        // If the Stub class contains any data members that are not input to the HT, but are derived from variables that
-        // are, then be sure to update these here too, unless Stub.h uses the check*() functions to declare them invalid.
-        // - currently none.
-
-        // Note that stub has been digitized.
-        digitizedForHTinput_ = true;
-      }
-    }
-  }
-
-  //=== Digitize stub for input to r-z Seed Filter or Track Fitter.
-  //=== Argument is "SeedFilter" or name of Track Fitter.
-
-  void Stub::digitizeForSForTFinput(string SForTF) {
-    if (settings_->enableDigitize()) {
-      if (digitizedForSForTFinput_ != SForTF) {
-        // Digitize variables specific to seed filter or track fittr if not already done.
-        digitalStub_->makeSForTFinput(SForTF);
-
-        // Must replace stub r coordinate, as seed filter & fitters work with digitized r instead of digitized rT.
-        r_ = digitalStub_->r();
-        // And KF may also redigitize z.
-        z_ = digitalStub_->z();
-
-        digitizedForSForTFinput_ = SForTF;
-      }
-    }
-  }
-
-  //=== Digitize stub for input to r-z Seed Filter.
-
-  void Stub::digitizeForDRinput(unsigned int stubId) {
-    if (settings_->enableDigitize()) {
-      // Digitize variables specific to seed filter if not already done.
-      digitalStub_->makeDRinput(stubId);
-      // digitizedForDRinput_ = true;
-    }
-  }
-
-  //===  Restore stub to pre-digitized state. i.e. Undo what function digitize() did.
-
-  void Stub::reset_digitize() {
-    if (settings_->enableDigitize()) {
-      // Save CPU by not undoing digitization if stub was not already digitized.
-      if (digitizedForGPinput_ || digitizedForHTinput_) {
-        // Replace stub coordinates and bend with original coordinates stored prior to any digitization.
-        phi_ = digitalStub_->orig_phi();
-        r_ = digitalStub_->orig_r();
-        z_ = digitalStub_->orig_z();
-        bend_ = digitalStub_->orig_bend();
-
-        // Note that stub is (no longer) digitized.
-        digitizedForGPinput_ = false;
-        digitizedForHTinput_ = false;
-        digitizedForSForTFinput_ = "";
-
-        // If the Stub class contains any data members that are not input to the GP or HT, but are derived from
-        // variables that are, then be sure to update these here too.
-
-        // Update variables giving ratio of track intercept angle to stub bend.
-        this->calcDphiOverBend();
+	// Update data members that depend on updated coords.
+	// (Logically part of digitisation, so disable warnings)
+	digitizeWarningsOn_ = false;
+	if (digiStep == DigiStage::GP) this->calcDphiOverBend();
+        if (digiStep == DigiStage::HT) this->calcQoverPtrange();
+	digitizeWarningsOn_ = true;
       }
     }
   }
@@ -504,32 +418,5 @@ namespace tmtt {
         }
       }
     }
-  }
-
-  //=== Estimated phi angle at which track intercepts a given radius rad, based on stub bend info. Also estimate uncertainty on this angle due to endcap 2S module strip length.
-  //=== N.B. This is identical to Stub::beta() if rad=0.
-
-  pair<float, float> Stub::trkPhiAtR(float rad) const {
-    float rStubMax = r_ + sigmaR();  // Uncertainty in radial stub coordinate due to strip length.
-    float rStubMin = r_ - sigmaR();
-    float trkPhi1 = (phi_ + dphi() * (1. - rad / rStubMin));
-    float trkPhi2 = (phi_ + dphi() * (1. - rad / rStubMax));
-    float trkPhi = 0.5 * (trkPhi1 + trkPhi2);
-    float errTrkPhi = 0.5 * std::abs(trkPhi1 - trkPhi2);
-    return pair<float, float>(trkPhi, errTrkPhi);
-  }
-
-  //=== Note if stub is a crazy distance from the tracking particle trajectory that produced it.
-  //=== If so, it was probably produced by a delta ray.
-
-  bool Stub::crazyStub() const {
-    bool crazy;
-    if (assocTP_ == nullptr) {
-      crazy = false;  // Stub is fake, but this is not crazy. It happens ...
-    } else {
-      // Stub was produced by TP. Check it lies not too far from TP trajectory.
-      crazy = std::abs(reco::deltaPhi(phi_, assocTP_->trkPhiAtStub(this))) > settings_->crazyStubCut();
-    }
-    return crazy;
   }
 }  // namespace tmtt

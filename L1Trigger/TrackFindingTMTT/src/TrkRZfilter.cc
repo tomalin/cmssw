@@ -91,7 +91,7 @@ namespace tmtt {
       // Digitize stubs for r-z filter if required.
       if (settings_->enableDigitize()) {
         for (const Stub* s : stubs) {
-          (const_cast<Stub*>(s))->digitizeForSFinput();
+  	  (const_cast<Stub*>(s))->digitize(iPhiSec_, Stub::DigiStage::SFTF, "SeedFilter");
         }
       }
 

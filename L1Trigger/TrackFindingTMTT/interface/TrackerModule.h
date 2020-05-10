@@ -26,9 +26,17 @@ public:
 
   enum BarrelModuleType { tiltedMinusZ = 1, tiltedPlusZ = 2, flat = 3 };
 
+  // Info used to define firmware module type.
+  struct ModuleTypeCfg {
+    std::vector<double> pitchVsType;
+    std::vector<double> spaceVsType;
+    std::vector<bool> barrelVsType;
+    std::vector<bool> psVsType;
+    std::vector<bool> tiltedVsType;
+  };
+
   // Here detId is ID of lower sensor in stacked module.
-  TrackerModule(const TrackerGeometry* trackerGeometry, const TrackerTopology* trackerTopology,
-	     const DetId& detId);
+    TrackerModule(const TrackerGeometry* trackerGeometry, const TrackerTopology* trackerTopology, const ModuleTypeCfg& moduleTypeCfg, const DetId& detId);
 
     // Det ID of lower sensor in stacked module. 
     const DetId& detId() const {return detId_;}
@@ -81,12 +89,17 @@ public:
     float pitchOverSep() const { return stripPitch_/sensorSpacing_; }
     // "B" parameter correction for module tilt.
     float paramB() const { return std::abs(cos(theta() - tiltAngle()) / sin(theta())); }
+    // Module type ID defined by firmware.
+    unsigned int moduleTypeID() const {return moduleTypeID_;}
 
-  //--- Utilties
+    //--- Utilties
 
-   // Calculate reduced layer ID (in range 1-7), for  packing into 3 bits to simplify the firmware.
-   static unsigned int calcLayerIdReduced(unsigned int layerId);
- 
+    // Calculate reduced layer ID (in range 1-7), for  packing into 3 bits to simplify the firmware.
+    static unsigned int calcLayerIdReduced(unsigned int layerId);
+
+    // Get module type ID defined by firmware.
+    unsigned int calcModuleType(float pitch, float space, bool barrel, bool tiltedBarrel, bool psModule) const;
+
   private:
 
     DetId detId_;
@@ -112,6 +125,9 @@ public:
     unsigned int nStrips_;
     float stripPitch_;
     float stripLength_;
+    unsigned int moduleTypeID_;
+
+  ModuleTypeCfg moduleTypeCfg_;
   };
 
 }  // namespace tmtt

@@ -44,7 +44,7 @@ namespace tmtt {
         int iphi = stubs_[i]->iphi();
 
         // N.B. These represent HALF the width and number of strips of sensor.
-        double width = 0.5 * stubs_[i]->sensorWidth();
+        double width = 0.5 * stubs_[i]->trackerModule()->sensorWidth();
         double nstrip = 0.5 * stubs_[i]->nStrips();
 
         double Deltai = width * (iphi - nstrip) / nstrip;  // Non-radial endcap 2S strip correction
@@ -139,7 +139,7 @@ namespace tmtt {
         int iphi = stubs_[i]->iphi();
 
         // N.B. These represent HALF the width and number of strips of sensor.
-        double width = 0.5 * stubs_[i]->sensorWidth();
+        double width = 0.5 * stubs_[i]->trackerModule()->sensorWidth();
         double nstrip = 0.5 * stubs_[i]->nStrips();
 
         double Deltai = width * (iphi - nstrip) / nstrip;  // Non-radial endcap 2S strip correction

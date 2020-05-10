@@ -33,11 +33,10 @@ namespace tmtt {
                        const edm::EDGetTokenT<TTStubDetSetVec> stubToken,
                        const edm::EDGetTokenT<TTStubAssMap> stubTruthToken,
                        const edm::EDGetTokenT<TTClusterAssMap> clusterTruthToken,
-                       const edm::EDGetTokenT<reco::GenJetCollection> genJetToken) {
-
+                       const edm::EDGetTokenT<reco::GenJetCollection> genJetToken) :
     // Note if job will use MC truth info (or skip it to save CPU).
-    enableMCtruth_ = settings->enableMCtruth();
-
+    enableMCtruth_(settings->enableMCtruth())
+{
     edm::Handle<TrackingParticleCollection> tpHandle;
     edm::Handle<TTStubDetSetVec> ttStubHandle;
     edm::Handle<TTStubAssMap> mcTruthTTStubHandle;

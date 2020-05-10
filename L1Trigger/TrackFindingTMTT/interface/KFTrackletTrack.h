@@ -14,6 +14,7 @@
 #include <vector>
 #include <utility>
 #include <string>
+#include <memory>
 
 //=== This is used uniquely for HYBRID TRACKING.
 //=== It is the equivalent of class L1fittedTrack.
@@ -190,7 +191,7 @@ namespace tmtt {
     void digitizeTrack(const std::string& fitterName);
 
     // Access to detailed info about digitized track
-    const DigitalTrack& digitaltrack() const { return digitalTrack_; }
+    const DigitalTrack* digitaltrack() const { return digitalTrack_.get(); }
 
   private:
     //--- Configuration parameters
@@ -247,8 +248,7 @@ namespace tmtt {
     std::string lostMatchingState_;
     std::unordered_map<std::string, int> stateCalls_;
 
-    bool digitizedTrack_;
-    DigitalTrack digitalTrack_;  // Class used to digitize track if required.
+    std::shared_ptr<DigitalTrack> digitalTrack_;  // Class used to digitize track if required.
   };
 
 }  // namespace tmtt

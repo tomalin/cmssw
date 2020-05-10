@@ -35,7 +35,7 @@ namespace tmtt {
     // and the number of helix parameters being fitted (=5 if d0 is fitted, or =4 if d0 is not fitted).
     // And if track fit declared this to be a valid track (enough stubs left on track after fit etc.).
     L1fittedTrack(const Settings* settings,
-                  const L1track3D& l1track3D,
+                  const L1track3D* l1track3D,
                   const std::vector<const Stub*>& stubs,
                   unsigned int hitPattern,
                   float qOverPt,
@@ -49,7 +49,7 @@ namespace tmtt {
                   bool accepted = true)
         : L1trackBase(),
           settings_(settings),
-          l1track3D_(&l1track3D),
+          l1track3D_(l1track3D),
           stubs_(stubs),
           hitPattern_(hitPattern),
           qOverPt_(qOverPt),
@@ -65,36 +65,51 @@ namespace tmtt {
           phi0_bcon_(phi0),
           chi2rphi_bcon_(chi2rphi),
           nHelixParam_(nHelixParam),
-          iPhiSec_(l1track3D.iPhiSec()),
-          iEtaReg_(l1track3D.iEtaReg()),
-          optoLinkID_(l1track3D.optoLinkID()),
           accepted_(accepted),
           nSkippedLayers_(0),
           numUpdateCalls_(0),
-          numIterations_(0),
-          digitizedTrack_(false),
-          digitalTrack_(settings) {
-      nLayers_ = Utility::countLayers(settings, stubs);  // Count tracker layers these stubs are in
-      matchedTP_ = Utility::matchingTP(settings,
-                                       stubs,
-                                       nMatchedLayers_,
-                                       matchedStubs_);  // Find associated truth particle & calculate info about match.
+          numIterations_(0)
+    {
+      if (l1track3D != nullptr) {
+	iPhiSec_ = l1track3D->iPhiSec();
+	iEtaReg_ = l1track3D->iEtaReg();
+	optoLinkID_ = l1track3D->optoLinkID();
+      } else { // Rejected track
+	iPhiSec_ = 0;
+	iEtaReg_ = 0;
+	optoLinkID_ = 0;
+      }
+      if (settings != nullptr) {
+	// Count tracker layers these stubs are in
+        nLayers_ = Utility::countLayers(settings, stubs);  
+	// Find associated truth particle & calculate info about match.
+        matchedTP_ = Utility::matchingTP(settings,
+                                         stubs,
+                                         nMatchedLayers_,
+                                         matchedStubs_);  
+      } else { // Rejected track
+	nLayers_ = 0;
+	matchedTP_ = nullptr;
+      }
       // Set d0 = 0 for 4 param fit, in case fitter didn't do it.
       if (nHelixParam == 4) {
         d0_ = 0.;
         d0_bcon_ = 0.;
       }
-      if (not settings->hybrid()) {
+      if (settings != nullptr && not settings->hybrid()) {
 	//Sector class used to check if fitted track trajectory is in expected sector.
         secTmp_ = std::make_shared<Sector>(settings, iPhiSec_, iEtaReg_);  
 	// HT class used to identify HT cell that corresponds to fitted helix parameters.
         htRphiTmp_ = std::make_shared<HTrphi>(settings, iPhiSec_, iEtaReg_,
             secTmp_->etaMin(), secTmp_->etaMax(), secTmp_->phiCentre());  
+	this->setConsistentHTcell();
+      } else {
+	consistentCell_ = false;
       }
-      this->setConsistentHTcell();
     }
 
-    L1fittedTrack() : L1trackBase(), accepted_(false) {};  // Creates rejected track object.
+    // Creates track rejected by fitter.
+    L1fittedTrack() : L1fittedTrack(nullptr, nullptr, noStubs_, 0, 0., 0., 0., 0., 0., 0., 0., 0, false) {} 
 
     ~L1fittedTrack() {}
 
@@ -294,7 +309,6 @@ namespace tmtt {
 
     // Determine if the fitted track trajectory should lie within the same HT cell in which the track was originally found?
     void setConsistentHTcell() {
-      //return (max(std::abs(this->deltaM()), std::abs(this->deltaC())) < 0.5);
       // Use helix params with beam-spot constaint if done in case of 5 param fit.
 
       std::pair<unsigned int, unsigned int> htCell = this->cellLocationHT();
@@ -327,8 +341,8 @@ namespace tmtt {
     // Digitize track and degrade helix parameter resolution according to effect of digitisation.
     void digitizeTrack(const std::string& fitterName);
 
-    // Access to detailed info about digitized track
-    const DigitalTrack& digitaltrack() const { return digitalTrack_; }
+    // Access to detailed info about digitized track. (Gets nullptr if trk not digitized)
+    const DigitalTrack* digitaltrack() const { return digitalTrack_.get(); }
 
   private:
     //--- Configuration parameters
@@ -390,10 +404,11 @@ namespace tmtt {
     std::string lostMatchingState_;
     std::unordered_map<std::string, int> stateCalls_;
 
-    bool digitizedTrack_;
-    DigitalTrack digitalTrack_;  // Class used to digitize track if required.
+    std::shared_ptr<DigitalTrack> digitalTrack_;  // Class used to digitize track if required.
 
     bool consistentCell_;
+
+    static const std::vector<const Stub*> noStubs_; // Empty vector used to initialize rejected tracks.
   };
 
 }  // namespace tmtt

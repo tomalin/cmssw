@@ -7,7 +7,8 @@ using namespace std;
 
 namespace tmtt {
 
-  // Set config params for HYBRID TRACKING via hard-wired consts to allow use outside CMSSW.
+  ///=== Hybrid Tracking
+  ///=== Set config params for HYBRID TRACKING via hard-wired consts to allow use outside CMSSW.
 
   Settings::Settings() {
     //
@@ -103,6 +104,7 @@ namespace tmtt {
     }
   }
 
+  ///=== TMTT tracking.
   ///=== Get configuration parameters from python cfg for TMTT tracking.
 
   Settings::Settings(const edm::ParameterSet& iConfig)
@@ -124,6 +126,7 @@ namespace tmtt {
         genCuts_(iConfig.getParameter<edm::ParameterSet>("GenCuts")),
         stubCuts_(iConfig.getParameter<edm::ParameterSet>("StubCuts")),
         stubDigitize_(iConfig.getParameter<edm::ParameterSet>("StubDigitize")),
+        trackerModuleType_(iConfig.getParameter<edm::ParameterSet>("TrackerModuleType")),
         geometricProc_(iConfig.getParameter<edm::ParameterSet>("GeometricProc")),
         phiSectors_(iConfig.getParameter<edm::ParameterSet>("PhiSectors")),
         etaSectors_(iConfig.getParameter<edm::ParameterSet>("EtaSectors")),
@@ -176,9 +179,16 @@ namespace tmtt {
         zBits_(stubDigitize_.getParameter<unsigned int>("ZBits")),
         zRange_(stubDigitize_.getParameter<double>("ZRange")),
         //--- Parameters available in GP board (excluding any in common with MP specified above).
-        phiOBits_(stubDigitize_.getParameter<unsigned int>("PhiOBits")),
-        phiORange_(stubDigitize_.getParameter<double>("PhiORange")),
+        phiNBits_(stubDigitize_.getParameter<unsigned int>("PhiNBits")),
+        phiNRange_(stubDigitize_.getParameter<double>("PhiNRange")),
         bendBits_(stubDigitize_.getParameter<unsigned int>("BendBits")),
+
+        //=== Tracker Module Type for FW.
+        pitchVsType_(trackerModuleType_.getParameter<vector<double>>("PitchVsType")),
+        spaceVsType_(trackerModuleType_.getParameter<vector<double>>("SpaceVsType")),
+        barrelVsTypeTmp_(trackerModuleType_.getParameter<vector<unsigned int>>("BarrelVsType")),
+        psVsTypeTmp_(trackerModuleType_.getParameter<vector<unsigned int>>("PSVsType")),
+        tiltedVsTypeTmp_(trackerModuleType_.getParameter<vector<unsigned int>>("TiltedVsType")),
 
         //=== Configuration of Geometric Processor.
         useApproxB_(geometricProc_.getParameter<bool>("UseApproxB")),
@@ -381,6 +391,13 @@ namespace tmtt {
         useRZfilterTmp.push_back(name);
     }
     useRZfilter_ = useRZfilterTmp;
+
+    // As python cfg doesn't know type "vbool", fix it here.
+    for (unsigned int i = 0; i < barrelVsTypeTmp_.size(); i++) {
+      barrelVsType_.push_back(bool(barrelVsTypeTmp_[i]));
+      psVsType_.push_back    (bool(psVsTypeTmp_[i]));
+      tiltedVsType_.push_back(bool(tiltedVsTypeTmp_[i]));
+    }
 
     //--- Sanity checks
 

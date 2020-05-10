@@ -116,7 +116,7 @@ namespace tmtt {
       const unsigned int hitPattern = 0;  // FIX: Needs setting
       const float chi2rz = 0;             // FIX: Needs setting
       return L1fittedTrack(settings_,
-                           l1track3D,
+                           &l1track3D,
                            stubs_,
                            hitPattern,
                            x[INVR] / (settings_->invPtToInvR()),

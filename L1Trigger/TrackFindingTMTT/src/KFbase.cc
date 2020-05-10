@@ -82,7 +82,7 @@ namespace tmtt {
       double d0 = (nPar_ == 5) ? trackPars[D0] : 0.;
 
       L1fittedTrack fitTrk(settings_,
-                           l1track3D,
+                           &l1track3D,
                            cand->stubs(),
                            cand->hitPattern(),
                            trackPars[QOVERPT],
@@ -960,7 +960,6 @@ namespace tmtt {
     text << "stub ";
     text << "index=" << stub->index() << " ";
     text << "layerId=" << stub->layerId() << " ";
-    text << "endcapRing=" << stub->endcapRing() << " ";
     text << "r=" << stub->r() << " ";
     text << "phi=" << stub->phi() << " ";
     text << "z=" << stub->z() << " ";

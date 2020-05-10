@@ -3,7 +3,7 @@
 
 #include "L1Trigger/TrackFindingTMTT/interface/L1fittedTrack.h"
 
-#include <vector>
+#include <list>
 #include <iostream>
 
 /**
@@ -29,7 +29,7 @@ namespace tmtt {
     /**
   *  Eliminate duplicate tracks from the input collection, and so return a reduced list of tracks.
   */
-    std::vector<L1fittedTrack> filter(const std::vector<L1fittedTrack>& vecTracks) const;
+    std::list<const L1fittedTrack*> filter(const std::list<L1fittedTrack>& vecTracks) const;
 
   private:
     /**
@@ -37,17 +37,17 @@ namespace tmtt {
    * by requiring that the fitted (q/Pt, phi0) of the track correspond to the same HT cell in which the track
    * was originally found by the HT.
    */
-    std::vector<L1fittedTrack> filterAlg1(const std::vector<L1fittedTrack>& tracks) const;
+    std::list<const L1fittedTrack*> filterAlg1(const std::list<L1fittedTrack>& tracks) const;
 
     /**
     * Duplicate removal algorithm that  eliminates duplicates  
     * by requiring that no two tracks should have fitted (q/Pt, phi0) that correspond to the same HT
     * cell. If they do, then only the first to arrive is kept.
   */
-    std::vector<L1fittedTrack> filterAlg2(const std::vector<L1fittedTrack>& tracks) const;
+    std::list<const L1fittedTrack*> filterAlg2(const std::list<L1fittedTrack>& tracks) const;
 
     // Debug printout of which tracks are duplicates.
-    void printDuplicateTracks(const std::vector<L1fittedTrack>& tracks) const;
+    void printDuplicateTracks(const std::list<const L1fittedTrack*>& tracks) const;
 
   private:
     const Settings* settings_;  // Configuration parameters.

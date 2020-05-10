@@ -56,13 +56,11 @@ namespace tmtt {
     r_ = 0.1;
     z_ = 0;
     barrel_ = true;
-    endcapRing_ = 0;
 
     if (stub != nullptr) {
       r_ = stub->r();
       z_ = stub->z();
       barrel_ = stub->barrel();
-      endcapRing_ = stub->endcapRing();
     }
 
     n_stubs_ = 1 + kLayer_ - nSkipped_;
@@ -71,7 +69,6 @@ namespace tmtt {
   KalmanState::KalmanState(const KalmanState &p)
       : settings_(p.settings()),
         kLayer_(p.layer()),
-        endcapRing_(p.endcapRing()),
         r_(p.r()),
         z_(p.z()),
         last_state_(p.last_state()),
@@ -93,7 +90,6 @@ namespace tmtt {
 
     settings_ = other.settings();
     kLayer_ = other.layer();
-    endcapRing_ = other.endcapRing();
     r_ = other.r();
     z_ = other.z();
     last_state_ = other.last_state();

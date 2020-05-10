@@ -3,21 +3,28 @@
 #include "Geometry/CommonTopologies/interface/PixelGeomDetUnit.h"
 #include "Geometry/CommonTopologies/interface/PixelTopology.h"
 #include "DataFormats/SiStripDetId/interface/StripSubdetector.h"
-#include "FWCore/Utilities/interface/Exception.h"
+#include "FWCore/MessageLogger/interface/MessageLogger.h"
 
 #include "L1Trigger/TrackFindingTMTT/interface/TrackerModule.h"
 
 #include <iostream>
+#include <sstream>
+#include <mutex>
 
 using namespace std;
 
 namespace tmtt {
 
+std::once_flag printOnce;
+
   //=== Get info about tracker module (where detId is ID of lower sensor in stacked module).
 
   TrackerModule::TrackerModule(const TrackerGeometry* trackerGeometry,
                            const TrackerTopology* trackerTopology,
-                           const DetId& detId) {
+			   const ModuleTypeCfg& moduleTypeCfg,
+			       const DetId& detId) :
+    moduleTypeCfg_(moduleTypeCfg)
+{
 
     detId_ = detId; // Det ID of lower sensor in stacked module.
     stackedDetId_ = trackerTopology->stack(detId); // Det ID of stacked module.
@@ -89,6 +96,10 @@ namespace tmtt {
     std::pair<float, float> pitch = specTopol_->pitch();
     stripPitch_ = pitch.first;      // Strip pitch (or pixel pitch along shortest axis)
     stripLength_ = pitch.second;    //  Strip length (or pixel pitch along longest axis)
+
+    // Get module type ID defined by firmware.
+
+    moduleTypeID_ = TrackerModule::calcModuleType(stripPitch_, sensorSpacing_, barrel_, tiltedBarrel_, psModule_);
   }
 
    //=== Calculate reduced layer ID (in range 1-7), for  packing into 3 bits to simplify the firmware.
@@ -115,4 +126,30 @@ namespace tmtt {
 
     return lay;
   }
+
+//=== Get module type ID defined by firmware.
+
+unsigned int TrackerModule::calcModuleType(float pitch, float space, bool barrel, bool tiltedBarrel, bool psModule) const {
+  // Calculate unique module type ID, allowing sensor pitch/seperation of module to be determined in FW.
+
+  unsigned int moduleType = 999;
+  constexpr float tol = 0.001;  // Tolerance
+
+  for (unsigned int i = 0; i < moduleTypeCfg_.pitchVsType.size(); i++) {
+    if (std::abs(pitch - moduleTypeCfg_.pitchVsType[i]) < tol && 
+	std::abs(space -  moduleTypeCfg_.spaceVsType[i]) < tol && 
+	barrel ==  moduleTypeCfg_.barrelVsType[i] &&
+	tiltedBarrel == moduleTypeCfg_.tiltedVsType[i] && 
+	psModule ==  moduleTypeCfg_.psVsType[i]) {
+      moduleType = i;
+    }
+  }
+
+  if (moduleType == 999) {
+    std::stringstream text;
+    text<<"WARNING: TrackerModule found tracker module type unknown to firmware: pitch=" << pitch << " separation=" << space << " barrel=" << barrel<< " tilted=" << tiltedBarrel << " PS=" << psModule;
+    std::call_once(printOnce, [](string t){ edm::LogWarning("L1track")<<t; }, text.str());
+  }
+  return moduleType;
+}
 }  // namespace tmtt

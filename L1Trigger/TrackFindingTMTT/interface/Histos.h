@@ -47,7 +47,7 @@ namespace tmtt {
                       const matrix<std::unique_ptr<Sector>>& mSectors,
                       const matrix<std::unique_ptr<HTrphi>>& mHtPhis,
                       const matrix<std::unique_ptr<Make3Dtracks>>& mGet3Dtrks,
-                      const std::map<std::string, std::vector<L1fittedTrack>>& fittedTracks);
+                      const std::map<std::string, std::list<const L1fittedTrack*>>& mapFinalTracks);
 
     // Print tracking performance summary & make tracking efficiency histograms.
     virtual void endJobAnalysis();
@@ -77,7 +77,7 @@ namespace tmtt {
     virtual void fillRZfilters(const matrix<std::unique_ptr<Make3Dtracks>>& mGet3Dtrks);
     virtual void fillTrackCands(const InputData& inputData, const std::vector<L1track3D>& tracks, std::string tName);
     virtual void fillTrackFitting(const InputData& inputData,
-                                  const std::map<std::string, std::vector<L1fittedTrack>>& fittedTracks);
+                                  const std::map<std::string, std::list<const L1fittedTrack*>>& mapFinalTracks);
 
     // Produce plots of tracking efficiency after HZ or after r-z track filter (run at end of job)
     virtual TFileDirectory plotTrackEfficiency(const std::string& tName);
@@ -140,7 +140,6 @@ namespace tmtt {
     TH2F* hisStubsVsRVsZ_;
     TH2F* hisStubsModuleVsRVsZ_;
     TH2F* hisStubsModuleTiltVsZ_;
-    TH2F* hisStubsdPhiCorrectionVsZ_;
     TH2F* hisStubsVsRVsPhi_;
     TH2F* hisStubsModuleVsRVsPhi_;
 
@@ -186,10 +185,6 @@ namespace tmtt {
     TH1F* hisPtStub_;
     TH1F* hisPtResStub_;
     TH1F* hisBendFilterPower_;
-    TH1F* hisDelPhiStub_;
-    TH1F* hisDelPhiResStub_;
-    TH1F* hisDelPhiResStub_tilted_;
-    TH1F* hisDelPhiResStub_notTilted_;
     TH1F* hisBendStub_;
     TH1F* hisBendResStub_;
     TH1F* hisNumMergedBend_;
@@ -199,17 +194,13 @@ namespace tmtt {
     TH2F* hisBendFEVsLayerOrRing2S_;
     TH1F* hisPhiStubVsPhiTP_;
     TH1F* hisPhiStubVsPhi0TP_;
-    TH1F* hisPhi0StubVsPhi0TP_;
-    TH1F* hisPhi0StubVsPhi0TPres_;
     TH1F* hisPitchOverSep_;
     TH1F* hisRhoParameter_;
     TH2F* hisAlphaCheck_;
     TH1F* hisFracStubsSharingClus0_;
     TH1F* hisFracStubsSharingClus1_;
 
-    // Histograms of B
-    TH1F* hisStubB_;
-    TH1F* hisStubBApproxDiff_tilted_;
+    // Histograms of B parameter for tilted modules.
     TGraph* graphBVsZoverR_;
 
     // Histograms checking that (eta,phi) sector definition is good.

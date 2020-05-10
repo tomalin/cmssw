@@ -84,7 +84,7 @@ namespace tmtt {
                     const matrix<unique_ptr<Sector>>& mSectors,
                     const matrix<unique_ptr<HTrphi>>& mHtRphis,
                     const matrix<unique_ptr<Make3Dtracks>>& mMake3Dtrks,
-                    const std::map<std::string, std::vector<L1fittedTrack>>& fittedTracks) {
+                    const std::map<std::string, std::list<const L1fittedTrack*>>& mapFinalTracks) {
     // Don't bother filling histograms if user didn't request them via TFileService in their cfg.
     if (not this->enabled())
       return;
@@ -121,7 +121,7 @@ namespace tmtt {
       this->fillTrackCands(inputData, tracksRZ, "RZ");
     }
     // Fill histograms studying track fitting performance
-    this->fillTrackFitting(inputData, fittedTracks);
+    this->fillTrackFitting(inputData, mapFinalTracks);
   }
 
   //=== Book histograms using input stubs and tracking particles.
@@ -156,9 +156,6 @@ namespace tmtt {
         "StubsModuleVsRVsPhi", "; x (cm); y (cm); No. stubs in tracker", 1000, -130, 130, 1000, -130, 130);
     hisStubsModuleTiltVsZ_ =
         inputDir.make<TH2F>("StubsModuleTiltVsZ", "; z (cm); Tilt; Module tilt vs z", 1000, -280, 280, 128, -3.2, 3.2);
-    hisStubsdPhiCorrectionVsZ_ = inputDir.make<TH2F>(
-        "StubsdPhiCorrectionVsZ", "; z (cm); Correction; dPhi Correction vs z", 1000, -280, 280, 100, -1, 10);
-
     hisStubsVsRVsZ_outerModuleAtSmallerR_ = inputDir.make<TH2F>("StubsVsRVsZ_outerModuleAtSmallerR",
                                                                 "; z (cm); radius (cm); No. stubs in tracker",
                                                                 1000,
@@ -257,14 +254,6 @@ namespace tmtt {
     hisPtStub_ = inputDir.make<TH1F>("PtStub", "; Stub q/Pt", 50, -0.5, 0.5);
     hisPtResStub_ = inputDir.make<TH1F>("PtResStub", "; Stub q/Pt minus TP q/Pt", 50, -0.5, 0.5);
     hisBendFilterPower_ = inputDir.make<TH1F>("BendFilterPower", "; Fraction of q/Pt range allowed", 102, -0.01, 1.01);
-    hisDelPhiStub_ = inputDir.make<TH1F>("DelPhiStub", "; Stub bend angle", 50, -0.2, 0.2);
-    hisDelPhiResStub_ = inputDir.make<TH1F>("DelPhiResStub", "; Stub bend angle minus TP bend angle", 200, -0.2, 0.2);
-
-    hisDelPhiResStub_tilted_ =
-        inputDir.make<TH1F>("DelPhiResStub_tilted", "; Stub bend angle minus TP bend angle", 200, -0.2, 0.2);
-    hisDelPhiResStub_notTilted_ =
-        inputDir.make<TH1F>("DelPhiResStub_notTilted", "; Stub bend angle minus TP bend angle", 200, -0.2, 0.2);
-
     hisBendStub_ = inputDir.make<TH1F>("BendStub", "; Stub bend in units of strips", 57, -7.125, 7.125);
     hisBendResStub_ = inputDir.make<TH1F>("BendResStub", "; Stub bend minus TP bend in units of strips", 100, -5., 5.);
     hisNumMergedBend_ =
@@ -293,9 +282,6 @@ namespace tmtt {
     hisPhiStubVsPhiTP_ =
         inputDir.make<TH1F>("PhiStubVsPhiTP", "; Stub #phi minus TP #phi at stub radius", 100, -0.05, 0.05);
     hisPhiStubVsPhi0TP_ = inputDir.make<TH1F>("PhiStubVsPhi0TP", "; Stub #phi minus TP #phi0", 100, -0.3, 0.3);
-    hisPhi0StubVsPhi0TP_ = inputDir.make<TH1F>("Phi0StubVsPhi0TP", "; #phi0 of Stub minus TP", 100, -0.2, 0.2);
-    hisPhi0StubVsPhi0TPres_ =
-        inputDir.make<TH1F>("Phi0StubVsPhi0TPres", "; #phi0 of Stub minus TP / resolution", 100, -5.0, 5.0);
 
     // Note ratio of sensor pitch to separation (needed to understand how many bits this can be packed into).
     hisPitchOverSep_ = inputDir.make<TH1F>("PitchOverSep", "; ratio of sensor pitch / separation", 100, 0.0, 0.1);
@@ -308,10 +294,6 @@ namespace tmtt {
         "FracStubsSharingClus0", "Fraction of stubs sharing cluster in seed sensor", 102, -0.01, 1.01);
     hisFracStubsSharingClus1_ = inputDir.make<TH1F>(
         "FracStubsSharingClus1", "Fraction of stubs sharing cluster in correlation sensor", 102, -0.01, 1.01);
-
-    hisStubB_ = inputDir.make<TH1F>("StubB", "Variable B for all stubs on TP", 100, 0.9, 10);
-    hisStubBApproxDiff_tilted_ = inputDir.make<TH1F>(
-        "StubBApproxDiff_tilted_", "Difference between exact and approximate values for B", 100, -1, 1);
 
     // Histos for denominator of tracking efficiency
     float maxAbsQoverPt = 1. / houghMinPt_;  // Max. |q/Pt| covered by  HT array.
@@ -381,26 +363,25 @@ namespace tmtt {
     profNumStubs_->Fill(4, nStubsWithTPforEff);
 
     for (const Stub* stub : vStubs) {
+      const TrackerModule* module = stub->trackerModule();
       hisStubsVsEta_->Fill(stub->eta());
       hisStubsVsR_->Fill(stub->r());
       hisStubsVsRVsZ_->Fill(stub->z(), stub->r());
-      hisStubsModuleVsRVsZ_->Fill(stub->minZ(), stub->minR());
-      hisStubsModuleVsRVsZ_->Fill(stub->maxZ(), stub->maxR());
+      hisStubsModuleVsRVsZ_->Fill(module->minZ(), module->minR());
+      hisStubsModuleVsRVsZ_->Fill(module->maxZ(), module->maxR());
 
-      hisStubsModuleTiltVsZ_->Fill(stub->minZ(), stub->tiltAngle());
-      hisStubsModuleTiltVsZ_->Fill(stub->maxZ(), stub->tiltAngle());
+      hisStubsModuleTiltVsZ_->Fill(module->minZ(), stub->tiltAngle());
+      hisStubsModuleTiltVsZ_->Fill(module->maxZ(), stub->tiltAngle());
 
-      if (stub->barrel() && stub->outerModuleAtSmallerR()) {
+      if (stub->barrel() && module->outerModuleAtSmallerR()) {
         hisStubsVsRVsZ_outerModuleAtSmallerR_->Fill(stub->z(), stub->r());
       }
 
-      hisStubsdPhiCorrectionVsZ_->Fill(stub->minZ(), stub->dphiOverBendCorrection());
-
       hisStubsVsRVsPhi_->Fill(stub->r() * sin(stub->phi()), stub->r() * cos(stub->phi()));
-      hisStubsModuleVsRVsPhi_->Fill(stub->minR() * sin(stub->minPhi()), stub->minR() * cos(stub->minPhi()));
-      hisStubsModuleVsRVsPhi_->Fill(stub->maxR() * sin(stub->maxPhi()), stub->maxR() * cos(stub->maxPhi()));
+      hisStubsModuleVsRVsPhi_->Fill(module->minR() * sin(module->minPhi()), module->minR() * cos(module->minPhi()));
+      hisStubsModuleVsRVsPhi_->Fill(module->maxR() * sin(module->maxPhi()), module->maxR() * cos(module->maxPhi()));
 
-      if (stub->barrel() && stub->outerModuleAtSmallerR()) {
+      if (stub->barrel() && module->outerModuleAtSmallerR()) {
         hisStubsVsRVsPhi_outerModuleAtSmallerR_->Fill(stub->r() * sin(stub->phi()), stub->r() * cos(stub->phi()));
       }
     }
@@ -422,7 +403,7 @@ namespace tmtt {
 
     const list<Stub>& vAllStubs = inputData.allStubs();  // Get all stubs prior to FE cuts to do this.
     for (const Stub& s : vAllStubs) {
-      unsigned int layerOrTenPlusRing = s.barrel() ? s.layerId() : 10 + s.endcapRing();
+      unsigned int layerOrTenPlusRing = s.barrel() ? s.layerId() : 10 + s.trackerModule()->endcapRing();
       // Fraction of all stubs (good and bad) failing tightened front-end electronics cuts.
       hisStubKillFE_->Fill(layerOrTenPlusRing, (!s.frontendPass()));
       // Fraction of stubs rejected by window cut in DegradeBend.h
@@ -444,8 +425,7 @@ namespace tmtt {
     // Plot stub bend-derived information.
     for (const Stub* stub : vStubs) {
       hisPtStub_->Fill(stub->qOverPt());
-      hisDelPhiStub_->Fill(stub->dphi());
-      hisBendStub_->Fill(stub->dphi() / stub->dphiOverBend());
+      hisBendStub_->Fill(stub->bend());
       // Number of bend values merged together by loss of a bit.
       hisNumMergedBend_->Fill(stub->numMergedBend());
       // Min. & max allowed q/Pt obtained from stub bend.
@@ -454,7 +434,7 @@ namespace tmtt {
       // Frac. of full q/Pt range allowed by stub bend.
       float fracAllowed = (maxQoverPt - minQoverPt) / (2. / (houghMinPt_));
       hisBendFilterPower_->Fill(fracAllowed);
-      unsigned int layerOrTenPlusRing = stub->barrel() ? stub->layerId() : 10 + stub->endcapRing();
+      unsigned int layerOrTenPlusRing = stub->barrel() ? stub->layerId() : 10 + stub->trackerModule()->endcapRing();
       // Also plot bend before & after to degradation.
       if (stub->psModule()) {
         hisBendFEVsLayerOrRingPS_->Fill(layerOrTenPlusRing, stub->bendInFrontend());
@@ -481,26 +461,11 @@ namespace tmtt {
             ++num2Sstubs;
 
           hisPtResStub_->Fill(stub->qOverPt() - tp.charge() / tp.pt());
-          hisDelPhiResStub_->Fill(stub->dphi() - tp.dphi(stub->r()));
-
-          if (stub->tiltAngle() > M_PI / 2 - 0.1 || !stub->barrel()) {
-            hisDelPhiResStub_notTilted_->Fill(stub->dphi() - tp.dphi(stub->r()));
-          } else {
-            hisDelPhiResStub_tilted_->Fill(stub->dphi() - tp.dphi(stub->r()));
-          }
-          hisBendResStub_->Fill((stub->dphi() - tp.dphi(stub->r())) / stub->dphiOverBend());
+          hisBendResStub_->Fill(stub->bend() - tp.dphi(stub->r())/ stub->dphiOverBend());
           // This checks if the TP multiple scattered before producing the stub or hit resolution effects.
           hisPhiStubVsPhiTP_->Fill(reco::deltaPhi(stub->phi(), tp.trkPhiAtStub(stub)));
           // This checks how wide overlap must be if using phi0 sectors, with no stub bend info used for assignment.
           hisPhiStubVsPhi0TP_->Fill(reco::deltaPhi(stub->phi(), tp.phi0()));
-          // This checks how wide overlap must be if using phi0 sectors, with stub bend info used for assignment
-          hisPhi0StubVsPhi0TP_->Fill(reco::deltaPhi(stub->trkPhiAtR(0.).first, tp.phi0()));
-          // This normalizes the previous distribution to the predicted resolution to check if the latter is OK.
-          hisPhi0StubVsPhi0TPres_->Fill(reco::deltaPhi(stub->trkPhiAtR(0.).first, tp.phi0()) / stub->trkPhiAtRres(0.));
-
-          // Plot B variable
-          hisStubB_->Fill(stub->dphiOverBendCorrection());
-          hisStubBApproxDiff_tilted_->Fill(stub->dphiOverBendCorrection() - stub->dphiOverBendCorrectionApprox());
         }
 
         hisNumPSStubsPerTP_->Fill(numPSstubs);
@@ -545,10 +510,10 @@ namespace tmtt {
     }
 
     for (const Stub* stub : vStubs) {
+      float rho = stub->trackerModule()->pitchOverSep();
       // Note ratio of sensor pitch to separation (needed to understand how many bits this can be packed into).
-      hisPitchOverSep_->Fill(stub->pitchOverSep());
+      hisPitchOverSep_->Fill(rho);
       // Also note this same quantity times 1.0 in the barrel or z/r in the endcap. This product is known as "rho".
-      float rho = stub->pitchOverSep();
       if (!stub->barrel())
         rho *= std::abs(stub->z()) / stub->r();
       hisRhoParameter_->Fill(rho);
@@ -556,12 +521,12 @@ namespace tmtt {
       // Check how strip number correlates with phi coordinate relative to module centre.
       // (Useful for "alpha" correction for non-radial strips in endcap 2S modules).
       float fracPosInModule = (float(2 * stub->iphi()) - float(stub->nStrips())) / float(stub->nStrips());
-      float phiFromStrip = 0.5 * stub->sensorWidth() * fracPosInModule / stub->r();
+      float phiFromStrip = 0.5 * stub->trackerModule()->sensorWidth() * fracPosInModule / stub->r();
       if (stub->z() < 0 && (not stub->barrel()))
         phiFromStrip *= -1;
-      if (stub->outerModuleAtSmallerR())
+      if (stub->trackerModule()->outerModuleAtSmallerR())
         phiFromStrip *= -1;  // Module flipped.
-      float phiFromStub = reco::deltaPhi(stub->phi(), 0.5 * (stub->minPhi() + stub->maxPhi()));
+      float phiFromStub = reco::deltaPhi(stub->phi(), 0.5 * (stub->trackerModule()->minPhi() + stub->trackerModule()->maxPhi()));
       hisAlphaCheck_->Fill(phiFromStub, phiFromStrip);
     }
 
@@ -629,7 +594,7 @@ namespace tmtt {
     for (const Stub* stub : vStubs) {
       float r = stub->r();
       float z = std::abs(stub->z());
-      unsigned int modType = stub->digitalStub()->moduleType();
+      unsigned int modType = stub->trackerModule()->moduleTypeID();
       // Do something ugly, as modules in 1-2nd & 3-4th endcap wheels are different to those in wheel 5 ...
       // And boundary between flat & tilted modules in barrel layers 1-3 varies in z.
       if (stub->barrel() && stub->layerId() == 1) {  // barrel layer 1
@@ -2283,12 +2248,12 @@ void Histos::fillEtaPhiSectors(const InputData& inputData, const matrix<unique_p
 
   //=== Fill histograms for studying track fitting.
 
-  void Histos::fillTrackFitting(const InputData& inputData, const map<string, vector<L1fittedTrack>>& mFittedTracks) {
+  void Histos::fillTrackFitting(const InputData& inputData, const map<string, list<const L1fittedTrack*>>& mapFinalTracks) {
     const list<TP>& vTPs = inputData.getTPs();
 
     // Loop over all the fitting algorithms we are trying.
     for (const string& fitName : trackFitters_) {
-      const vector<L1fittedTrack>& fittedTracks = mFittedTracks.at(fitName);  // Get fitted tracks.
+      const list<const L1fittedTrack*>& fittedTracks = mapFinalTracks.at(fitName);  // Get fitted tracks.
 
       // Count tracks
       unsigned int nFitTracks = 0;
@@ -2298,17 +2263,17 @@ void Histos::fillEtaPhiSectors(const InputData& inputData, const matrix<unique_p
       vector<unsigned int> nFitTracksPerNonant(numPhiNonants, 0);
       map<pair<unsigned int, unsigned int>, unsigned int> nFitTracksPerSector;
 
-      for (const L1fittedTrack& fitTrk : fittedTracks) {
+      for (const L1fittedTrack* fitTrk : fittedTracks) {
         nFitTracks++;
         // Get matched truth particle, if any.
-        const TP* tp = fitTrk.matchedTP();
+        const TP* tp = fitTrk->matchedTP();
         if (tp != nullptr)
           nFitsMatchingTP++;
         // Count fitted tracks per nonant.
         unsigned int iNonant =
-            (numPhiSectors_ > 0) ? floor(fitTrk.iPhiSec() * numPhiNonants / (numPhiSectors_)) : 0;  // phi nonant number
+            (numPhiSectors_ > 0) ? floor(fitTrk->iPhiSec() * numPhiNonants / (numPhiSectors_)) : 0;  // phi nonant number
         nFitTracksPerNonant[iNonant]++;
-        nFitTracksPerSector[pair<unsigned int, unsigned int>(fitTrk.iPhiSec(), fitTrk.iEtaReg())]++;
+        nFitTracksPerSector[pair<unsigned int, unsigned int>(fitTrk->iPhiSec(), fitTrk->iEtaReg())]++;
       }
 
       profNumFitTracks_[fitName]->Fill(1, nFitTracks);
@@ -2324,8 +2289,8 @@ void Histos::fillEtaPhiSectors(const InputData& inputData, const matrix<unique_p
 
       // Count stubs assigned to fitted tracks.
       unsigned int nTotStubs = 0;
-      for (const L1fittedTrack& fitTrk : fittedTracks) {
-        unsigned int nStubs = fitTrk.numStubs();
+      for (const L1fittedTrack* fitTrk : fittedTracks) {
+        unsigned int nStubs = fitTrk->numStubs();
         hisStubsPerFitTrack_[fitName]->Fill(nStubs);
         nTotStubs += nStubs;
       }
@@ -2341,11 +2306,11 @@ void Histos::fillEtaPhiSectors(const InputData& inputData, const matrix<unique_p
         tpRecoedMap[&tp] = false;
         tpPerfRecoedMap[&tp] = false;
         unsigned int nMatch = 0;
-        for (const L1fittedTrack& fitTrk : fittedTracks) {
-          const TP* assocTP = fitTrk.matchedTP();  // Get the TP the fitted track matches to, if any.
+        for (const L1fittedTrack* fitTrk : fittedTracks) {
+          const TP* assocTP = fitTrk->matchedTP();  // Get the TP the fitted track matches to, if any.
           if (assocTP == &tp) {
             tpRecoedMap[&tp] = true;
-            if (fitTrk.purity() == 1.)
+            if (fitTrk->purity() == 1.)
               tpPerfRecoedMap[&tp] = true;
             nMatch++;
           }
@@ -2370,75 +2335,75 @@ void Histos::fillEtaPhiSectors(const InputData& inputData, const matrix<unique_p
 
       // Loop over fitted tracks again.
 
-      for (const L1fittedTrack& fitTrk : fittedTracks) {
+      for (const L1fittedTrack* fitTrk : fittedTracks) {
         // Info for specific track fit algorithms.
         unsigned int nSkippedLayers = 0;
         unsigned int numUpdateCalls = 0;
         if (fitName.find("KF") != string::npos) {
-          fitTrk.infoKF(nSkippedLayers, numUpdateCalls);
+          fitTrk->infoKF(nSkippedLayers, numUpdateCalls);
           hisKalmanNumUpdateCalls_[fitName]->Fill(numUpdateCalls);
         }
 
         //--- Compare fitted tracks that match truth particles to those that don't.
 
         // Get original HT track candidate prior to fit for comparison.
-        const L1track3D* htTrk = fitTrk.l1track3D();
+        const L1track3D* htTrk = fitTrk->l1track3D();
 
         // Get matched truth particle, if any.
-        const TP* tp = fitTrk.matchedTP();
+        const TP* tp = fitTrk->matchedTP();
 
         if (tp != nullptr) {
-          hisFitQinvPtMatched_[fitName]->Fill(fitTrk.qOverPt());
-          hisFitPhi0Matched_[fitName]->Fill(fitTrk.phi0());
-          hisFitD0Matched_[fitName]->Fill(fitTrk.d0());
-          hisFitZ0Matched_[fitName]->Fill(fitTrk.z0());
-          hisFitEtaMatched_[fitName]->Fill(fitTrk.eta());
+          hisFitQinvPtMatched_[fitName]->Fill(fitTrk->qOverPt());
+          hisFitPhi0Matched_[fitName]->Fill(fitTrk->phi0());
+          hisFitD0Matched_[fitName]->Fill(fitTrk->d0());
+          hisFitZ0Matched_[fitName]->Fill(fitTrk->z0());
+          hisFitEtaMatched_[fitName]->Fill(fitTrk->eta());
 
-          hisFitChi2Matched_[fitName]->Fill(fitTrk.chi2());
-          hisFitChi2DofMatched_[fitName]->Fill(fitTrk.chi2dof());
-          hisFitChi2DofRphiMatched_[fitName]->Fill(fitTrk.chi2rphi() / fitTrk.numDOFrphi());
-          hisFitChi2DofRzMatched_[fitName]->Fill(fitTrk.chi2rz() / fitTrk.numDOFrz());
+          hisFitChi2Matched_[fitName]->Fill(fitTrk->chi2());
+          hisFitChi2DofMatched_[fitName]->Fill(fitTrk->chi2dof());
+          hisFitChi2DofRphiMatched_[fitName]->Fill(fitTrk->chi2rphi() / fitTrk->numDOFrphi());
+          hisFitChi2DofRzMatched_[fitName]->Fill(fitTrk->chi2rz() / fitTrk->numDOFrz());
           if (settings_->kalmanAddBeamConstr() &&
               fitName.find("KF5") !=
                   string::npos) {  // Histograms of chi2 with beam-spot constraint only make sense for 5 param fit.
-            hisFitBeamChi2Matched_[fitName]->Fill(fitTrk.chi2_bcon());
-            hisFitBeamChi2DofMatched_[fitName]->Fill(fitTrk.chi2dof_bcon());
+            hisFitBeamChi2Matched_[fitName]->Fill(fitTrk->chi2_bcon());
+            hisFitBeamChi2DofMatched_[fitName]->Fill(fitTrk->chi2dof_bcon());
           }
-          profFitChi2VsEtaMatched_[fitName]->Fill(std::abs(fitTrk.eta()), fitTrk.chi2());
-          profFitChi2DofVsEtaMatched_[fitName]->Fill(std::abs(fitTrk.eta()), fitTrk.chi2dof());
-          profFitChi2VsInvPtMatched_[fitName]->Fill(std::abs(fitTrk.qOverPt()), fitTrk.chi2());
-          profFitChi2DofVsInvPtMatched_[fitName]->Fill(std::abs(fitTrk.qOverPt()), fitTrk.chi2dof());
-          profFitChi2VsTrueD0Matched_[fitName]->Fill(std::abs(tp->d0()), fitTrk.chi2());
-          profFitChi2DofVsTrueD0Matched_[fitName]->Fill(std::abs(tp->d0()), fitTrk.chi2dof());
+          profFitChi2VsEtaMatched_[fitName]->Fill(std::abs(fitTrk->eta()), fitTrk->chi2());
+          profFitChi2DofVsEtaMatched_[fitName]->Fill(std::abs(fitTrk->eta()), fitTrk->chi2dof());
+          profFitChi2VsInvPtMatched_[fitName]->Fill(std::abs(fitTrk->qOverPt()), fitTrk->chi2());
+          profFitChi2DofVsInvPtMatched_[fitName]->Fill(std::abs(fitTrk->qOverPt()), fitTrk->chi2dof());
+          profFitChi2VsTrueD0Matched_[fitName]->Fill(std::abs(tp->d0()), fitTrk->chi2());
+          profFitChi2DofVsTrueD0Matched_[fitName]->Fill(std::abs(tp->d0()), fitTrk->chi2dof());
 
           // Check chi2/dof for perfectly reconstructed tracks.
-          if (fitTrk.purity() == 1.) {
-            hisFitChi2PerfMatched_[fitName]->Fill(fitTrk.chi2());
-            hisFitChi2DofPerfMatched_[fitName]->Fill(fitTrk.chi2dof());
+          if (fitTrk->purity() == 1.) {
+            hisFitChi2PerfMatched_[fitName]->Fill(fitTrk->chi2());
+            hisFitChi2DofPerfMatched_[fitName]->Fill(fitTrk->chi2dof());
           }
 
           if (fitName.find("KF") != string::npos) {
             // No. of skipped layers on track during Kalman track fit.
             if (nSkippedLayers == 0) {
-              hisKalmanChi2DofSkipLay0Matched_[fitName]->Fill(fitTrk.chi2dof());
+              hisKalmanChi2DofSkipLay0Matched_[fitName]->Fill(fitTrk->chi2dof());
             } else if (nSkippedLayers == 1) {
-              hisKalmanChi2DofSkipLay1Matched_[fitName]->Fill(fitTrk.chi2dof());
+              hisKalmanChi2DofSkipLay1Matched_[fitName]->Fill(fitTrk->chi2dof());
             } else if (nSkippedLayers >= 2) {
-              hisKalmanChi2DofSkipLay2Matched_[fitName]->Fill(fitTrk.chi2dof());
+              hisKalmanChi2DofSkipLay2Matched_[fitName]->Fill(fitTrk->chi2dof());
             }
           }
 
           // Compared fitted track helix params with seed track from HT.
-          hisFitVsSeedQinvPtMatched_[fitName]->Fill(htTrk->qOverPt(), fitTrk.qOverPt());
-          hisFitVsSeedPhi0Matched_[fitName]->Fill(htTrk->phi0(), fitTrk.phi0());
-          hisFitVsSeedD0Matched_[fitName]->Fill(htTrk->d0(), fitTrk.d0());
-          hisFitVsSeedZ0Matched_[fitName]->Fill(htTrk->z0(), fitTrk.z0());
-          hisFitVsSeedEtaMatched_[fitName]->Fill(htTrk->eta(), fitTrk.eta());
+          hisFitVsSeedQinvPtMatched_[fitName]->Fill(htTrk->qOverPt(), fitTrk->qOverPt());
+          hisFitVsSeedPhi0Matched_[fitName]->Fill(htTrk->phi0(), fitTrk->phi0());
+          hisFitVsSeedD0Matched_[fitName]->Fill(htTrk->d0(), fitTrk->d0());
+          hisFitVsSeedZ0Matched_[fitName]->Fill(htTrk->z0(), fitTrk->z0());
+          hisFitVsSeedEtaMatched_[fitName]->Fill(htTrk->eta(), fitTrk->eta());
 
           // Study incorrect hits on matched tracks.
-          hisNumStubsVsPurityMatched_[fitName]->Fill(fitTrk.numStubs(), fitTrk.purity());
+          hisNumStubsVsPurityMatched_[fitName]->Fill(fitTrk->numStubs(), fitTrk->purity());
 
-          const vector<const Stub*>& stubs = fitTrk.stubs();
+          const vector<const Stub*>& stubs = fitTrk->stubs();
           for (const Stub* s : stubs) {
             // Was this stub produced by correct truth particle?
             const set<const TP*>& stubTPs = s->assocTPs();
@@ -2448,48 +2413,48 @@ void Histos::fillEtaPhiSectors(const InputData& inputData, const matrix<unique_p
           }
 
         } else {
-          hisFitQinvPtUnmatched_[fitName]->Fill(fitTrk.qOverPt());
-          hisFitPhi0Unmatched_[fitName]->Fill(fitTrk.phi0());
-          hisFitD0Unmatched_[fitName]->Fill(fitTrk.d0());
-          hisFitZ0Unmatched_[fitName]->Fill(fitTrk.z0());
-          hisFitEtaUnmatched_[fitName]->Fill(fitTrk.eta());
+          hisFitQinvPtUnmatched_[fitName]->Fill(fitTrk->qOverPt());
+          hisFitPhi0Unmatched_[fitName]->Fill(fitTrk->phi0());
+          hisFitD0Unmatched_[fitName]->Fill(fitTrk->d0());
+          hisFitZ0Unmatched_[fitName]->Fill(fitTrk->z0());
+          hisFitEtaUnmatched_[fitName]->Fill(fitTrk->eta());
 
-          hisFitChi2Unmatched_[fitName]->Fill(fitTrk.chi2());
-          hisFitChi2DofUnmatched_[fitName]->Fill(fitTrk.chi2dof());
-          hisFitChi2DofRphiUnmatched_[fitName]->Fill(fitTrk.chi2rphi() / fitTrk.numDOFrphi());
-          hisFitChi2DofRzUnmatched_[fitName]->Fill(fitTrk.chi2rz() / fitTrk.numDOFrz());
+          hisFitChi2Unmatched_[fitName]->Fill(fitTrk->chi2());
+          hisFitChi2DofUnmatched_[fitName]->Fill(fitTrk->chi2dof());
+          hisFitChi2DofRphiUnmatched_[fitName]->Fill(fitTrk->chi2rphi() / fitTrk->numDOFrphi());
+          hisFitChi2DofRzUnmatched_[fitName]->Fill(fitTrk->chi2rz() / fitTrk->numDOFrz());
           if (settings_->kalmanAddBeamConstr() &&
               fitName.find("KF5") !=
                   string::npos) {  // Histograms of chi2 with beam-spot constraint only make sense for 5 param fit.
-            hisFitBeamChi2Unmatched_[fitName]->Fill(fitTrk.chi2_bcon());
-            hisFitBeamChi2DofUnmatched_[fitName]->Fill(fitTrk.chi2dof_bcon());
+            hisFitBeamChi2Unmatched_[fitName]->Fill(fitTrk->chi2_bcon());
+            hisFitBeamChi2DofUnmatched_[fitName]->Fill(fitTrk->chi2dof_bcon());
           }
-          profFitChi2VsEtaUnmatched_[fitName]->Fill(std::abs(fitTrk.eta()), fitTrk.chi2());
-          profFitChi2DofVsEtaUnmatched_[fitName]->Fill(std::abs(fitTrk.eta()), fitTrk.chi2dof());
-          profFitChi2VsInvPtUnmatched_[fitName]->Fill(std::abs(fitTrk.qOverPt()), fitTrk.chi2());
-          profFitChi2DofVsInvPtUnmatched_[fitName]->Fill(std::abs(fitTrk.qOverPt()), fitTrk.chi2dof());
+          profFitChi2VsEtaUnmatched_[fitName]->Fill(std::abs(fitTrk->eta()), fitTrk->chi2());
+          profFitChi2DofVsEtaUnmatched_[fitName]->Fill(std::abs(fitTrk->eta()), fitTrk->chi2dof());
+          profFitChi2VsInvPtUnmatched_[fitName]->Fill(std::abs(fitTrk->qOverPt()), fitTrk->chi2());
+          profFitChi2DofVsInvPtUnmatched_[fitName]->Fill(std::abs(fitTrk->qOverPt()), fitTrk->chi2dof());
 
           if (fitName.find("KF") != string::npos) {
             // No. of skipped layers on track during Kalman track fit.
             if (nSkippedLayers == 0) {
-              hisKalmanChi2DofSkipLay0Unmatched_[fitName]->Fill(fitTrk.chi2dof());
+              hisKalmanChi2DofSkipLay0Unmatched_[fitName]->Fill(fitTrk->chi2dof());
             } else if (nSkippedLayers == 1) {
-              hisKalmanChi2DofSkipLay1Unmatched_[fitName]->Fill(fitTrk.chi2dof());
+              hisKalmanChi2DofSkipLay1Unmatched_[fitName]->Fill(fitTrk->chi2dof());
             } else if (nSkippedLayers >= 2) {
-              hisKalmanChi2DofSkipLay2Unmatched_[fitName]->Fill(fitTrk.chi2dof());
+              hisKalmanChi2DofSkipLay2Unmatched_[fitName]->Fill(fitTrk->chi2dof());
             }
           }
 
-          hisFitVsSeedQinvPtUnmatched_[fitName]->Fill(htTrk->qOverPt(), fitTrk.qOverPt());
-          hisFitVsSeedPhi0Unmatched_[fitName]->Fill(htTrk->phi0(), fitTrk.phi0());
-          hisFitVsSeedD0Unmatched_[fitName]->Fill(htTrk->d0(), fitTrk.d0());
-          hisFitVsSeedZ0Unmatched_[fitName]->Fill(htTrk->z0(), fitTrk.z0());
-          hisFitVsSeedEtaUnmatched_[fitName]->Fill(htTrk->eta(), fitTrk.eta());
+          hisFitVsSeedQinvPtUnmatched_[fitName]->Fill(htTrk->qOverPt(), fitTrk->qOverPt());
+          hisFitVsSeedPhi0Unmatched_[fitName]->Fill(htTrk->phi0(), fitTrk->phi0());
+          hisFitVsSeedD0Unmatched_[fitName]->Fill(htTrk->d0(), fitTrk->d0());
+          hisFitVsSeedZ0Unmatched_[fitName]->Fill(htTrk->z0(), fitTrk->z0());
+          hisFitVsSeedEtaUnmatched_[fitName]->Fill(htTrk->eta(), fitTrk->eta());
         }
 
         // Study how incorrect stubs on track affect fit chi2.
-        profFitChi2VsPurity_[fitName]->Fill(fitTrk.purity(), fitTrk.chi2());
-        profFitChi2DofVsPurity_[fitName]->Fill(fitTrk.purity(), fitTrk.chi2dof());
+        profFitChi2VsPurity_[fitName]->Fill(fitTrk->purity(), fitTrk->chi2());
+        profFitChi2DofVsPurity_[fitName]->Fill(fitTrk->purity(), fitTrk->chi2dof());
 
         // Look at stub residuals w.r.t. fitted (or true) track.
         if (tp != nullptr) {
@@ -2503,7 +2468,7 @@ void Histos::fillEtaPhiSectors(const InputData& inputData, const matrix<unique_p
           float recalcChiSquared_1_rphi = 0.;
           float recalcChiSquared_1_rz = 0.;
           float recalcChiSquared_2 = 0.;
-          const vector<const Stub*> stubs = fitTrk.stubs();
+          const vector<const Stub*> stubs = fitTrk->stubs();
           for (const Stub* s : stubs) {
             // Was this stub produced by correct truth particle?
             const set<const TP*> stubTPs = s->assocTPs();
@@ -2554,11 +2519,11 @@ void Histos::fillEtaPhiSectors(const InputData& inputData, const matrix<unique_p
               // Distance of stub from true trajectory in r*phi, evaluated at nominal radius of stub.
               deltaPhi_proj = reco::deltaPhi(s->phi(), tp->phi0() - (s->r() * inv2R_proj));
             } else {
-              inv2R_proj = fitTrk.qOverPt() * (0.5 * settings_->invPtToInvR());
-              tanL_proj = fitTrk.tanLambda();
-              z0_proj = fitTrk.z0();
-              deltaZ_proj = s->z() - (fitTrk.z0() + fitTrk.tanLambda() * s->r());
-              deltaPhi_proj = reco::deltaPhi(s->phi(), fitTrk.phi0() - (s->r() * inv2R_proj));
+              inv2R_proj = fitTrk->qOverPt() * (0.5 * settings_->invPtToInvR());
+              tanL_proj = fitTrk->tanLambda();
+              z0_proj = fitTrk->z0();
+              deltaZ_proj = s->z() - (fitTrk->z0() + fitTrk->tanLambda() * s->r());
+              deltaPhi_proj = reco::deltaPhi(s->phi(), fitTrk->phi0() - (s->r() * inv2R_proj));
             }
 
             // Higher order correction correction to circle expansion for improved accuracy at low Pt.
@@ -2597,7 +2562,7 @@ void Histos::fillEtaPhiSectors(const InputData& inputData, const matrix<unique_p
               sigmaPhi2_proj += phiExtra2;
             } else {
               // Fit uses Pt of L1track3D to estimate scattering.
-              double phiExtra_fit = settings_->kalmanMultiScattTerm() / (fitTrk.l1track3D()->pt());
+              double phiExtra_fit = settings_->kalmanMultiScattTerm() / (fitTrk->l1track3D()->pt());
               double phiExtra2_fit = phiExtra_fit * phiExtra_fit;
               sigmaPhi2_proj += phiExtra2_fit;
             }
@@ -2669,18 +2634,18 @@ void Histos::fillEtaPhiSectors(const InputData& inputData, const matrix<unique_p
             }
           }
           // Plot recalculated chi2 for correct stubs on matched tracks.
-          profRecalcRphiChi2VsEtaTrue1_[fitName]->Fill(std::abs(fitTrk.eta()), recalcChiSquared_1_rphi);
-          profRecalcRzChi2VsEtaTrue1_[fitName]->Fill(std::abs(fitTrk.eta()), recalcChiSquared_1_rz);
+          profRecalcRphiChi2VsEtaTrue1_[fitName]->Fill(std::abs(fitTrk->eta()), recalcChiSquared_1_rphi);
+          profRecalcRzChi2VsEtaTrue1_[fitName]->Fill(std::abs(fitTrk->eta()), recalcChiSquared_1_rz);
           float recalcChiSquared_1 = recalcChiSquared_1_rphi + recalcChiSquared_1_rz;
-          profRecalcChi2VsEtaTrue1_[fitName]->Fill(std::abs(fitTrk.eta()), recalcChiSquared_1);
-          profRecalcChi2VsEtaTrue2_[fitName]->Fill(std::abs(fitTrk.eta()), recalcChiSquared_2);
+          profRecalcChi2VsEtaTrue1_[fitName]->Fill(std::abs(fitTrk->eta()), recalcChiSquared_1);
+          profRecalcChi2VsEtaTrue2_[fitName]->Fill(std::abs(fitTrk->eta()), recalcChiSquared_2);
         }
       }
 
       // Study helix param resolution.
 
-      for (const L1fittedTrack& fitTrk : fittedTracks) {
-        const TP* tp = fitTrk.matchedTP();
+      for (const L1fittedTrack* fitTrk : fittedTracks) {
+        const TP* tp = fitTrk->matchedTP();
         if (tp != nullptr) {
           // IRT
           if ((resPlotOpt_ && tp->useForAlgEff()) ||
@@ -2688,46 +2653,46 @@ void Histos::fillEtaPhiSectors(const InputData& inputData, const matrix<unique_p
             //if (not (abs(tp->pdgId()) == 11)) continue;
             //if (not (abs(tp->pdgId()) == 13) || (abs(tp->pdgId()) == 211) || (abs(tp->pdgId()) == 321) || (abs(tp->pdgId()) == 2212)) continue;
             // Fitted vs True parameter distribution 2D plots
-            hisFitVsTrueQinvPt_[fitName]->Fill(tp->qOverPt(), fitTrk.qOverPt());
-            hisFitVsTruePhi0_[fitName]->Fill(tp->phi0(), fitTrk.phi0());
-            hisFitVsTrueD0_[fitName]->Fill(tp->d0(), fitTrk.d0());
-            hisFitVsTrueZ0_[fitName]->Fill(tp->z0(), fitTrk.z0());
-            hisFitVsTrueEta_[fitName]->Fill(tp->eta(), fitTrk.eta());
+            hisFitVsTrueQinvPt_[fitName]->Fill(tp->qOverPt(), fitTrk->qOverPt());
+            hisFitVsTruePhi0_[fitName]->Fill(tp->phi0(), fitTrk->phi0());
+            hisFitVsTrueD0_[fitName]->Fill(tp->d0(), fitTrk->d0());
+            hisFitVsTrueZ0_[fitName]->Fill(tp->z0(), fitTrk->z0());
+            hisFitVsTrueEta_[fitName]->Fill(tp->eta(), fitTrk->eta());
 
             // Residuals between fitted and true helix params as 1D plot.
-            hisFitQinvPtRes_[fitName]->Fill(fitTrk.qOverPt() - tp->qOverPt());
-            hisFitPhi0Res_[fitName]->Fill(reco::deltaPhi(fitTrk.phi0(), tp->phi0()));
-            hisFitD0Res_[fitName]->Fill(fitTrk.d0() - tp->d0());
-            hisFitZ0Res_[fitName]->Fill(fitTrk.z0() - tp->z0());
-            hisFitEtaRes_[fitName]->Fill(fitTrk.eta() - tp->eta());
+            hisFitQinvPtRes_[fitName]->Fill(fitTrk->qOverPt() - tp->qOverPt());
+            hisFitPhi0Res_[fitName]->Fill(reco::deltaPhi(fitTrk->phi0(), tp->phi0()));
+            hisFitD0Res_[fitName]->Fill(fitTrk->d0() - tp->d0());
+            hisFitZ0Res_[fitName]->Fill(fitTrk->z0() - tp->z0());
+            hisFitEtaRes_[fitName]->Fill(fitTrk->eta() - tp->eta());
 
             // Plot helix parameter resolution against eta or Pt.
-            hisQoverPtResVsTrueEta_[fitName]->Fill(std::abs(tp->eta()), std::abs(fitTrk.qOverPt() - tp->qOverPt()));
+            hisQoverPtResVsTrueEta_[fitName]->Fill(std::abs(tp->eta()), std::abs(fitTrk->qOverPt() - tp->qOverPt()));
             hisPhi0ResVsTrueEta_[fitName]->Fill(std::abs(tp->eta()),
-                                                std::abs(reco::deltaPhi(fitTrk.phi0(), tp->phi0())));
-            hisEtaResVsTrueEta_[fitName]->Fill(std::abs(tp->eta()), std::abs(fitTrk.eta() - tp->eta()));
-            hisZ0ResVsTrueEta_[fitName]->Fill(std::abs(tp->eta()), std::abs(fitTrk.z0() - tp->z0()));
-            hisD0ResVsTrueEta_[fitName]->Fill(std::abs(tp->eta()), std::abs(fitTrk.d0() - tp->d0()));
+                                                std::abs(reco::deltaPhi(fitTrk->phi0(), tp->phi0())));
+            hisEtaResVsTrueEta_[fitName]->Fill(std::abs(tp->eta()), std::abs(fitTrk->eta() - tp->eta()));
+            hisZ0ResVsTrueEta_[fitName]->Fill(std::abs(tp->eta()), std::abs(fitTrk->z0() - tp->z0()));
+            hisD0ResVsTrueEta_[fitName]->Fill(std::abs(tp->eta()), std::abs(fitTrk->d0() - tp->d0()));
 
             hisQoverPtResVsTrueInvPt_[fitName]->Fill(std::abs(tp->qOverPt()),
-                                                     std::abs(fitTrk.qOverPt() - tp->qOverPt()));
+                                                     std::abs(fitTrk->qOverPt() - tp->qOverPt()));
             hisPhi0ResVsTrueInvPt_[fitName]->Fill(std::abs(tp->qOverPt()),
-                                                  std::abs(reco::deltaPhi(fitTrk.phi0(), tp->phi0())));
-            hisEtaResVsTrueInvPt_[fitName]->Fill(std::abs(tp->qOverPt()), std::abs(fitTrk.eta() - tp->eta()));
-            hisZ0ResVsTrueInvPt_[fitName]->Fill(std::abs(tp->qOverPt()), std::abs(fitTrk.z0() - tp->z0()));
-            hisD0ResVsTrueInvPt_[fitName]->Fill(std::abs(tp->qOverPt()), std::abs(fitTrk.d0() - tp->d0()));
+                                                  std::abs(reco::deltaPhi(fitTrk->phi0(), tp->phi0())));
+            hisEtaResVsTrueInvPt_[fitName]->Fill(std::abs(tp->qOverPt()), std::abs(fitTrk->eta() - tp->eta()));
+            hisZ0ResVsTrueInvPt_[fitName]->Fill(std::abs(tp->qOverPt()), std::abs(fitTrk->z0() - tp->z0()));
+            hisD0ResVsTrueInvPt_[fitName]->Fill(std::abs(tp->qOverPt()), std::abs(fitTrk->d0() - tp->d0()));
 
             // Also plot resolution for 5 parameter fits after beam-spot constraint it applied post-fit.
             if (settings_->kalmanAddBeamConstr() && fitName.find("KF5") != string::npos) {
               hisQoverPtResBeamVsTrueEta_[fitName]->Fill(std::abs(tp->eta()),
-                                                         std::abs(fitTrk.qOverPt_bcon() - tp->qOverPt()));
+                                                         std::abs(fitTrk->qOverPt_bcon() - tp->qOverPt()));
               hisPhi0ResBeamVsTrueEta_[fitName]->Fill(std::abs(tp->eta()),
-                                                      std::abs(reco::deltaPhi(fitTrk.phi0_bcon(), tp->phi0())));
+                                                      std::abs(reco::deltaPhi(fitTrk->phi0_bcon(), tp->phi0())));
 
               hisQoverPtResBeamVsTrueInvPt_[fitName]->Fill(std::abs(tp->qOverPt()),
-                                                           std::abs(fitTrk.qOverPt_bcon() - tp->qOverPt()));
+                                                           std::abs(fitTrk->qOverPt_bcon() - tp->qOverPt()));
               hisPhi0ResBeamVsTrueInvPt_[fitName]->Fill(std::abs(tp->qOverPt()),
-                                                        std::abs(reco::deltaPhi(fitTrk.phi0_bcon(), tp->phi0())));
+                                                        std::abs(reco::deltaPhi(fitTrk->phi0_bcon(), tp->phi0())));
             }
           }
         }

@@ -129,19 +129,19 @@ Sector::Sector(const Settings* settings, unsigned int iPhiSec, unsigned int iEta
 
     if (useStubPhiTrk_) {
       // Estimate either phi0 of track from stub info, or phi of the track at radius chosenRofPhi_.
-      float phiTrk = stub->trkPhiAtR(chosenRofPhi_).first;  // N.B. This equals stub->beta() if chosenRofPhi_ = 0.
-      float delPhiTrk =
-          reco::deltaPhi(phiTrk, phiCentre_);  // Phi difference between stub & sector in range -PI to +PI.
-      float tolerancePhiTrk =
-          assumedPhiTrkRes_ * (2 * sectorHalfWidth_);  // Set tolerance equal to nominal resolution assumed in phiTrk
+      float phiTrk = stub->trkPhiAtR(chosenRofPhi_); 
+      // Phi difference between stub & sector in range -PI to +PI.
+      float delPhiTrk = reco::deltaPhi(phiTrk, phiCentre_);  
+      // Set tolerance equal to nominal resolution assumed in phiTrk
+      float tolerancePhiTrk = assumedPhiTrkRes_ * (2 * sectorHalfWidth_);  
       if (calcPhiTrkRes_) {
         // Calculate uncertainty in phiTrk due to poor resolution in stub bend
         float phiTrkRes = stub->trkPhiAtRres(chosenRofPhi_);
         // Reduce tolerance if this is smaller than the nominal assumed resolution.
         tolerancePhiTrk = min(tolerancePhiTrk, phiTrkRes);
       }
-      float outsidePhiTrk = std::abs(delPhiTrk) - sectorHalfWidth_ -
-                            tolerancePhiTrk;  // If > 0, then stub is not compatible with being inside this sector.
+      // If following > 0, then stub is not compatible with being inside this sector.
+      float outsidePhiTrk = std::abs(delPhiTrk) - sectorHalfWidth_ - tolerancePhiTrk;  
 
       if (outsidePhiTrk > 0)
         okPhiTrk = false;

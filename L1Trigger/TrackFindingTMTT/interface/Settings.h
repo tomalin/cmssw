@@ -85,9 +85,16 @@ namespace tmtt {
     unsigned int zBits() const { return zBits_; }
     double zRange() const { return zRange_; }
     //--- Parameters available in GP board (excluding any in common with MP specified above).
-    unsigned int phiOBits() const { return phiOBits_; }
-    double phiORange() const { return phiORange_; }
+    unsigned int phiNBits() const { return phiNBits_; }
+    double phiNRange() const { return phiNRange_; }
     unsigned int bendBits() const { return bendBits_; }
+
+    //=== Tracker module type for FW.
+    const std::vector<double>& pitchVsType() const {return pitchVsType_;}
+    const std::vector<double>& spaceVsType() const {return spaceVsType_;}
+    const std::vector<bool>& barrelVsType() const {return barrelVsType_;}
+    const std::vector<bool>& psVsType() const {return psVsType_;}
+    const std::vector<bool>& tiltedVsType() const {return tiltedVsType_;}
 
     //=== Configuration of Geometric Processor.
     // Use an FPGA-friendly approximation to determine track angle dphi from bend in GP?
@@ -400,7 +407,6 @@ namespace tmtt {
     }
 
     //=== Settings used for HYBRID TRACKING code only.
-
     // Is hybrid tracking in use?
     bool hybrid() const { return hybrid_; }
     // Info about geometry, needed for use of hybrid outside CMSSW.
@@ -428,6 +434,7 @@ namespace tmtt {
     edm::ParameterSet genCuts_;
     edm::ParameterSet stubCuts_;
     edm::ParameterSet stubDigitize_;
+    edm::ParameterSet trackerModuleType_;
     edm::ParameterSet geometricProc_;
     edm::ParameterSet phiSectors_;
     edm::ParameterSet etaSectors_;
@@ -474,9 +481,19 @@ namespace tmtt {
     double rtRange_;
     unsigned int zBits_;
     double zRange_;
-    unsigned int phiOBits_;
-    double phiORange_;
+    unsigned int phiNBits_;
+    double phiNRange_;
     unsigned int bendBits_;
+
+    // Tracker module type for FW.
+    std::vector<double> pitchVsType_; 
+    std::vector<double> spaceVsType_; 
+    std::vector<bool> barrelVsType_; 
+    std::vector<bool> psVsType_; 
+    std::vector<bool> tiltedVsType_; 
+    std::vector<unsigned int> barrelVsTypeTmp_; 
+    std::vector<unsigned int> psVsTypeTmp_; 
+    std::vector<unsigned int> tiltedVsTypeTmp_; 
 
     // Configuration of Geometric Processor.
     bool useApproxB_;

@@ -41,11 +41,10 @@ namespace tmtt {
     KalmanState &operator=(const KalmanState &other);
 
     const Settings *settings() const { return settings_; }
-    // Layer where next stub to extend this state should be sought.
+    // KF layer where next stub to extend this state should be sought.
     unsigned nextLayer() const { return (1 + kLayer_); }
-    // Layer of last added stub. (-1 if no stubs yet).
+    // KF layer of last added stub. (-1 if no stubs yet).
     int layer() const { return kLayer_; }
-    unsigned endcapRing() const { return endcapRing_; }
     bool barrel() const { return barrel_; }
     unsigned nSkippedLayers() const { return nSkipped_; }
     // Hit coordinates.
@@ -89,7 +88,6 @@ namespace tmtt {
   private:
     const Settings *settings_;
     int kLayer_;
-    unsigned endcapRing_;
     double r_;
     double z_;
     const KalmanState *last_state_;
