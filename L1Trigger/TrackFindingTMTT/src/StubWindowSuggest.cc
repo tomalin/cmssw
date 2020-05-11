@@ -1,5 +1,6 @@
 #include "L1Trigger/TrackFindingTMTT/interface/StubWindowSuggest.h"
 #include "L1Trigger/TrackFindingTMTT/interface/Stub.h"
+#include "L1Trigger/TrackFindingTMTT/interface/TrackerModule.h"
 #include "L1Trigger/TrackFindingTMTT/interface/PrintL1trk.h"
 
 #include "DataFormats/DetId/interface/DetId.h"
@@ -11,14 +12,9 @@ using namespace std;
 
 namespace tmtt {
 
-  thread_local std::vector<double> StubWindowSuggest::barrelCut_;
-  thread_local std::vector<std::vector<double> > StubWindowSuggest::ringCut_;
-  thread_local std::vector<std::vector<double> > StubWindowSuggest::tiltedCut_;
-  thread_local std::vector<double> StubWindowSuggest::barrelNTilt_;
-
   //=== Analyse stub window required for this stub.
 
-  void StubWindowSuggest::process(const Stub* stub) {
+void StubWindowSuggest::process(const TrackerTopology* trackerTopo, const Stub* stub) {
     // Half-size of FE chip bend window corresponding to Pt range in which tracks are to be found.
     const double invPtMax = 1 / ptMin_;
     double bendHalfWind = invPtMax / std::abs(stub->qOverPtOverBend());
@@ -28,12 +24,12 @@ namespace tmtt {
     bendHalfWind = int(2 * bendHalfWind) / 2.;
 
     // Compare with half-size of FE bend window stored in arrays.
-    this->updateStoredWindow(stub, bendHalfWind);
+    this->updateStoredWindow(trackerTopo, stub, bendHalfWind);
   }
 
   //===  Update stored stub window size with this stub.
 
-  void StubWindowSuggest::updateStoredWindow(const Stub* stub, double bendHalfWind) {
+void StubWindowSuggest::updateStoredWindow(const TrackerTopology* trackerTopo, const Stub* stub, double bendHalfWind) {
     // Values set according to L1Trigger/TrackTrigger/python/TTStubAlgorithmRegister_cfi.py
     // parameter NTiltedRings for whichever tracker geometry (T3, T4, T5 ...) is used..
     const vector<double> barrelNTilt_init = {0., 12., 12., 12., 0., 0., 0.};
@@ -46,12 +42,12 @@ namespace tmtt {
     DetId stDetId(stub->trackerModule()->detId());
 
     if (stDetId.subdetId() == StripSubdetector::TOB) {
-      unsigned int layer = theTrackerTopo_->layer(stDetId);
-      unsigned int ladder = theTrackerTopo_->tobRod(stDetId);
-      int type = 2 * theTrackerTopo_->tobSide(stDetId) - 3;  // -1 for tilted-, 1 for tilted+, 3 for flat
+      unsigned int layer = trackerTopo->layer(stDetId);
+      unsigned int ladder = trackerTopo->tobRod(stDetId);
+      int type = 2 * trackerTopo->tobSide(stDetId) - 3;  // -1 for tilted-, 1 for tilted+, 3 for flat
       double corr = 0;
 
-      if (type < 3)  // Only for tilted modules
+      if (type != TrackerModule::BarrelModuleType::flat)  // Only for tilted modules
       {
         corr = (barrelNTilt_.at(layer) + 1) / 2.;
         ladder =
@@ -76,8 +72,8 @@ namespace tmtt {
 
     } else if (stDetId.subdetId() == StripSubdetector::TID) {
       // Modified by TMTT group, to expland arrays if necessary, divide by 2, & update the stored window sizes
-      unsigned int wheel = theTrackerTopo_->tidWheel(stDetId);
-      unsigned int ring = theTrackerTopo_->tidRing(stDetId);
+      unsigned int wheel = trackerTopo->tidWheel(stDetId);
+      unsigned int ring = trackerTopo->tidRing(stDetId);
       if (ringCut_.size() < (wheel + 1))
         ringCut_.resize(wheel + 1);
       if (ringCut_.at(wheel).size() < (ring + 1))
@@ -90,7 +86,7 @@ namespace tmtt {
 
   //=== Print results (should be done in endJob();
 
-  void StubWindowSuggest::printResults() {
+  void StubWindowSuggest::printResults() const {
     PrintL1trk(1) << "==============================================================================";
     PrintL1trk(1) << " Stub window sizes that TMTT suggests putting inside ";
     PrintL1trk(1) << "   /L1Trigger/TrackTrigger/python/TTStubAlgorithmRegister_cfi.py";

@@ -15,7 +15,9 @@ using namespace std;
 
 namespace tmtt {
 
+namespace {
 std::once_flag printOnce;
+}
 
   //=== Get info about tracker module (where detId is ID of lower sensor in stacked module).
 

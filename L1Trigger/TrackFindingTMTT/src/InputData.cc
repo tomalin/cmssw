@@ -15,6 +15,7 @@
 #include "L1Trigger/TrackFindingTMTT/interface/InputData.h"
 #include "L1Trigger/TrackFindingTMTT/interface/Settings.h"
 #include "L1Trigger/TrackFindingTMTT/interface/StubKiller.h"
+#include "L1Trigger/TrackFindingTMTT/interface/StubWindowSuggest.h"
 
 #include <map>
 #include <memory>
@@ -25,7 +26,8 @@ namespace tmtt {
 
   InputData::InputData(const edm::Event& iEvent,
                        const edm::EventSetup& iSetup,
-                       Settings* settings,
+                       const Settings* settings,
+		       StubWindowSuggest* stubWindowSuggest,
                        const TrackerGeometry* trackerGeometry,
                        const TrackerTopology* trackerTopology,
 		       const list<TrackerModule>& listTrackerModule,
@@ -138,6 +140,13 @@ namespace tmtt {
     if (enableMCtruth_) {
       for (TP& tp : vTPs_) {
         tp.fillTruth(vAllStubs_);
+      }
+    }
+
+    // If requested, recommend better FE stub window cuts.
+    if (settings->printStubWindows()) {
+      for (const Stub& s : vAllStubs_) {
+        stubWindowSuggest->process(trackerTopology, &s);
       }
     }
   }

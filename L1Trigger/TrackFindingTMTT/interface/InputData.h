@@ -12,6 +12,7 @@
 namespace tmtt {
 
   class Settings;
+class StubWindowSuggest;
 
   //=== Unpacks stub & tracking particle (truth) data into user-friendlier format in Stub & TP classes.
   //=== Also makes B-field available to Settings class.
@@ -20,7 +21,8 @@ namespace tmtt {
   public:
     InputData(const edm::Event& iEvent,
               const edm::EventSetup& iSetup,
-              Settings* settings,
+              const Settings* settings,
+	      StubWindowSuggest* stubWindowSuggest,
               const TrackerGeometry* trackerGeometry,
               const TrackerTopology* trackerTopology,
 	      const std::list<TrackerModule>& listTrackerModule,
@@ -55,6 +57,9 @@ namespace tmtt {
 
     // all stubs, even those that would fail any tightened front-end readout electronic cuts specified in section StubCuts of Analyze_Defaults_cfi.py. (Only used to measure the efficiency of these cuts).
     std::list<Stub> vAllStubs_;
+
+    // Recommends optimal FE stub window sizes.
+    StubWindowSuggest* stubWindowSuggest_;
   };
 
 }  // namespace tmtt

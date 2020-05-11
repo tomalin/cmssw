@@ -10,7 +10,6 @@
 #include "L1Trigger/TrackFindingTMTT/interface/HTcell.h"
 #include "L1Trigger/TrackFindingTMTT/interface/MuxHToutputs.h"
 #include "L1Trigger/TrackFindingTMTT/interface/MiniHTstage.h"
-#include "L1Trigger/TrackFindingTMTT/interface/StubWindowSuggest.h"
 #include "L1Trigger/TrackFindingTMTT/interface/PrintL1trk.h"
 
 #include "FWCore/MessageService/interface/MessageLogger.h"
@@ -30,7 +29,9 @@ namespace tmtt {
 TMTrackProducer::TMTrackProducer(const edm::ParameterSet& iConfig)
   : debug_(true),        // Debug printout
     settings_(iConfig),  // Set configuration parameters
-    hists_(&settings_)   // Initialize histograms
+    hists_(&settings_),  // Initialize histograms
+    htRphiErrMon_({0., 0, 0, 0}), // rphi HT error monitoring
+    stubWindowSuggest_(&settings_) // For tuning FE stub window sizes
 {
   using namespace edm;
 
@@ -101,6 +102,7 @@ void TMTrackProducer::beginRun(const edm::Run& iRun, const edm::EventSetup& iSet
   moduleTypeCfg.psVsType     = settings_.psVsType();
   moduleTypeCfg.tiltedVsType = settings_.tiltedVsType();
     
+  listTrackerModule_.clear();
   for (const GeomDet* gd : trackerGeometry_->dets()) {
     DetId detId = gd->geographicalId();
     // Phase 2 Outer Tracker uses TOB for entire barrel & TID for entire endcap.
@@ -118,6 +120,7 @@ void TMTrackProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
   InputData inputData(iEvent,
 		      iSetup,
 		      &settings_,
+		      &stubWindowSuggest_,
 		      trackerGeometry_,
 		      trackerTopology_,
 		      listTrackerModule_,
@@ -165,7 +168,7 @@ void TMTrackProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
       mSectors(iPhiSec, iEtaReg) = std::make_unique<Sector>(&settings_, iPhiSec, iEtaReg);
       Sector* sector = mSectors(iPhiSec, iEtaReg).get();
 
-      mHtRphis(iPhiSec, iEtaReg) = std::make_unique<HTrphi>(&settings_, iPhiSec, iEtaReg, sector->etaMin(), sector->etaMax(), sector->phiCentre());
+      mHtRphis(iPhiSec, iEtaReg) = std::make_unique<HTrphi>(&settings_, iPhiSec, iEtaReg, sector->etaMin(), sector->etaMax(), sector->phiCentre(), &htRphiErrMon_);
       HTrphi* htRphi = mHtRphis(iPhiSec, iEtaReg).get();
 
       // Check sector is enabled (always true, except if user disabled some for special studies).
@@ -367,11 +370,11 @@ void TMTrackProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
 void TMTrackProducer::endJob() {
   // Print stub window sizes that TMTT recommends CMS uses in FE chips.
   if (settings_.printStubWindows())
-    StubWindowSuggest::printResults();
+    stubWindowSuggest_.printResults();
 
   // Print job summary
   hists_.trackerGeometryAnalysis(listTrackerModule_);
-  hists_.endJobAnalysis();
+  hists_.endJobAnalysis(&htRphiErrMon_);
 
   PrintL1trk() << "\n Number of (eta,phi) sectors used = (" << settings_.numEtaRegions() << "," << settings_.numPhiSectors() << ")";
 }

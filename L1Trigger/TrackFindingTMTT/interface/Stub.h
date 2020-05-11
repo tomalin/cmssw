@@ -12,7 +12,6 @@
 
 #include "L1Trigger/TrackFindingTMTT/interface/Settings.h"
 #include "L1Trigger/TrackFindingTMTT/interface/DigitalStub.h"
-#include "L1Trigger/TrackFindingTMTT/interface/StubWindowSuggest.h"
 #include "L1Trigger/TrackFindingTMTT/interface/DegradeBend.h"
 #include "L1Trigger/TrackFindingTMTT/interface/TrackerModule.h"
 #include "L1Trigger/TrackFindingTMTT/interface/StubKiller.h"
@@ -209,13 +208,11 @@ namespace tmtt {
 
   private:
     // Degrade assumed stub bend resolution.
-    // Also return boolean indicating if stub bend was outside assumed window, so stub should be rejected
-    // and return an integer indicating how many values of bend are merged into this single one.
-    void degradeResolution(float bend, float& degradedBend, bool& reject, unsigned int& num) const;
+    // And return an integer indicating how many values of bend are merged into this single one.
+    void degradeResolution(float bend, float& degradedBend, unsigned int& num) const;
 
     // Set the frontendPass_ flag, indicating if frontend readout electronics will output this stub.
-    // Argument indicates if stub bend was outside window size encoded in DegradeBend.h
-    void setFrontend(bool rejectStub, const StubKiller* stubKiller);
+    void setFrontend(const StubKiller* stubKiller);
 
     // Set info about the module that this stub is in.
     void setTrackerModule(const TrackerGeometry* trackerGeometry,
@@ -275,9 +272,6 @@ namespace tmtt {
     // Info about tracker module containing stub.
     const TrackerModule* trackerModule_;
 
-    // Used to provide TMTT recommendations for stub window sizes that CMS should use.
-    StubWindowSuggest stubWindowSuggest_;
-
     // Used to degrade stub bend information.
     DegradeBend degradeBend_;
 
@@ -292,6 +286,8 @@ namespace tmtt {
     float stripPitch_;
     float stripLength_;
     unsigned int nStrips_;
+
+    const float rejectedStubBend_ = 99999.; // Bend set to this if stub rejected.
   };
 
 }  // namespace tmtt

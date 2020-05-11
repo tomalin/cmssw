@@ -13,6 +13,7 @@
 #include <limits>
 #include <atomic>
 #include <sstream>
+#include <mutex>
 
 using namespace std;
 
@@ -23,21 +24,14 @@ namespace tmtt {
   //=== Its axes are (q/Pt, phiTrk), where phiTrk is the phi at which the track crosses a
   //=== user-configurable radius from the beam-line.
 
-  using namespace std;
-
-  // Maximum |gradient| of line corresponding to any stub. Should be less than the value of 1.0 assumed by the firmware.
-  std::atomic<float> HTrphi::maxLineGradient_ = 0.;
-  // Error count when stub added to cell which does not lie NE, E or SE of stub added to previous HT column.
-  std::atomic<unsigned int> HTrphi::numErrorsTypeA_ = 0;
-  // Error count when stub added to more than 2 cells in one HT column (problem only for Thomas' firmware).
-  std::atomic<unsigned int> HTrphi::numErrorsTypeB_ = 0;
-  // Error count normalisation
-  std::atomic<unsigned int> HTrphi::numErrorsNormalisation_ = 0;
+namespace {
+  std::once_flag printOnce;
+}
 
   //=== Initialise
 
   HTrphi::HTrphi(const Settings* settings, unsigned int iPhiSec, unsigned int iEtaReg,
-		 float etaMinSector, float etaMaxSector, float phiCentreSector) :
+		 float etaMinSector, float etaMaxSector, float phiCentreSector, HTrphi::ErrorMonitor* errMon) :
     HTbase(settings, iPhiSec, iEtaReg, settings->houghNbinsPt(), settings->houghNbinsPhi()),
     invPtToDphi_((settings->invPtToDphi())),
     shape_(static_cast<HTshape>(settings->shape())), // shape of HT cells
@@ -53,7 +47,8 @@ namespace tmtt {
     phiCentreSector_(phiCentreSector),                           // Centre of phiTrk sector.
     maxAbsPhiTrkAxis_(M_PI / float(settings->numPhiSectors())),  // Half-width of phiTrk axis in HT array.
     nBinsPhiTrkAxis_(settings->houghNbinsPhi()),                 // No. of bins in HT array phiTrk
-    binSizePhiTrkAxis_(2 * maxAbsPhiTrkAxis_ / nBinsPhiTrkAxis_)
+  binSizePhiTrkAxis_(2 * maxAbsPhiTrkAxis_ / nBinsPhiTrkAxis_),
+  errMon_(errMon)
   {
     // Deal with unusually shaped HT cells.
     if (shape_ != HTshape::square)
@@ -65,7 +60,9 @@ namespace tmtt {
 
     // Note max. |gradient| that the line corresponding to any stub in any of the r-phi HT arrays could have.
     // Firmware assumes this should not exceed 1.0;
-    HTrphi::maxLineGradient_ = max(HTrphi::maxLineGradient_.load(), this->calcMaxLineGradArray());
+    if (errMon_ != nullptr) {
+      errMon_->maxLineGradient = max(errMon_->maxLineGradient, this->calcMaxLineGradArray());
+    }
 
     // Optionally merge 2x2 neighbouring cells into a single cell at low Pt, to reduce efficiency loss due to
     // scattering. (Do this if either of options EnableMerge2x2 or MiniHTstage are enabled.
@@ -150,25 +147,21 @@ namespace tmtt {
       }
     }
 
-    static std::atomic<bool> first = true;
-    if (first) {
-      first = false;
-      PrintL1trk() << "=== R-PHI HOUGH TRANSFORM AXES RANGES: abs(q/Pt) < " << maxAbsQoverPtAxis_ << " & abs(track-phi) < "<< maxAbsPhiTrkAxis_ << " ===";
-      PrintL1trk() << "=== R-PHI HOUGH TRANSFORM ARRAY SIZE: q/Pt bins = " << nBinsQoverPtAxis_
-           << " & track-phi bins = " << nBinsPhiTrkAxis_ << " ===";
-      PrintL1trk() << "=== R-PHI HOUGH TRANSFORM BIN SIZE: BIN(q/Pt) = " << binSizeQoverPtAxis_
-		   << " & BIN(track-phi) = " << binSizePhiTrkAxis_ << " ===\n";
-      if (busySectorKill_ && busySectorUseMbinRanges_ && rescaleMbins) {
-        PrintL1trk() << "=== R-PHI HOUGH TRANSFORM WARNING: Rescaled m bin ranges specified by cfg parameter "
-	  "BusySectorMbinRanges, as they were inconsistent with total number of m bins in HT.";
-	std::stringstream text;
-        text << "=== Rescaled values for BusySectorMbinRanges =";
-        for (unsigned int i = 0; i < busySectorMbinRanges_.size(); i++) {
-          text << " " << (busySectorMbinHigh_[i] - busySectorMbinLow_[i] + 1);
-        }
-        PrintL1trk() << text.str();
+    std::stringstream text;
+    text << "=== R-PHI HOUGH TRANSFORM AXES RANGES: abs(q/Pt) < " << maxAbsQoverPtAxis_ << " & abs(track-phi) < "<< maxAbsPhiTrkAxis_ << " ===\n";
+    text << "=== R-PHI HOUGH TRANSFORM ARRAY SIZE: q/Pt bins = " << nBinsQoverPtAxis_
+	 << " & track-phi bins = " << nBinsPhiTrkAxis_ << " ===\n";
+    text << "=== R-PHI HOUGH TRANSFORM BIN SIZE: BIN(q/Pt) = " << binSizeQoverPtAxis_
+	 << " & BIN(track-phi) = " << binSizePhiTrkAxis_ << " ===\n\n";
+    if (busySectorKill_ && busySectorUseMbinRanges_ && rescaleMbins) {
+      text << "=== R-PHI HOUGH TRANSFORM WARNING: Rescaled m bin ranges specified by cfg parameter "
+	"BusySectorMbinRanges, as they were inconsistent with total number of m bins in HT.\n";
+      text << "=== Rescaled values for BusySectorMbinRanges =";
+      for (unsigned int i = 0; i < busySectorMbinRanges_.size(); i++) {
+	text << " " << (busySectorMbinHigh_[i] - busySectorMbinLow_[i] + 1);
       }
     }
+    std::call_once(printOnce, [](string t){ PrintL1trk()<<t; }, text.str());
 
     // Note helix parameters at the centre of each HT cell.
     cellCenters_.clear();
@@ -187,6 +180,9 @@ namespace tmtt {
     // Optionally, only store stubs that can be sent from GP to HT within TM period.
     if ((!busyInputSectorKill_) || (nReceivedStubs_ < busyInputSectorNumStubs_)) {
       nReceivedStubs_++;
+
+      unsigned int jPhiTrkBinMinLast = 0; // Used for error checking
+      unsigned int jPhiTrkBinMaxLast = 99999;
 
       // Loop over q/Pt related bins in HT array.
       for (unsigned int i = 0; i < nBinsQoverPtAxis_; i++) {
@@ -226,7 +222,11 @@ namespace tmtt {
           }
 
           // Check that limitations of firmware would not prevent stub being stored correctly in this HT column.
-          this->countFirmwareErrors(i, jPhiTrkBinMin, jPhiTrkBinMax);
+	  if (errMon_ != nullptr) {
+            this->countFirmwareErrors(i, jPhiTrkBinMin, jPhiTrkBinMax, jPhiTrkBinMinLast, jPhiTrkBinMaxLast);
+            jPhiTrkBinMinLast = jPhiTrkBinMin;
+            jPhiTrkBinMaxLast = jPhiTrkBinMax;
+	  }
 
         } else {
           //--- This is are novel HT with unusual shaped cells.
@@ -371,31 +371,21 @@ namespace tmtt {
 
   //=== Check that limitations of firmware would not prevent stub being stored correctly in this HT column.
 
-  void HTrphi::countFirmwareErrors(unsigned int iQoverPtBin, unsigned int iPhiTrkBinMin, unsigned int iPhiTrkBinMax) {
-    static std::atomic<unsigned int> iPhiTrkBinMinLast = 0;
-    static std::atomic<unsigned int> iPhiTrkBinMaxLast = 99999;
-    // Reinitialize if this is left-most column in HT array.
-    if (iQoverPtBin == 0) {
-      iPhiTrkBinMinLast = 0;
-      iPhiTrkBinMaxLast = 99999;
-    }
+void HTrphi::countFirmwareErrors(unsigned int iQoverPtBin, unsigned int jPhiTrkBinMin, unsigned int jPhiTrkBinMax, unsigned int jPhiTrkBinMinLast, unsigned int jPhiTrkBinMaxLast) {
 
     // Only do check if stub is being stored somewhere in this HT column.
-    if (iPhiTrkBinMax >= iPhiTrkBinMin) {
+    if (jPhiTrkBinMax >= jPhiTrkBinMin) {
       //--- Remaining code below checks that firmware could successfully store this stub in this column.
       //   (a) Does cell lie NE, E or SE of cell filled in previous column?
-      bool OK_a = (iPhiTrkBinMin + 1 >= iPhiTrkBinMinLast) && (iPhiTrkBinMax <= iPhiTrkBinMaxLast + 1);
-      //   (b) Are no more than 2 cells filled in this column (problem only for Thomas' firmware)
-      bool OK_b = (iPhiTrkBinMax - iPhiTrkBinMin + 1 <= 2);
+      bool OK_a = (jPhiTrkBinMin + 1 >= jPhiTrkBinMinLast) && (jPhiTrkBinMax <= jPhiTrkBinMaxLast + 1);
+      //   (b) Are no more than 2 cells filled in this column 
+      bool OK_b = (jPhiTrkBinMax - jPhiTrkBinMin + 1 <= 2);
 
       if (!OK_a)
-        numErrorsTypeA_++;
+        errMon_->numErrorsTypeA++;
       if (!OK_b)
-        numErrorsTypeB_++;
-      numErrorsNormalisation_++;  // No. of times a stub is added to an HT column.
-
-      iPhiTrkBinMinLast = iPhiTrkBinMin;
-      iPhiTrkBinMaxLast = iPhiTrkBinMax;
+        errMon_->numErrorsTypeB++;
+      errMon_->numErrorsNorm++;  // No. of times a stub is added to an HT column.
     }
   }
 

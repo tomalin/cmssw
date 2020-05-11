@@ -6,6 +6,7 @@
 #include "L1Trigger/TrackFindingTMTT/interface/Stub.h"
 #include "L1Trigger/TrackFindingTMTT/interface/L1track3D.h"
 #include "L1Trigger/TrackFindingTMTT/interface/TrackerModule.h"
+#include "L1Trigger/TrackFindingTMTT/interface/StubWindowSuggest.h"
 
 #include "FWCore/Framework/interface/EDProducer.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
@@ -68,6 +69,9 @@ namespace tmtt {
     bool runRZfilter_;
 
     Histos hists_;
+    HTrphi::ErrorMonitor htRphiErrMon_;
+    StubWindowSuggest stubWindowSuggest_;
+
     std::map<std::string, std::unique_ptr<TrackFitGeneric>> fitterWorkerMap_;
   };
 

@@ -7,11 +7,16 @@
 
 #include "FWCore/Utilities/interface/Exception.h"
 
-#include <atomic>
+#include <sstream>
+#include <mutex>
 
 using namespace std;
 
 namespace tmtt {
+
+namespace {
+std::once_flag printOnce;
+}
 
   //=== Initialize constants from configuration parameters.
 
@@ -40,12 +45,10 @@ namespace tmtt {
     // Check that the MUX algorithm implemented in linkID() is not obviously wrong.
     this->sanityCheck();
 
-    static std::atomic<bool> first = true;
-    if (first) {
-      first = false;
-      PrintL1trk() << "=== The R-PHI HT output is multiplexed onto " << this->numLinksPerNonant()
+    std::stringstream text;
+    text << "=== The R-PHI HT output is multiplexed onto " << this->numLinksPerNonant()
            << " pairs of opto-links per nonant.";
-    }
+    std::call_once(printOnce, [](string t){ PrintL1trk()<<t; }, text.str());
   }
 
   //=== Determine which tracks are transmitted on each HT output optical link, taking into account the multiplexing

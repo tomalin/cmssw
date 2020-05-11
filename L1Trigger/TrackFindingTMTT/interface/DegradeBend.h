@@ -23,12 +23,7 @@ namespace tmtt {
    * This gives slightly more granular encoding with Pt > 3 GeV.
    * 
    * TMTT histograms "hisBendFEVsLayerOrRingPS" & "hisBendFEVsLayerOrRing2S" produced by the "Histos" class
-   * are useful for debugging.
-   * 
-   * IMPORTANT: If the code below detects a stub with bend outside the assumed window, meaning that looser windows
-   * were used when generating the MC, then it std::sets boolean reject = true to tell you this. You should reject this stub,
-   * and ideally update the hard-wired constants in this C++.
-   *-------------------------------------------------------------------------------------------------------------------
+   * are useful for debugging.   *-------------------------------------------------------------------------------------------------------------------
    */
 
   public:
@@ -50,7 +45,6 @@ namespace tmtt {
                  const DetId& stDetId,
                  float windowFEnew,
                  float& degradedBend,
-                 bool& reject,
                  unsigned int& numInGroup) const;
 
   private:
@@ -60,17 +54,8 @@ namespace tmtt {
               const DetId& stDetId,
               float windowFEnew,
               float& degradedBend,
-              bool& reject,
               unsigned int& numInGroup,
               unsigned int& windowHalfStrips) const;
-
-    // Check for mistakes
-    void sanityChecks(bool psModule,
-                      const DetId& stDetId,
-                      float windowFEnew,
-                      float degradedBend,
-                      unsigned int numInGroup,
-                      unsigned int windowHalfStrips) const;
 
   private:
     const TrackerTopology* theTrackerTopo_;

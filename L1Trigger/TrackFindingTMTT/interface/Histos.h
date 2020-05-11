@@ -50,7 +50,7 @@ namespace tmtt {
                       const std::map<std::string, std::list<const L1fittedTrack*>>& mapFinalTracks);
 
     // Print tracking performance summary & make tracking efficiency histograms.
-    virtual void endJobAnalysis();
+    virtual void endJobAnalysis(const HTrphi::ErrorMonitor* htRphiErrMon = nullptr);
 
     // Determine "B" parameter, used in GP firmware to allow for tilted modules.
     virtual void trackerGeometryAnalysis(const std::list<TrackerModule>& listTrackerModule);

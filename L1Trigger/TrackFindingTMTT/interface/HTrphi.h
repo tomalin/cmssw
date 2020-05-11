@@ -25,9 +25,22 @@ namespace tmtt {
 
     enum class HTshape {square, diamond, hexagon, brick};
 
+    //--- Error monitoring
+
+    struct ErrorMonitor {
+    // Maximum |gradient| of line corresponding to any stub. FW assumes it's < 1.0.
+    float maxLineGradient;
+    // Error count when stub added to cell not NE, E or SE of cell stub added to in previous HT column.
+    unsigned int numErrorsTypeA;
+    // Error count when stub added to more than 2 cells in one HT column 
+    unsigned int numErrorsTypeB;
+    // Error count normalisation
+    unsigned int numErrorsNorm;
+    };
+
     // Initialization with sector number, eta range covered by sector and phi coordinate of its centre.
     HTrphi(const Settings* settings, unsigned int iPhiSec, unsigned int iEtaReg,
-           float etaMinSector, float etaMaxSector, float phiCentreSector);
+           float etaMinSector, float etaMaxSector, float phiCentreSector, ErrorMonitor* errMon = nullptr);
 
     ~HTrphi() {}
 
@@ -67,15 +80,6 @@ namespace tmtt {
     // as it is in low Pt region.
     bool mergedCell(unsigned int iQoverPtBin, unsigned int jPhiTrkBin) const;
 
-    //--- Functions to check that stub filling is compatible with limitations of firmware.
-
-    // Calculate maximum |gradient| that any stub's line across any of the r-phi HT arrays could have, to check it is < 1.
-    static float maxLineGrad() { return maxLineGradient_; }
-    // Summed over all r-phi HT arrays, returns fraction of stubs added to an HT column which do not lie NE, E or SE of stub added to previous HT column.
-    static float fracErrorsTypeA() { return numErrorsTypeA_ / float(numErrorsNormalisation_); }
-    // Summed over all r-phi HT arrays, returns fraction of stubs added to more than 2 cells in one HT column. (Only a problem for Thomas' firmware).
-    static float fracErrorsTypeB() { return numErrorsTypeB_ / float(numErrorsNormalisation_); }
-
     // Number of stubs received from GP, irrespective of whether the stub was actually stored in
     // a cell in the HT array.
     unsigned int nReceivedStubs() const { return nReceivedStubs_; }
@@ -90,7 +94,7 @@ namespace tmtt {
                                                     bool debug = false) const;
 
     // Check that limitations of firmware would not prevent stub being stored correctly in this HT column.
-    void countFirmwareErrors(unsigned int iQoverPtBin, unsigned int iPhiTrkBinMin, unsigned int iPhiTrkBinMax);
+    void countFirmwareErrors(unsigned int iQoverPtBin, unsigned int iPhiTrkBinMin, unsigned int iPhiTrkBinMax, unsigned int jPhiTrkBinMinLast, unsigned int jPhiTrkBinMaxLast);
 
     // Calculate maximum |gradient| that any stub's line across this HT array could have, so can check it doesn't exceed 1.
     float calcMaxLineGradArray() const;
@@ -141,20 +145,12 @@ namespace tmtt {
     std::vector<unsigned int> busySectorMbinLow_;
     std::vector<unsigned int> busySectorMbinHigh_;
 
-    //--- Checks that stub filling is compatible with limitations of firmware.
-
-    // Maximum |gradient| of line corresponding to any stub. Should be less than the value of 1.0 assumed by the firmware.
-    static std::atomic<float> maxLineGradient_;
-    // Error count when stub added to cell which does not lie NE, E or SE of stub added to previous HT column.
-    static std::atomic<unsigned int> numErrorsTypeA_;
-    // Error count when stub added to more than 2 cells in one HT column (problem only for Thomas' firmware).
-    static std::atomic<unsigned int> numErrorsTypeB_;
-    // Error count normalisation
-    static std::atomic<unsigned int> numErrorsNormalisation_;
-
     // Number of stubs received from GP, irrespective of whether the stub was actually stored in
     // a cell in the HT array.
     unsigned int nReceivedStubs_;
+
+    // Error monitoring.
+    ErrorMonitor* errMon_;
 
     // ... The Hough transform array data is in the base class ...
 

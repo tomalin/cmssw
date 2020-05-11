@@ -26,13 +26,17 @@
 #include <array>
 #include <unordered_set>
 #include <list>
-#include <atomic>
+#include <sstream>
 #include <memory>
+#include <mutex>
 
 using namespace std;
 
 namespace tmtt {
 
+namespace {
+std::once_flag printOnce;
+}
   //=== Store cfg parameters.
 
   Histos::Histos(const Settings* settings)
@@ -84,7 +88,7 @@ namespace tmtt {
                     const matrix<unique_ptr<Sector>>& mSectors,
                     const matrix<unique_ptr<HTrphi>>& mHtRphis,
                     const matrix<unique_ptr<Make3Dtracks>>& mMake3Dtrks,
-                    const std::map<std::string, std::list<const L1fittedTrack*>>& mapFinalTracks) {
+		    const std::map<std::string, std::list<const L1fittedTrack*>>& mapFinalTracks) {
     // Don't bother filling histograms if user didn't request them via TFileService in their cfg.
     if (not this->enabled())
       return;
@@ -1331,7 +1335,6 @@ void Histos::fillEtaPhiSectors(const InputData& inputData, const matrix<unique_p
     // Plot number of tracks & number of stubs per output HT opto-link.
 
     if (algoTMTT && not withRZfilter) {
-      static std::atomic<bool> firstMess = true;
       //const unsigned int numPhiSecPerNon = numPhiSectors_ / numPhiNonants;
       // Hard-wired bodge
       const unsigned int nLinks = houghNbinsPt_ / 2;  // Hard-wired to number of course HT bins. Check.
@@ -1347,9 +1350,10 @@ void Histos::fillEtaPhiSectors(const InputData& inputData, const matrix<unique_p
             if (link < nLinks) {
               stubsToLinkCount[link] += trk.numStubs();
               trksToLinkCount[link] += 1;
-            } else if (firstMess) {
-              firstMess = false;
-              PrintL1trk() << "\n ===== HISTOS MESS UP: Increase size of nLinks ===== " << link << "\n";
+            } else {
+	      std::stringstream text;
+	      text<<"\n ===== HISTOS MESS UP: Increase size of nLinks ===== " << link << "\n";
+	      std::call_once(printOnce, [](string t){ edm::LogWarning("L1track")<<t; }, text.str());
             }
           }
         }
@@ -3224,7 +3228,7 @@ void Histos::fillEtaPhiSectors(const InputData& inputData, const matrix<unique_p
 
   //=== Print tracking performance summary & make tracking efficiency histograms.
 
-  void Histos::endJobAnalysis() {
+  void Histos::endJobAnalysis(const HTrphi::ErrorMonitor* htRphiErrMon) {
     // Don't bother producing summary if user didn't request histograms via TFileService in their cfg.
     if (not this->enabled())
       return;
@@ -3328,24 +3332,26 @@ void Histos::fillEtaPhiSectors(const InputData& inputData, const matrix<unique_p
     }
     PrintL1trk() << "=========================================================================";
 
-    if (not settings_->hybrid()) {
+    if (htRphiErrMon != nullptr && not settings_->hybrid()) {
       // Check that stub filling was consistent with known limitations of HT firmware design.
 
-      PrintL1trk() << "\n Max. |gradients| of stub lines in HT array is: r-phi = " << HTrphi::maxLineGrad();
+      PrintL1trk() << "\n Max. |gradients| of stub lines in HT array is: r-phi = " << htRphiErrMon->maxLineGradient;
 
-      if (HTrphi::maxLineGrad() > 1.) {
+      if (htRphiErrMon->maxLineGradient > 1.) {
         PrintL1trk() << "WARNING: Line |gradient| exceeds 1, which firmware will not be able to cope with! Please adjust HT "
                 "array size to avoid this.";
 
-      } else if (HTrphi::fracErrorsTypeA() > 0.) {
+      } else if (htRphiErrMon->numErrorsTypeA > 0.) {
+	float frac = float(htRphiErrMon->numErrorsTypeA)/float(htRphiErrMon->numErrorsNorm);
         PrintL1trk() << "WARNING: Despite line gradients being less than one, some fraction of HT columns have filled cells "
                 "with no filled neighbours in W, SW or NW direction. Firmware will object to this! ";
-        PrintL1trk() << "This fraction = " << HTrphi::fracErrorsTypeA() << " for r-phi HT";
+        PrintL1trk() << "This fraction = " << frac << " for r-phi HT";
 
-      } else if (HTrphi::fracErrorsTypeB() > 0.) {
+      } else if (htRphiErrMon->numErrorsTypeB > 0.) {
+	float frac = float(htRphiErrMon->numErrorsTypeB)/float(htRphiErrMon->numErrorsNorm);
         PrintL1trk() << "WARNING: Despite line gradients being less than one, some fraction of HT columns recorded individual "
                 "stubs being added to more than two cells! Thomas firmware will object to this! ";
-        PrintL1trk() << "This fraction = " << HTrphi::fracErrorsTypeB() << " for r-phi HT";
+        PrintL1trk() << "This fraction = " << frac << " for r-phi HT";
       }
     }
 

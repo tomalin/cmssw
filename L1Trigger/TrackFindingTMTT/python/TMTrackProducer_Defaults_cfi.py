@@ -54,7 +54,7 @@ TMTrackProducer_params = cms.PSet(
      MaxStubEta     = cms.double(2.4),
      # Don't use stubs whose measured Pt from bend info is significantly below HTArraySpec.HoughMinPt, where "significantly" means allowing for resolution in q/Pt derived from stub bend resolution specified below.
      KillLowPtStubs = cms.bool(True),
-     # Print stub windows corresponding to KillLowPtStubs, in python cfg format used by CMSSW.
+     # Print FE stub window sizes recommended by this code (in python cfg format used by CMSSW).
      PrintStubWindows = cms.bool(False),
      # Bend resolution assumed by bend filter in units of strip pitch. Also used when assigning stubs to sectors if EtaPhiSectors.CalcPhiTrkRes=True. And by the bend filter if HTFillingRphi.UseBendFilter=True.
      # Suggested value: 1.19 if DegradeBendRes = 0, or 1.249 if it > 0.

@@ -36,7 +36,6 @@ namespace tmtt {
         iphi_(iphi),
         alpha_(alpha),
         digitalStub_(std::make_unique<DigitalStub>(settings, r, phi, z, iPhiSec)),
-        stubWindowSuggest_(settings),
         psModule_(psModule),
         layerId_(layerId),
         layerIdReduced_(TrackerModule::calcLayerIdReduced(layerId)),
@@ -77,7 +76,6 @@ namespace tmtt {
         digitizeWarningsOn_(true),
 	lastDigiStep_(Stub::DigiStage::NONE),
         trackerModule_(trackerModule),  // Info about tracker module containing stub 
-        stubWindowSuggest_(settings, trackerTopology),  // TMTT recommended stub window sizes.
         degradeBend_(trackerTopology),                   // Used to degrade stub bend information.
   // Module related variables (need to be stored for Hybrid)
     psModule_(trackerModule->psModule()),
@@ -149,12 +147,11 @@ namespace tmtt {
 
     // Get stub bend that is available in off-detector electronics, allowing for degredation of
     // bend resolution due to bit encoding by FE chip if required.
-    bool rejectStub = false;  // indicates if bend is outside window assumed in DegradeBend.h
     numMergedBend_ = 1;       // Number of bend values merged into single degraded one.
     if (settings->degradeBendRes() == 2) {
       float degradedBend;  // degraded bend
-      this->degradeResolution(
-          bendInFrontend_, degradedBend, rejectStub, numMergedBend_);  // sets value of last 3 arguments.
+      // This returns values of degradedBend & numMergedBend_
+      this->degradeResolution(bendInFrontend_, degradedBend, numMergedBend_); 
       bend_ = degradedBend;
     } else if (settings->degradeBendRes() == 1) {
       bend_ = ttStubRef_->bendBE();  // Degraded bend from official CMS recipe.
@@ -167,14 +164,10 @@ namespace tmtt {
     }
 
     // Fill frontendPass_ flag, indicating if frontend readout electronics will output this stub.
-    this->setFrontend(rejectStub, stubKiller);
+    this->setFrontend(stubKiller);
 
     // Calculate bin range along q/Pt axis of r-phi Hough transform array consistent with bend of this stub.
     this->calcQoverPtrange();
-
-    // Update recommended stub window sizes that TMTT recommends that CMS should use in FE electronics.
-    if (settings_->printStubWindows())
-      stubWindowSuggest_.process(this);
 
     // Initialize truth info to false in case job is using no MC truth info.
     for (unsigned int iClus = 0; iClus <= 1; iClus++) {
@@ -272,10 +265,9 @@ void Stub::digitize(unsigned int iPhiSec, Stub::DigiStage digiStep, string nameS
   }
 
   //=== Degrade assumed stub bend resolution.
-  //=== Also return boolean indicating if stub bend was outside assumed window, so stub should be rejected
-  //=== and return an integer indicating how many values of bend are merged into this single one.
+  //=== And return an integer indicating how many values of bend are merged into this single one.
 
-  void Stub::degradeResolution(float bend, float& degradedBend, bool& reject, unsigned int& num) const {
+  void Stub::degradeResolution(float bend, float& degradedBend, unsigned int& num) const {
     // If TMTT code is tightening official CMS FE stub window cuts, then calculate TMTT stub windows.
     float windowFE;
     if (settings_->killLowPtStubs()) {
@@ -285,41 +277,37 @@ void Stub::digitize(unsigned int iPhiSec, Stub::DigiStage digiStep, string nameS
       // Increase half-indow size to allow for resolution in bend.
       windowFE += this->bendResInFrontend();
     } else {
-      windowFE = 99999.;  // TMTT is not tightening windows.
+      windowFE = rejectedStubBend_;  // TMTT is not tightening windows.
     }
 
-    static std::atomic<bool> firstErr = true;
-    degradeBend_.degrade(bend, psModule(), trackerModule_->detId(), windowFE, degradedBend, reject, num);
+    degradeBend_.degrade(bend, psModule(), trackerModule_->detId(), windowFE, degradedBend, num);
   }
 
   //=== Set flag indicating if stub will be output by front-end readout electronics
   //=== (where we can reconfigure the stub window size and rapidity cut).
-  //=== Argument indicates if stub bend was outside window size encoded in DegradeBend.h
-  //=== Note that this should run on quantities as available inside front-end chip, which are not
-  //=== degraded by loss of bits or digitisation.
 
-  void Stub::setFrontend(bool rejectStub, const StubKiller* stubKiller) {
+  void Stub::setFrontend(const StubKiller* stubKiller) {
     frontendPass_ = true;              // Did stub pass cuts applied in front-end chip
     stubFailedDegradeWindow_ = false;  // Did it only fail cuts corresponding to windows encoded in DegradeBend.h?
     // Don't use stubs at large eta, since it is impossible to form L1 tracks from them, so they only contribute to combinatorics.
     if (std::abs(this->eta()) > settings_->maxStubEta())
       frontendPass_ = false;
     // Don't use stubs whose Pt is significantly below the Pt cut used in the L1 tracking, allowing for uncertainty in q/Pt due to stub bend resolution.
+    const float qOverPtCut = 1. / settings_->houghMinPt();
     if (settings_->killLowPtStubs()) {
-      const float qOverPtCut = 1. / settings_->houghMinPt();
       // Apply this cut in the front-end electronics.
-      if (std::abs(this->bendInFrontend()) - this->bendResInFrontend() > qOverPtCut / this->qOverPtOverBend())
-        frontendPass_ = false;
+      if (std::abs(this->bendInFrontend()) - this->bendResInFrontend() > qOverPtCut / this->qOverPtOverBend()) frontendPass_ = false;
+    }
+
+    if (frontendPass_ && this->bend() == rejectedStubBend_) {
+      throw cms::Exception("LogicError: Window sizes assumed in DegradeBend are tighter than those used for TTStub production. Please fix them");
+    }
+
+    if (settings_->killLowPtStubs()) {
       // Reapply the same cut using the degraded bend information available in the off-detector electronics.
       // The reason is  that the bend degredation can move the Pt below the Pt cut, making the stub useless to the off-detector electronics.
       if (std::abs(this->bend()) - this->bendRes() > qOverPtCut / this->qOverPtOverBend())
         frontendPass_ = false;
-    }
-    // Don't use stubs whose bend is outside the window encoded into DegradeBend.h
-    if (rejectStub) {
-      if (frontendPass_)
-        stubFailedDegradeWindow_ = true;
-      frontendPass_ = false;
     }
 
     // Emulate stubs in dead tracker regions..
