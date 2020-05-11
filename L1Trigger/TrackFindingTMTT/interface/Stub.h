@@ -81,9 +81,9 @@ namespace tmtt {
     // Calculate HT m-bin range consistent with bend.
     void calcQoverPtrange();
 
-    // Digitize stub for input to GP, HT, SF/TF
-    enum class DigiStage {NONE, GP, HT, SFTF};
-    void digitize(unsigned int iPhiSec, DigiStage digiStep, std::string nameSForTF="");
+    // Digitize stub for input to GP, HT, SF, TF
+    enum class DigiStage {NONE, GP, HT, SF, TF};
+    void digitize(unsigned int iPhiSec, DigiStage digiStep);
 
     // Control warning messages about accessing non-digitized quantities.
     void setDigitizeWarningsOn(bool newVal) { digitizeWarningsOn_ = newVal; }

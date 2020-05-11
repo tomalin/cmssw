@@ -217,7 +217,7 @@ namespace tmtt {
   //=== Digitize stub for input to Geographic Processor, with digitized phi coord. measured relative to closest phi sector.
   //=== (This approximation is valid if their are an integer number of digitisation bins inside each phi nonant).
 
-void Stub::digitize(unsigned int iPhiSec, Stub::DigiStage digiStep, string nameSForTF) {
+void Stub::digitize(unsigned int iPhiSec, Stub::DigiStage digiStep) {
     if (settings_->enableDigitize()) {
 
       bool updated = true;

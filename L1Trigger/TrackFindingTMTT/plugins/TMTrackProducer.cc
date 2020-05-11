@@ -280,7 +280,7 @@ void TMTrackProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
 	    const vector<const Stub*>& stubsOnTrk = trk.stubs();
 	    for (const Stub* s : stubsOnTrk) {
 	      // Also digitize stub in way this specific track fitter uses it.
-  	      (const_cast<Stub*>(s))->digitize(iPhiSec, Stub::DigiStage::SFTF, fitterName);
+  	      (const_cast<Stub*>(s))->digitize(iPhiSec, Stub::DigiStage::TF);
 	    }
 	  }
 
