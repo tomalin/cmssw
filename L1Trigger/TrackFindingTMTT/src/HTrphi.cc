@@ -61,7 +61,7 @@ namespace {
     // Note max. |gradient| that the line corresponding to any stub in any of the r-phi HT arrays could have.
     // Firmware assumes this should not exceed 1.0;
     if (errMon_ != nullptr) {
-      errMon_->maxLineGradient = max(errMon_->maxLineGradient, this->calcMaxLineGradArray());
+      errMon_->maxLineGradient = max(errMon_->maxLineGradient.load(), this->calcMaxLineGradArray());
     }
 
     // Optionally merge 2x2 neighbouring cells into a single cell at low Pt, to reduce efficiency loss due to
