@@ -7,6 +7,7 @@
 #include "FWCore/Utilities/interface/Exception.h"
 #include <vector>
 #include <iostream>
+#include <atomic>
 
 // Stores all configuration parameters + some hard-wired constants.
 
@@ -660,7 +661,7 @@ namespace tmtt {
     bool writeOutEdmFile_;
 
     // B-field in Tesla
-    float magneticField_;
+    std::atomic<float> magneticField_;
 
     // Hybrid tracking
     bool hybrid_;
