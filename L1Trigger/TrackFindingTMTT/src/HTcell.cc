@@ -95,7 +95,7 @@ namespace tmtt {
       if (inSubSec[iSubSec])
         stubsInSubSec.push_back(s);
     }
-    return Utility::countLayersConst(settings_, stubsInSubSec);
+    return Utility::countLayers(settings_, stubsInSubSec);
   }
 
   //=== Produce a filtered collection of stubs in this cell that all have consistent bend.

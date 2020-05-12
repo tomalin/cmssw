@@ -132,7 +132,7 @@ namespace tmtt {
   void TP::fillUseForAlgEff() {
     useForAlgEff_ = false;
     if (useForEff_) {
-      useForAlgEff_ = (Utility::countLayersConst(settings_, assocStubs_, true) >= settings_->genMinStubLayers());
+      useForAlgEff_ = (Utility::countLayers(settings_, assocStubs_, true) >= settings_->genMinStubLayers());
     }
   }
 

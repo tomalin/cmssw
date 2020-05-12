@@ -17,10 +17,10 @@ namespace tmtt {
                              bool disableReducedLayerID,
                              bool onlyPS) {
       std::vector<const Stub*> stubsConst(stubs.begin(), stubs.end());
-      return countLayersConst(settings, stubsConst, disableReducedLayerID, onlyPS);
+      return countLayers(settings, stubsConst, disableReducedLayerID, onlyPS);
   }
 
-  unsigned int Utility::countLayersConst(const Settings* settings,
+  unsigned int Utility::countLayers(const Settings* settings,
                                     const vector<const Stub*>& vstubs,
                                     bool disableReducedLayerID,
                                     bool onlyPS) {
@@ -89,10 +89,10 @@ namespace tmtt {
                          unsigned int& nMatchedLayersBest,
                          std::vector<const Stub*>& matchedStubsBest) {
       std::vector<const Stub*> stubsConst(vstubs.begin(), vstubs.end());
-      return matchingTPConst(settings, stubsConst, nMatchedLayersBest, matchedStubsBest);
+      return matchingTP(settings, stubsConst, nMatchedLayersBest, matchedStubsBest);
   }
 
-  const TP* Utility::matchingTPConst(const Settings* settings,
+  const TP* Utility::matchingTP(const Settings* settings,
                                 const vector<const Stub*>& vstubs,
                                 unsigned int& nMatchedLayersBest,
                                 vector<const Stub*>& matchedStubsBest) {
@@ -137,11 +137,11 @@ namespace tmtt {
       // Count number of the given stubs that came from this TP.
       unsigned int nMatchedStubs = matchedStubsFromTP.size();
       // Count number of tracker layers in which the given stubs came from this TP.
-      unsigned int nMatchedLayers = Utility::countLayersConst(settings, matchedStubsFromTP, true);
-      unsigned int nMatchedPSLayers = Utility::countLayersConst(settings, matchedStubsFromTP, true, true);
+      unsigned int nMatchedLayers = Utility::countLayers(settings, matchedStubsFromTP, true);
+      unsigned int nMatchedPSLayers = Utility::countLayers(settings, matchedStubsFromTP, true, true);
 
       // For tie-breaks, count number of tracker layers in which both clusters of the given stubs came from this TP.
-      unsigned int nMatchedLayersStrict = Utility::countLayersConst(settings, matchedStubsStrictFromTP, true);
+      unsigned int nMatchedLayersStrict = Utility::countLayers(settings, matchedStubsStrictFromTP, true);
 
       // If enough layers matched, then accept this tracking particle.
       // Of the three criteria used here, usually only one is used, with the cuts on the other two set ultra loose.

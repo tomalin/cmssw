@@ -476,8 +476,8 @@ std::once_flag printOnce;
         hisNum2SStubsPerTP_->Fill(num2Sstubs);
 
         if (std::abs(tp.eta()) < 0.5) {
-          double nLayersOnTP = Utility::countLayersConst(settings_, assStubs, true, false);
-          double nPSLayersOnTP = Utility::countLayersConst(settings_, assStubs, true, true);
+          double nLayersOnTP = Utility::countLayers(settings_, assStubs, true, false);
+          double nPSLayersOnTP = Utility::countLayers(settings_, assStubs, true, true);
           hisNumLayersPerTP_->Fill(nLayersOnTP);
           hisNumPSLayersPerTP_->Fill(nPSLayersOnTP);
           hisNum2SLayersPerTP_->Fill(nLayersOnTP - nPSLayersOnTP);
@@ -1387,12 +1387,12 @@ void Histos::fillEtaPhiSectors(const InputData& inputData, const matrix<unique_p
         }
       }
       hisLayersPerTrack_[tName]->Fill(trk.numLayers());  // Number of reduced layers with stubs per track.
-      hisPSLayersPerTrack_[tName]->Fill(Utility::countLayersConst(
+      hisPSLayersPerTrack_[tName]->Fill(Utility::countLayers(
           settings_, trk.stubsConst(), false, true));  // Number of reduced PS layers with stubs per track.
       // Also plot just for genuine tracks.
       if (tp != nullptr && tp->useForAlgEff()) {
         hisLayersPerTrueTrack_[tName]->Fill(trk.numLayers());  // Number of reduced layers with stubs per track.
-        hisPSLayersPerTrueTrack_[tName]->Fill(Utility::countLayersConst(
+        hisPSLayersPerTrueTrack_[tName]->Fill(Utility::countLayers(
             settings_, trk.stubsConst(), false, true));  // Number of reduced PS layers with stubs per track.
       }
     }
