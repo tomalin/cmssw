@@ -7,14 +7,22 @@
 #include "FWCore/Utilities/interface/Exception.h"
 
 #include <sstream>
+#include <mutex>
 
 using namespace std;
+
+namespace {
+std::mutex myMutex;
+}
 
 namespace tmtt {
 
   //=== Analyse stub window required for this stub.
 
 void StubWindowSuggest::process(const TrackerTopology* trackerTopo, const Stub* stub) {
+
+    std::lock_guard<std::mutex> myGuard(myMutex); // Allow only one thread.
+
     // Half-size of FE chip bend window corresponding to Pt range in which tracks are to be found.
     const double invPtMax = 1 / ptMin_;
     double bendHalfWind = invPtMax / std::abs(stub->qOverPtOverBend());
@@ -30,6 +38,7 @@ void StubWindowSuggest::process(const TrackerTopology* trackerTopo, const Stub* 
   //===  Update stored stub window size with this stub.
 
 void StubWindowSuggest::updateStoredWindow(const TrackerTopology* trackerTopo, const Stub* stub, double bendHalfWind) {
+
     // Values set according to L1Trigger/TrackTrigger/python/TTStubAlgorithmRegister_cfi.py
     // parameter NTiltedRings for whichever tracker geometry (T3, T4, T5 ...) is used..
     const vector<double> barrelNTilt_init = {0., 12., 12., 12., 0., 0., 0.};

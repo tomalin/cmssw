@@ -20,18 +20,29 @@
 #include <vector>
 #include <list>
 #include <set>
+#include <sstream>
+#include <mutex>
 
 using namespace std;
 using boost::numeric::ublas::matrix;
 
 namespace tmtt {
 
-TMTrackProducer::TMTrackProducer(const edm::ParameterSet& iConfig)
+namespace {
+std::once_flag printOnce;
+std::once_flag callOnce;
+}
+
+std::unique_ptr<GlobalCacheTMTT> TMTrackProducer::initializeGlobalCache(edm::ParameterSet const& iConfig) {
+  return std::make_unique<GlobalCacheTMTT>(iConfig);
+}
+
+TMTrackProducer::TMTrackProducer(const edm::ParameterSet& iConfig, GlobalCacheTMTT const* globalCacheTMTT)
   : debug_(true),        // Debug printout
     settings_(iConfig),  // Set configuration parameters
-    hists_(&settings_),  // Initialize histograms
-    htRphiErrMon_({0., 0, 0, 0}), // rphi HT error monitoring
-    stubWindowSuggest_(&settings_) // For tuning FE stub window sizes
+    hists_(globalCacheTMTT->hists()),  // Initialize histograms
+    htRphiErrMon_(globalCacheTMTT->htRphiErrMon()), // rphi HT error monitoring
+    stubWindowSuggest_(globalCacheTMTT->stubWindowSuggest()) // For tuning FE stub window sizes
 {
   using namespace edm;
 
@@ -58,7 +69,7 @@ TMTrackProducer::TMTrackProducer(const edm::ParameterSet& iConfig)
   runRZfilter_ = (not useRZfilter_.empty());  // Do any fitters require an r-z track filter to be run?
 
   // Book histograms.
-  hists_.book();
+  //hists_.book();
 
   // Create track fitting algorithm
   for (const string& fitterName : trackFitters_) {
@@ -85,8 +96,14 @@ void TMTrackProducer::beginRun(const edm::Run& iRun, const edm::EventSetup& iSet
   // Get the B-field and store its value in the Settings class.
   const MagneticField* theMagneticField = &(iSetup.getData(magneticFieldToken_));
   float bField = theMagneticField->inTesla(GlobalPoint(0, 0, 0)).z();  // B field in Tesla.
-  PrintL1trk() << "\n--- B field = " << bField << " Tesla ---\n";
   settings_.setMagneticField(bField);
+
+  // Set also B field in GlobalCacheTMTT (used only for Histogramming)
+  globalCache()->settings().setMagneticField(bField);
+
+  std::stringstream text;
+  text<< "\n--- B field = " << bField << " Tesla ---\n";
+  std::call_once(printOnce, [](string t){ PrintL1trk()<<t; }, text.str());
 
   // Get tracker geometry
   trackerGeometry_ = &(iSetup.getData(trackerGeometryToken_));
@@ -112,6 +129,9 @@ void TMTrackProducer::beginRun(const edm::Run& iRun, const edm::EventSetup& iSet
       listTrackerModule_.emplace_back(trackerGeometry_, trackerTopology_, moduleTypeCfg, detId);
     }
   }
+
+  // Takes one copy of this to GlobalCacheTMTT for later histogramming.
+  globalCache()->setListTrackerModule(listTrackerModule_);
 }
 
 void TMTrackProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
@@ -366,16 +386,21 @@ void TMTrackProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
   }
 }
 
-void TMTrackProducer::endJob() {
+void TMTrackProducer::globalEndJob(GlobalCacheTMTT* globalCacheTMTT) {
+
+  const Settings& settings = globalCacheTMTT->settings();
+
   // Print stub window sizes that TMTT recommends CMS uses in FE chips.
-  if (settings_.printStubWindows())
-    stubWindowSuggest_.printResults();
+  if (settings.printStubWindows())
+    globalCacheTMTT->stubWindowSuggest().printResults();
+
+  // Print (once) info about tracker geometry.
+  globalCacheTMTT->hists().trackerGeometryAnalysis(globalCacheTMTT->listTrackerModule());
+
+  PrintL1trk() << "\n Number of (eta,phi) sectors used = (" << settings.numEtaRegions() << "," << settings.numPhiSectors() << ")";
 
   // Print job summary
-  hists_.trackerGeometryAnalysis(listTrackerModule_);
-  hists_.endJobAnalysis(&htRphiErrMon_);
-
-  PrintL1trk() << "\n Number of (eta,phi) sectors used = (" << settings_.numEtaRegions() << "," << settings_.numPhiSectors() << ")";
+  globalCacheTMTT->hists().endJobAnalysis(&(globalCacheTMTT->htRphiErrMon()));
 }
 
 }  // namespace tmtt

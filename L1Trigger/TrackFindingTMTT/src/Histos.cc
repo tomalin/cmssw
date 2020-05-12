@@ -36,6 +36,7 @@ namespace tmtt {
 
 namespace {
 std::once_flag printOnce;
+std::mutex myMutexA;
 }
   //=== Store cfg parameters.
 
@@ -89,6 +90,9 @@ std::once_flag printOnce;
                     const matrix<unique_ptr<HTrphi>>& mHtRphis,
                     const matrix<unique_ptr<Make3Dtracks>>& mMake3Dtrks,
 		    const std::map<std::string, std::list<const L1fittedTrack*>>& mapFinalTracks) {
+
+    std::lock_guard<std::mutex> myGuard(myMutexA); // Allow only one thread.
+
     // Don't bother filling histograms if user didn't request them via TFileService in their cfg.
     if (not this->enabled())
       return;
@@ -3229,6 +3233,7 @@ void Histos::fillEtaPhiSectors(const InputData& inputData, const matrix<unique_p
   //=== Print tracking performance summary & make tracking efficiency histograms.
 
   void Histos::endJobAnalysis(const HTrphi::ErrorMonitor* htRphiErrMon) {
+
     // Don't bother producing summary if user didn't request histograms via TFileService in their cfg.
     if (not this->enabled())
       return;
@@ -3335,7 +3340,7 @@ void Histos::fillEtaPhiSectors(const InputData& inputData, const matrix<unique_p
     if (htRphiErrMon != nullptr && not settings_->hybrid()) {
       // Check that stub filling was consistent with known limitations of HT firmware design.
 
-      PrintL1trk() << "\n Max. |gradients| of stub lines in HT array is: r-phi = " << htRphiErrMon->maxLineGradient;
+      PrintL1trk() << "Max. |gradients| of stub lines in HT array is: r-phi = " << htRphiErrMon->maxLineGradient;
 
       if (htRphiErrMon->maxLineGradient > 1.) {
         PrintL1trk() << "WARNING: Line |gradient| exceeds 1, which firmware will not be able to cope with! Please adjust HT "
@@ -3404,11 +3409,11 @@ void Histos::trackerGeometryAnalysis(const list<TrackerModule>& listTrackerModul
       i++;
     }
 
-    PrintL1trk() << "\n =========================================================================";
+    PrintL1trk() << "=========================================================================";
     PrintL1trk() << "--- Fit to cfg params for FPGA-friendly approximation to B parameter in GP & KF ---";
     PrintL1trk() << "--- (used to allowed for tilted barrel modules)                                 ---";
 
-    TFileDirectory inputDir = fs_->mkdir("InputData");
+    TFileDirectory inputDir = fs_->mkdir("InputDataB");
     graphBVsZoverR_ = inputDir.make<TGraph>(nEntries, &vecZoverR[0], &vecParamB[0]);
     graphBVsZoverR_->SetNameTitle("B vs module Z/R", "; Module Z/R; B");
     graphBVsZoverR_->Fit("pol1", "q");
@@ -3419,6 +3424,8 @@ void Histos::trackerGeometryAnalysis(const list<TrackerModule>& listTrackerModul
     double intercept_err = fittedFunction->GetParError(0);
     PrintL1trk() << "         BApprox_gradient (fitted)  = " << gradient << " +- " << gradient_err;
     PrintL1trk() << "         BApprox_intercept (fitted) = " << intercept << " +- "<< intercept_err;
+    PrintL1trk() << "=========================================================================";
+
     // Check fitted params consistent with those assumed in cfg file.
     if (settings_->useApproxB()) {
       double gradientDiff = std::abs(gradient - settings_->bApprox_gradient());

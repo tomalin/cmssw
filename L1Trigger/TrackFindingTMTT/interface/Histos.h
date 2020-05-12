@@ -609,6 +609,8 @@ namespace tmtt {
     std::map<unsigned int, float> mapExtraDModuleTypeMaxZ_;
 
     bool bApproxMistake_;
+
+    bool printedGeomAnalysis_;
   };
 
 }  // namespace tmtt

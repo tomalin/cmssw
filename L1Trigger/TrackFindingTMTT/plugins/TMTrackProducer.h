@@ -7,8 +7,9 @@
 #include "L1Trigger/TrackFindingTMTT/interface/L1track3D.h"
 #include "L1Trigger/TrackFindingTMTT/interface/TrackerModule.h"
 #include "L1Trigger/TrackFindingTMTT/interface/StubWindowSuggest.h"
+#include "L1Trigger/TrackFindingTMTT/interface/GlobalCacheTMTT.h"
 
-#include "FWCore/Framework/interface/EDProducer.h"
+#include "FWCore/Framework/interface/stream/EDProducer.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
 #include "FWCore/Framework/interface/Event.h"
@@ -31,17 +32,23 @@ namespace tmtt {
 
   class TrackFitGeneric;
 
-  class TMTrackProducer : public edm::EDProducer {
+class TMTrackProducer : public edm::stream::EDProducer<edm::GlobalCache<GlobalCacheTMTT>> {
   public:
-    explicit TMTrackProducer(const edm::ParameterSet &);
+
+  explicit TMTrackProducer(const edm::ParameterSet &, GlobalCacheTMTT const* globalCacheTMTT);
     ~TMTrackProducer() {}
 
+    static std::unique_ptr<GlobalCacheTMTT> initializeGlobalCache(edm::ParameterSet const& iConfig);
+
+    static void globalEndJob(GlobalCacheTMTT* globalCacheTMTT);
+
   private:
+
     typedef std::vector<TTTrack<Ref_Phase2TrackerDigi_>> TTTrackCollection;
 
     virtual void beginRun(const edm::Run &, const edm::EventSetup &);
+
     virtual void produce(edm::Event &, const edm::EventSetup &);
-    virtual void endJob();
 
   private:
     bool debug_;
@@ -68,9 +75,9 @@ namespace tmtt {
     std::vector<std::string> useRZfilter_;
     bool runRZfilter_;
 
-    Histos hists_;
-    HTrphi::ErrorMonitor htRphiErrMon_;
-    StubWindowSuggest stubWindowSuggest_;
+    Histos& hists_;
+    HTrphi::ErrorMonitor& htRphiErrMon_;
+    StubWindowSuggest& stubWindowSuggest_;
 
     std::map<std::string, std::unique_ptr<TrackFitGeneric>> fitterWorkerMap_;
   };
