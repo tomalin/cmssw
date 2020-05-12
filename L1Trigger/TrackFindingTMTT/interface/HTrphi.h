@@ -29,13 +29,13 @@ namespace tmtt {
 
     struct ErrorMonitor {
     // Maximum |gradient| of line corresponding to any stub. FW assumes it's < 1.0.
-    float maxLineGradient;
+      std::atomic<float> maxLineGradient;
     // Error count when stub added to cell not NE, E or SE of cell stub added to in previous HT column.
-    unsigned int numErrorsTypeA;
+      std::atomic<unsigned int> numErrorsTypeA;
     // Error count when stub added to more than 2 cells in one HT column 
-    unsigned int numErrorsTypeB;
+      std::atomic<unsigned int> numErrorsTypeB;
     // Error count normalisation
-    unsigned int numErrorsNorm;
+      std::atomic<unsigned int> numErrorsNorm;
     };
 
     // Initialization with sector number, eta range covered by sector and phi coordinate of its centre.
