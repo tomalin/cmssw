@@ -94,7 +94,7 @@ void MiniHTstage::exec(matrix<unique_ptr<HTrphi>>& mHtRphis) {
                   for (auto& stub : stubs) {
                     // Ensure stubs are digitized with respect to the current phi sector.
                     if (settings_->enableDigitize())
-         	      (const_cast<Stub*>(stub))->digitize(iPhiSec, Stub::DigiStage::HT);
+         	      stub->digitize(iPhiSec, Stub::DigiStage::HT);
                     float phiStub = reco::deltaPhi(
                         stub->phi() + invPtToDphi_ * qOverPtBin * (stub->r() - chosenRofPhi_) - phiCentre, 0.);
                     float dPhi = reco::deltaPhi(phiBin - phiStub, 0.);
