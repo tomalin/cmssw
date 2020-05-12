@@ -36,8 +36,9 @@ namespace tmtt {
 
 namespace {
 std::once_flag printOnce;
-std::mutex myMutexA;
+std::mutex myMutex[6];
 }
+
   //=== Store cfg parameters.
 
   Histos::Histos(const Settings* settings)
@@ -91,7 +92,7 @@ std::mutex myMutexA;
                     const matrix<unique_ptr<Make3Dtracks>>& mMake3Dtrks,
 		    const std::map<std::string, std::list<const L1fittedTrack*>>& mapFinalTracks) {
 
-    std::lock_guard<std::mutex> myGuard(myMutexA); // Allow only one thread.
+    // Each function here protected by a mytex lock, so only one thread can run it at a time.
 
     // Don't bother filling histograms if user didn't request them via TFileService in their cfg.
     if (not this->enabled())
@@ -99,35 +100,25 @@ std::mutex myMutexA;
 
     // Fill histograms about input data.
     this->fillInputData(inputData);
+
     // Fill histograms checking if (eta,phi) sector definition choices are good.
     this->fillEtaPhiSectors(inputData, mSectors);
+
     // Fill histograms checking filling of r-phi HT array.
     this->fillRphiHT(mHtRphis);
+
     // Fill histograms about r-z track filters.
     if (ranRZfilter_)
       this->fillRZfilters(mMake3Dtrks);
+
     // Fill histograms studying 3D track candidates found after HT.
-    vector<L1track3D> tracksHT;
-    bool withRZfilter = false;
-    for (unsigned int iEtaReg = 0; iEtaReg < numEtaRegions_; iEtaReg++)
-      for (unsigned int iPhiSec = 0; iPhiSec < numPhiSectors_; iPhiSec++) {
-        const Make3Dtracks* make3Dtrk = mMake3Dtrks(iPhiSec, iEtaReg).get();
-        const std::list<L1track3D>& tracks = make3Dtrk->trackCands3D(withRZfilter);
-        tracksHT.insert(tracksHT.end(), tracks.begin(), tracks.end());
-      }
-    this->fillTrackCands(inputData, tracksHT, "HT");
+    this->fillTrackCands(inputData, mMake3Dtrks, "HT");
+
     // Fill histograms studying 3D track candidates found after r-z track filter.
     if (ranRZfilter_) {
-      vector<L1track3D> tracksRZ;
-      bool withRZfilter = true;
-      for (unsigned int iEtaReg = 0; iEtaReg < numEtaRegions_; iEtaReg++)
-        for (unsigned int iPhiSec = 0; iPhiSec < numPhiSectors_; iPhiSec++) {
-          const Make3Dtracks* make3Dtrk = mMake3Dtrks(iPhiSec, iEtaReg).get();
-          const std::list<L1track3D>& tracks = make3Dtrk->trackCands3D(withRZfilter);
-          tracksRZ.insert(tracksRZ.end(), tracks.begin(), tracks.end());
-        }
-      this->fillTrackCands(inputData, tracksRZ, "RZ");
+      this->fillTrackCands(inputData, mMake3Dtrks, "RZ");
     }
+
     // Fill histograms studying track fitting performance
     this->fillTrackFitting(inputData, mapFinalTracks);
   }
@@ -346,6 +337,10 @@ std::mutex myMutexA;
   //=== Fill histograms using input stubs and tracking particles.
 
   void Histos::fillInputData(const InputData& inputData) {
+
+    // Allow only one thread to run this function at a time
+    std::lock_guard<std::mutex> myGuard(myMutex[0]); 
+
     const list<const Stub*>& vStubs = inputData.stubsConst();
     const list<TP>& vTPs = inputData.getTPs();
 
@@ -785,6 +780,10 @@ std::mutex myMutexA;
   //=== Fill histograms checking if (eta,phi) sector definition choices are good.
 
 void Histos::fillEtaPhiSectors(const InputData& inputData, const matrix<unique_ptr<Sector>>& mSectors) {
+
+    // Allow only one thread to run this function at a time
+    std::lock_guard<std::mutex> myGuard(myMutex[1]); 
+
     const list<const Stub*>& vStubs = inputData.stubsConst();
     const list<TP>& vTPs = inputData.getTPs();
 
@@ -929,6 +928,9 @@ void Histos::fillEtaPhiSectors(const InputData& inputData, const matrix<unique_p
   void Histos::fillRphiHT(const matrix<unique_ptr<HTrphi>>& mHtRphis) {
     //--- Loop over (eta,phi) sectors, counting the number of stubs in the HT array of each.
 
+    // Allow only one thread to run this function at a time
+    std::lock_guard<std::mutex> myGuard(myMutex[2]); 
+
     for (unsigned int iEtaReg = 0; iEtaReg < numEtaRegions_; iEtaReg++) {
       for (unsigned int iPhiSec = 0; iPhiSec < numPhiSectors_; iPhiSec++) {
         const HTrphi* htRphi = mHtRphis(iPhiSec, iEtaReg).get();
@@ -1001,6 +1003,10 @@ void Histos::fillEtaPhiSectors(const InputData& inputData, const matrix<unique_p
   //=== Fill histograms about r-z track filters.
 
   void Histos::fillRZfilters(const matrix<unique_ptr<Make3Dtracks>>& mMake3Dtrks) {
+
+    // Allow only one thread to run this function at a time
+    std::lock_guard<std::mutex> myGuard(myMutex[3]); 
+
     for (unsigned int iEtaReg = 0; iEtaReg < numEtaRegions_; iEtaReg++) {
       for (unsigned int iPhiSec = 0; iPhiSec < numPhiSectors_; iPhiSec++) {
         const Make3Dtracks* make3Dtrk = mMake3Dtrks(iPhiSec, iEtaReg).get();
@@ -1249,7 +1255,25 @@ void Histos::fillEtaPhiSectors(const InputData& inputData, const matrix<unique_p
 
   //=== Fill histograms studying track candidates found before track fit is run.
 
-  void Histos::fillTrackCands(const InputData& inputData, const vector<L1track3D>& tracks, string tName) {
+void Histos::fillTrackCands(const InputData& inputData, const matrix<std::unique_ptr<Make3Dtracks>>& mMake3Dtrks, const string& tName) {
+
+    // Allow only one thread to run this function at a time
+    std::lock_guard<std::mutex> myGuard(myMutex[4]); 
+
+    vector<L1track3D> tracks;
+    bool withRZfilter = (tName == "RZ")  ?  true  :  false;
+    for (unsigned int iEtaReg = 0; iEtaReg < numEtaRegions_; iEtaReg++) {
+      for (unsigned int iPhiSec = 0; iPhiSec < numPhiSectors_; iPhiSec++) {
+        const Make3Dtracks* make3Dtrk = mMake3Dtrks(iPhiSec, iEtaReg).get();
+        const std::list<L1track3D>& tracksSec = make3Dtrk->trackCands3D(withRZfilter);
+        tracks.insert(tracks.end(), tracksSec.begin(), tracksSec.end());
+      }
+   }
+   this->fillTrackCands(inputData, tracks, tName);
+}
+
+
+  void Histos::fillTrackCands(const InputData& inputData, const vector<L1track3D>& tracks, const string& tName) {
     bool withRZfilter = (tName == "RZ");
 
     bool algoTMTT = (tName == "HT" || tName == "RZ");  // Check if running TMTT or Hybrid L1 tracking.
@@ -2257,6 +2281,10 @@ void Histos::fillEtaPhiSectors(const InputData& inputData, const matrix<unique_p
   //=== Fill histograms for studying track fitting.
 
   void Histos::fillTrackFitting(const InputData& inputData, const map<string, list<const L1fittedTrack*>>& mapFinalTracks) {
+
+    // Allow only one thread to run this function at a time
+    std::lock_guard<std::mutex> myGuard(myMutex[5]); 
+
     const list<TP>& vTPs = inputData.getTPs();
 
     // Loop over all the fitting algorithms we are trying.

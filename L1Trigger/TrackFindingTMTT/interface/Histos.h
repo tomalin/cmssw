@@ -74,8 +74,9 @@ namespace tmtt {
     virtual void fillInputData(const InputData& inputData);
     virtual void fillEtaPhiSectors(const InputData& inputData, const matrix<std::unique_ptr<Sector>>& mSectors);
     virtual void fillRphiHT(const matrix<std::unique_ptr<HTrphi>>& mHtRphis);
-    virtual void fillRZfilters(const matrix<std::unique_ptr<Make3Dtracks>>& mGet3Dtrks);
-    virtual void fillTrackCands(const InputData& inputData, const std::vector<L1track3D>& tracks, std::string tName);
+    virtual void fillRZfilters(const matrix<std::unique_ptr<Make3Dtracks>>& mMake3Dtrks);
+    virtual void fillTrackCands(const InputData& inputData, const matrix<std::unique_ptr<Make3Dtracks>>& mMake3Dtrks, const std::string& tName);
+    virtual void fillTrackCands(const InputData& inputData, const std::vector<L1track3D>& tracks, const std::string& tName);
     virtual void fillTrackFitting(const InputData& inputData,
                                   const std::map<std::string, std::list<const L1fittedTrack*>>& mapFinalTracks);
 
