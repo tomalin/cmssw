@@ -95,16 +95,16 @@ namespace tmtt {
       if (inSubSec[iSubSec])
         stubsInSubSec.push_back(s);
     }
-    return Utility::countLayers(settings_, stubsInSubSec);
+    return Utility::countLayersConst(settings_, stubsInSubSec);
   }
 
   //=== Produce a filtered collection of stubs in this cell that all have consistent bend.
   //=== Only called for r-phi Hough transform.
 
-  vector<const Stub*> HTcell::bendFilter(const vector<const Stub*>& stubs) const {
+  vector<Stub*> HTcell::bendFilter(const vector<Stub*>& stubs) const {
     // Create bend-filtered stub collection.
-    vector<const Stub*> filteredStubs;
-    for (const Stub* s : stubs) {
+    vector<Stub*> filteredStubs;
+    for (Stub* s : stubs) {
       // Require stub bend to be consistent with q/Pt of this cell.
 
       unsigned int minBin = s->min_qOverPt_bin();
@@ -123,8 +123,8 @@ namespace tmtt {
   //=== Filter stubs so as to prevent more than specified number of stubs being stored in one cell.
   //=== This reflects finite memory of hardware.
 
-  vector<const Stub*> HTcell::maxStubCountFilter(const vector<const Stub*>& stubs) const {
-    vector<const Stub*> filteredStubs;
+  vector<Stub*> HTcell::maxStubCountFilter(const vector<Stub*>& stubs) const {
+    vector<Stub*> filteredStubs;
     // If there are too many stubs in a cell, the hardware keeps (maxStubsInCell - 1) of the first stubs in the list
     // plus the last stub.
     if (stubs.size() > maxStubsInCell_) {

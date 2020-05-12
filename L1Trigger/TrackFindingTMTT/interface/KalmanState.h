@@ -31,7 +31,7 @@ namespace tmtt {
                 const TMatrixD &matC,
                 const TMatrixD &matK,
                 const TMatrixD &matV,
-                const Stub *stub,
+                Stub *stub,
                 double chi2rphi,
                 double chi2rz);
 
@@ -60,7 +60,7 @@ namespace tmtt {
     // Hit position covariance matrix.
     const TMatrixD &matrixV() const { return matV_; }
     // Last added stub
-    const Stub *stub() const { return stub_; }
+    Stub *stub() const { return stub_; }
     // Track used to seed KF.
     const L1track3D &candidate() const { return l1track3D_; }
 
@@ -74,7 +74,7 @@ namespace tmtt {
     bool good(const TP *tp) const;
     double reducedChi2() const;
     const KalmanState *last_update_state() const;
-    std::vector<const Stub *> stubs() const;
+    std::vector<Stub *> stubs() const;
 
     void setChi2(double chi2rphi, double chi2rz) {
       chi2rphi_ = chi2rphi;
@@ -95,7 +95,7 @@ namespace tmtt {
     TMatrixD matC_;
     TMatrixD matK_;
     TMatrixD matV_;
-    const Stub *stub_;
+    Stub *stub_;
     double chi2rphi_;
     double chi2rz_;
     unsigned int kalmanChi2RphiScale_;

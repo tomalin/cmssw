@@ -19,7 +19,7 @@ void StubWindowSuggest::process(const TrackerTopology* trackerTopo, const Stub* 
     const double invPtMax = 1 / ptMin_;
     double bendHalfWind = invPtMax / std::abs(stub->qOverPtOverBend());
     // Increase half-indow size to allow for resolution in bend.
-    bendHalfWind += stub->bendResInFrontend();
+    bendHalfWind += stub->bendCutInFrontend();
     // Stub bend is measured here in half-integer values.
     bendHalfWind = int(2 * bendHalfWind) / 2.;
 

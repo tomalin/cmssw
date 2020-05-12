@@ -6,7 +6,6 @@
 #include "L1Trigger/TrackFindingTMTT/interface/L1trackBase.h"
 #include "L1Trigger/TrackFindingTMTT/interface/L1track3D.h"
 #include "L1Trigger/TrackFindingTMTT/interface/Settings.h"
-#include "L1Trigger/TrackFindingTMTT/interface/Utility.h"
 #include "L1Trigger/TrackFindingTMTT/interface/TP.h"
 #include "L1Trigger/TrackFindingTMTT/interface/Stub.h"
 #include "L1Trigger/TrackFindingTMTT/interface/DigitalTrack.h"
@@ -14,7 +13,6 @@
 #include <vector>
 #include <utility>
 #include <string>
-#include <memory>
 
 //=== This is used uniquely for HYBRID TRACKING.
 //=== It is the equivalent of class L1fittedTrack.

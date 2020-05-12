@@ -176,7 +176,7 @@ namespace {
   //=== Add stub to HT array.
   //=== If eta subsectors are being used within each sector, specify which ones the stub is compatible with.
 
-  void HTrphi::store(const Stub* stub, const vector<bool>& inEtaSubSecs) {
+  void HTrphi::store(Stub* stub, const vector<bool>& inEtaSubSecs) {
     // Optionally, only store stubs that can be sent from GP to HT within TM period.
     if ((!busyInputSectorKill_) || (nReceivedStubs_ < busyInputSectorNumStubs_)) {
       nReceivedStubs_++;

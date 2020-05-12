@@ -131,7 +131,7 @@ void TMTrackProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
 		      genJetToken_);
 
   const list<TP>& vTPs = inputData.getTPs();
-  const list<const Stub*>& vStubs = inputData.stubs();
+  const list<Stub*>& vStubs = inputData.stubs();
 
   // Creates matrix of Sector objects, which decide which stubs are in which (eta,phi) sector
   matrix<unique_ptr<Sector>> mSectors(settings_.numPhiSectors(), settings_.numEtaRegions());
@@ -173,13 +173,12 @@ void TMTrackProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
 
       // Check sector is enabled (always true, except if user disabled some for special studies).
       if (settings_.isHTRPhiEtaRegWhitelisted(iEtaReg)) {
-	for (const Stub* stub : vStubs) {
+	for (Stub* stub : vStubs) {
 	  // Digitize stub as would be at input to GP. This doesn't need the nonant number, since we assumed an integer number of
 	  // phi digitisation  bins inside an nonant. N.B. This changes the coordinates & bend stored in the stub.
-	  // The cast allows us to ignore the "const".
 
 	  if (settings_.enableDigitize())
-	    (const_cast<Stub*>(stub))->digitize(iPhiSec, Stub::DigiStage::GP);
+	    stub->digitize(iPhiSec, Stub::DigiStage::GP);
 
 	  // Check if stub is inside this sector
 	  bool inside = sector->inside(stub);
@@ -190,7 +189,7 @@ void TMTrackProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
 
 	    // Digitize stub if as would be at input to HT, which slightly degrades its coord. & bend resolution, affecting the HT performance.
 	    if (settings_.enableDigitize())
-  	      (const_cast<Stub*>(stub))->digitize(iPhiSec, Stub::DigiStage::HT);
+  	      stub->digitize(iPhiSec, Stub::DigiStage::HT);
 
 	    // Store stub in Hough transform array for this sector, indicating its compatibility with eta subsectors with sector.
 	    htRphi->store(stub, inEtaSubSecs);
@@ -277,10 +276,10 @@ void TMTrackProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
 	for (const L1track3D& trk : vecTrk3D) {
 	  // Ensure stubs assigned to this track is digitized with respect to the phi sector the track is in.
 	  if (settings_.enableDigitize()) {
-	    const vector<const Stub*>& stubsOnTrk = trk.stubs();
-	    for (const Stub* s : stubsOnTrk) {
+	    const vector<Stub*>& stubsOnTrk = trk.stubs();
+	    for (Stub* s : stubsOnTrk) {
 	      // Also digitize stub in way this specific track fitter uses it.
-  	      (const_cast<Stub*>(s))->digitize(iPhiSec, Stub::DigiStage::TF);
+  	      s->digitize(iPhiSec, Stub::DigiStage::TF);
 	    }
 	  }
 
@@ -347,9 +346,9 @@ void TMTrackProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
   }
 
   // Allow histogramming to plot undigitized variables.
-  for (const Stub* stub : vStubs) {
+  for (Stub* stub : vStubs) {
     if (settings_.enableDigitize())
-      (const_cast<Stub*>(stub))->setDigitizeWarningsOn(false);
+      stub->setDigitizeWarningsOn(false);
   }
 
   // Fill histograms to monitor input data & tracking performance.

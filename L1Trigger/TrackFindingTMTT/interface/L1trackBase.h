@@ -23,7 +23,8 @@ namespace tmtt {
     //--- Get information about the reconstructed track.
 
     // Get stubs on track candidate.
-    virtual const std::vector<const Stub*>& stubs() const = 0;
+    virtual const std::vector<const Stub*>& stubsConst() const = 0;
+    virtual const std::vector<Stub*>& stubs() const = 0;
     // Get number of stubs on track candidate.
     virtual unsigned int numStubs() const = 0;
     // Get number of tracker layers these stubs are in.

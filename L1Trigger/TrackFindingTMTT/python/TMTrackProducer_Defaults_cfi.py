@@ -59,11 +59,11 @@ TMTrackProducer_params = cms.PSet(
      # Bend resolution assumed by bend filter in units of strip pitch. Also used when assigning stubs to sectors if EtaPhiSectors.CalcPhiTrkRes=True. And by the bend filter if HTFillingRphi.UseBendFilter=True.
      # Suggested value: 1.19 if DegradeBendRes = 0, or 1.249 if it > 0.
      # N.B. Avoid 1/4-integer values due to rounding error issues.
-     BendResolution = cms.double(1.249),
+     BendCut = cms.double(1.249),
      # Additional contribution to bend resolution from its encoding into a reduced number of bits.
      # This number is the assumed resolution relative to the naive guess of its value.
      # It is ignored in DegradeBendRes = 0.
-     BendResolutionExtra = cms.double(0.0),
+     BendCutExtra = cms.double(0.0),
      # Order stubs by bend in DTC, such that highest Pt stubs are transmitted first.
      OrderStubsByBend = cms.bool(True)
   ),
@@ -122,7 +122,7 @@ TMTrackProducer_params = cms.PSet(
      UseStubPhi         = cms.bool(True),  # Require stub phi to be consistent with track of Pt > HTArraySpec.HoughMinPt that crosses HT phi axis?
      UseStubPhiTrk      = cms.bool(True),  # Require stub phi0 (or phi65 etc.) as estimated from stub bend, to lie within HT phi axis, allowing tolerance(s) specified below?
      AssumedPhiTrkRes   = cms.double(0.5), # Tolerance in stub phi0 (or phi65) assumed to be this fraction of phi sector width. (N.B. If > 0.5, then stubs can be shared by more than 2 phi sectors).
-     CalcPhiTrkRes      = cms.bool(True)  # If true, tolerance in stub phi0 (or phi65 etc.) will be reduced below AssumedPhiTrkRes if stub bend resolution specified in StubCuts.BendResolution suggests it is safe to do so.
+     CalcPhiTrkRes      = cms.bool(True)  # If true, tolerance in stub phi0 (or phi65 etc.) will be reduced below AssumedPhiTrkRes if stub bend resolution specified in StubCuts.BendCut suggests it is safe to do so.
   ),
 
   #=== Division of Tracker into eta sectors
@@ -166,7 +166,7 @@ TMTrackProducer_params = cms.PSet(
      # Suggest setting KillSomeHTCellsRphi=1 (=0) if HTArraySpec.ChosenRofPhi=0 (>0)
      KillSomeHTCellsRphi  = cms.uint32(0),
      # Use filter in each r-phi HT cell, filling it only with stubs that have consistent bend information?
-     # The assumed bend resolution is specified in StubCuts.BendResolution.
+     # The assumed bend resolution is specified in StubCuts.BendCut.
      UseBendFilter        = cms.bool(True),
      # Use filter in each HT cell, preventing more than the specified number of stubs being stored in the cell. (Reflecting memory limit of hardware). N.B. Results depend on assumed order of stubs.
      # N.B. If mini-HT is in use, then this cut applies to coarse-HT.
@@ -389,8 +389,8 @@ TMTrackProducer_params = cms.PSet(
      KalmanHOalpha           = cms.uint32(0),
      # Projection from (r,phi) to (z,phi) for endcap 2S modules. (0=disable correction, 1=correct with offset, 2=correct with non-diagonal stub covariance matrix). -- Option 1 is easier in FPGA, but only works if fit adds PS stubs before 2S ones.
      KalmanHOprojZcorr       = cms.uint32(0),
-     # Use dodgy calculation to account for non-radial endcap 2S modules that was used in Dec. 2016 demonstrator & use no special treatment for tilted modules.
-     KalmanHOdodgy           = cms.bool(True)
+     # Use approx calc to account for non-radial endcap 2S modules corresponding to current FW, with  no special treatment for tilted modules.
+     KalmanHOfw           = cms.bool(True)
   ),
 
   #=== Treatment of dead modules.

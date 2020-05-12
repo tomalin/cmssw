@@ -65,11 +65,11 @@ namespace tmtt {
     // Print stub windows corresponding to KillLowPtStubs, in python cfg format used by CMSSW.
     bool printStubWindows() const { return printStubWindows_; }
     // Bend resolution assumed by bend filter in units of strip pitch. Also used when assigning stubs to sectors if calcPhiTrkRes() is true.
-    double bendResolution() const { return bendResolution_; }
+    double bendCut() const { return bendCut_; }
     // Additional contribution to bend resolution from its encoding into a reduced number of bits.
     // This number is the assumed resolution relative to the naive guess of its value.
     // It is ignored in DegradeBendRes = 0.
-    double bendResolutionExtra() const { return bendResolutionExtra_; }
+    double bendCutExtra() const { return bendCutExtra_; }
     // Order stubs by bend in DTC, such that highest Pt stubs are transmitted first.
     bool orderStubsByBend() const { return orderStubsByBend_; }
 
@@ -323,8 +323,8 @@ namespace tmtt {
     unsigned int kalmanHOalpha() const { return kalmanHOalpha_; }
     // Projection from (r,phi) to (z,phi) for endcap 2S modules. (0=disable correction, 1=correct with offset, 2=correct with non-diagonal stub covariance matrix).
     unsigned int kalmanHOprojZcorr() const { return kalmanHOprojZcorr_; }
-    // Use dodgy calculation to account for non-radial endcap 2S modules that was used in Dec. 2016 demonstrator & use no special treatment for tilted barrel modules.
-    bool kalmanHOdodgy() const { return kalmanHOdodgy_; }
+    // Use approx calc to account for non-radial endcap 2S modules corresponding to current FW, with  no special treatment for tilted modules.
+    bool kalmanHOfw() const { return kalmanHOfw_; }
 
     //=== Treatment of dead modules.
     //
@@ -468,8 +468,8 @@ namespace tmtt {
     double maxStubEta_;
     bool killLowPtStubs_;
     bool printStubWindows_;
-    double bendResolution_;
-    double bendResolutionExtra_;
+    double bendCut_;
+    double bendCutExtra_;
     bool orderStubsByBend_;
 
     // Optional stub digitization.
@@ -613,7 +613,7 @@ namespace tmtt {
     bool kalmanHOhelixExp_;
     unsigned int kalmanHOalpha_;
     unsigned int kalmanHOprojZcorr_;
-    bool kalmanHOdodgy_;
+    bool kalmanHOfw_;
 
     // Treatment of dead modules.
     unsigned int killScenario_;

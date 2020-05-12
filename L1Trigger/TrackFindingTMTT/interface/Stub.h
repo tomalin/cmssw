@@ -117,18 +117,18 @@ namespace tmtt {
     // Get stub bend and its resolution, as available within the front end chip (i.e. prior to loss of bits
     // or digitisation).
     float bendInFrontend() const { return bendInFrontend_; }
-    float bendResInFrontend() const { return settings_->bendResolution(); }
+    float bendCutInFrontend() const { return settings_->bendCut(); }
     // Get stub bend (i.e. displacement between two hits in stub in units of strip pitch). 
     float bend() const {return bend_;}
     // Bend resolution.
-    float bendRes() const {
-      return (settings_->bendResolution() + (numMergedBend_ - 1) * settings_->bendResolutionExtra());
+    float bendCut() const {
+      return (settings_->bendCut() + (numMergedBend_ - 1) * settings_->bendCutExtra());
     }
     // No. of bend values merged into FE bend encoding of this stub.
     float numMergedBend() const { return numMergedBend_; }
     // Estimated track q/Pt based on stub bend info.
     float qOverPt() const { return (this->qOverPtOverBend() * this->bend()); }
-    float qOverPtres() const { return (this->qOverPtOverBend() * this->bendRes()); }
+    float qOverPtcut() const { return (this->qOverPtOverBend() * this->bendCut()); }
     // Range in q/Pt bins in HT array compatible with stub bend.
     unsigned int min_qOverPt_bin() const { return min_qOverPt_bin_; }
     unsigned int max_qOverPt_bin() const { return max_qOverPt_bin_; }
@@ -137,7 +137,7 @@ namespace tmtt {
     // Phi angle at which particle consistent with this stub & its bend cross specified radius.
     float trkPhiAtR(float rad) const {return phi_ + (bend_*dphiOverBend_)*(1. - rad/r_);}
     // Its resolution
-    float trkPhiAtRres(float rad) const {return (bendRes()*dphiOverBend_)*std::abs(1. - rad/r_);} 
+    float trkPhiAtRcut(float rad) const {return (bendCut()*dphiOverBend_)*std::abs(1. - rad/r_);} 
 
     // -- conversion factors
     // Ratio of track crossing angle to bend.

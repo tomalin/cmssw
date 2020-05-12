@@ -42,7 +42,7 @@ TMTrackProducer.TrackFitSettings.KalmanHOtilted     = True
 TMTrackProducer.TrackFitSettings.KalmanHOhelixExp   = True
 TMTrackProducer.TrackFitSettings.KalmanHOalpha      = 1
 TMTrackProducer.TrackFitSettings.KalmanHOprojZcorr  = 1
-TMTrackProducer.TrackFitSettings.KalmanHOdodgy      = False
+TMTrackProducer.TrackFitSettings.KalmanHOfw      = False
 
 #--- Switch on 2nd stage Mini HT with 2 GeV Pt threshold & allow it to find tracks with stubs in as few as 4 layers.
 

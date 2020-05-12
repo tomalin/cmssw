@@ -5,7 +5,7 @@ using namespace std;
 namespace tmtt {
 
   // Empty vector used to initialize rejected tracks.
-  const std::vector<const Stub*> L1fittedTrack::noStubs_; 
+  const std::vector<Stub*> L1fittedTrack::noStubs_; 
 
   // Digitize track and degrade helix parameter resolution according to effect of digitisation.
 

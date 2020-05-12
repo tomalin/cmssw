@@ -1,8 +1,9 @@
-// Author: Emyr Clement (2018)
-// Tidy up: Ian Tomalin (2020)
-
 #ifndef L1Trigger_TrackFindingTMTT_StubKiller_h
 #define L1Trigger_TrackFindingTMTT_StubKiller_h
+
+// Kill some stubs to emulate dead tracker modules.
+// Author: Emyr Clement (2018)
+// Tidy up: Ian Tomalin (2020)
 
 #include "FWCore/Framework/interface/Event.h"
 #include "DataFormats/L1TrackTrigger/interface/TTTypes.h"

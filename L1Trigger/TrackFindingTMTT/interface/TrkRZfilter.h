@@ -62,7 +62,7 @@ namespace tmtt {
 
     // Use Seed Filter to produce a filtered collection of stubs on this track candidate that are consistent with a straight line
     // in r-z using tracklet algo.
-    std::vector<const Stub*> seedFilter(const std::vector<const Stub*>& stubs, float trkQoverPt, bool print);
+    std::vector<Stub*> seedFilter(const std::vector<Stub*>& stubs, float trkQoverPt, bool print);
 
     //--- Estimate r-z helix parameters from centre of eta-sector if no better estimate provided by r-z filter.
     void estRZhelix();

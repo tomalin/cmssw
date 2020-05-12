@@ -34,37 +34,28 @@ namespace tmtt {
     double invPtToInv2R = settings_->invPtToInvR() / 2;
 
     // Assumed track seed (from HT) uncertainty in transverse impact parameter.
-    const float d0Sigma = 1.0;
 
-    if (settings_->hybrid()) {
-      matC[INV2R][INV2R] = 0.0157 * 0.0157 * invPtToInv2R * invPtToInv2R * 4;
-      matC[PHI0][PHI0] = 0.0051 * 0.0051 * 4;
-      matC[Z0][Z0] = 5.0 * 5.0;
-      matC[T][T] = 0.25 * 0.25 * 4;
+    // Constants optimised by hand for TMTT algo.
+    const     float inv2Rsigma2 = pow(0.0314 * invPtToInv2R, 2);
+    constexpr float phi0sigma2  = pow(0.0102, 2);
+    constexpr float z0sigma2    = pow(5.0, 2);
+    constexpr float tanLsigma2  = pow(0.5, 2); 
+    constexpr float d0Sigma2    = pow(1.0, 2);
+    matC[INV2R][INV2R] = inv2Rsigma2; 
+    matC[PHI0][PHI0]   = phi0sigma2;      
+    matC[Z0][Z0]       = z0sigma2;              
+    matC[T][T]         = tanLsigma2;         
+    if (nPar_ == 5) {
+      matC[D0][D0] = d0Sigma2;
+    }
+
+    //if (settings_->hybrid()) {
       // N.B. (z0, tanL, d0) seed uncertainties could be smaller for hybrid, if seeded in PS? -- not tried
       //if (l1track3D.seedPS() > 0) { // Tracklet seed used PS layers
       //  matC[Z0][Z0] /= (4.*4.).;
       //  matC[T][T] /= (4.*4.);
       // }
-      if (nPar_ == 5) {
-        matC[D0][D0] = d0Sigma * d0Sigma;
-      }
-
-    } else {
-      // optimised for 18x2 with additional error factor in pt/phi to avoid pulling towards wrong HT params
-      matC[INV2R][INV2R] = 0.0157 * 0.0157 * invPtToInv2R * invPtToInv2R * 4;  // Base on HT cell size
-      matC[PHI0][PHI0] = 0.0051 * 0.0051 * 4;                                  // Based on HT cell size.
-      matC[Z0][Z0] = 5.0 * 5.0;
-      matC[T][T] = 0.25 * 0.25 * 4;  // IRT: increased by factor 4, as was affecting fit chi2.
-      if (nPar_ == 5) {
-        matC[D0][D0] = d0Sigma * d0Sigma;
-      }
-
-      if (settings_->numEtaRegions() <= 12) {
-        // Inflate eta errors
-        matC[T][T] = matC[T][T] * 2 * 2;
-      }
-    }
+    //}
 
     return matC;
   }
@@ -127,7 +118,7 @@ namespace tmtt {
         vz = b;
       }
 
-      if (settings_->kalmanHOdodgy()) {
+      if (settings_->kalmanHOfw()) {
         // Use approximation corresponding to current firmware.
         vz = b;
       }
@@ -149,7 +140,7 @@ namespace tmtt {
         vphi += b * beta2;
         vcorr = b * (beta * tanl);
 
-        if (settings_->kalmanHOdodgy()) {
+        if (settings_->kalmanHOfw()) {
           // Use approximation corresponding to current firmware.
           vphi = (a * invr2) + (b * inv2R2) + sigmaScat2;
           vcorr = 0.;

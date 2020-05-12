@@ -104,7 +104,7 @@ namespace tmtt {
     void fillUseForAlgEff();  // Fill the useforAlgEff_ flag.
 
     // Calculate how many tracker layers this TP has stubs in.
-    void calcNumLayers() { nLayersWithStubs_ = Utility::countLayers(settings_, assocStubs_, false); }
+    void calcNumLayers() { nLayersWithStubs_ = Utility::countLayersConst(settings_, assocStubs_, false); }
 
   private:
     TrackingParticlePtr trackingParticlePtr_;  // Pointer to original TrackingParticle.

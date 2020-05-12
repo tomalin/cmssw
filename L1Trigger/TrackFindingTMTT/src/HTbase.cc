@@ -68,7 +68,7 @@ HTbase::HTbase(const Settings* settings, unsigned int iPhiSec, unsigned int iEta
     for (unsigned int i = 0; i < nBinsX_; i++) {
       for (unsigned int j = 0; j < nBinsY_; j++) {
         // Loop over stubs in each cells, storing their IDs.
-        const vector<const Stub*>& vStubs = htArray_(i, j)->stubs();  // Calls HTcell::stubs()
+        const vector<Stub*>& vStubs = htArray_(i, j)->stubs();  // Calls HTcell::stubs()
         for (const Stub* stub : vStubs) {
           stubIDs.insert(stub->index());
         }
@@ -205,7 +205,7 @@ HTbase::HTbase(const Settings* settings, unsigned int iPhiSec, unsigned int iEta
           const bool merged = htArray_(iPos, j)->mergedCell();
 
           // Get stubs on this track candidate.
-          const vector<const Stub*>& stubs = htArray_(iPos, j)->stubs();
+          const vector<Stub*>& stubs = htArray_(iPos, j)->stubs();
 
           // And note location of cell inside HT array.
           const pair<unsigned int, unsigned int> cellLocation(iPos, j);

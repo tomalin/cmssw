@@ -1,9 +1,9 @@
-///=== This is the base class for the linearised chi-squared track fit algorithms.
-
-///=== Written by: Sioni Summers and Alexander D. Morton
-
 #ifndef L1Trigger_TrackFindingTMTT_ChiSquaredFitBase_h
 #define L1Trigger_TrackFindingTMTT_ChiSquaredFitBase_h
+
+///=== This is the base class for the linearised chi-squared track fit algorithms.
+
+///=== Written by: Sioni Summers and Alexander D. Morton.
 
 #include "L1Trigger/TrackFindingTMTT/interface/Stub.h"
 #include "L1Trigger/TrackFindingTMTT/interface/TrackFitGeneric.h"
@@ -36,7 +36,7 @@ namespace tmtt {
 
     /* Variables */
     double qOverPt_seed_;
-    std::vector<const Stub*> stubs_;
+    std::vector<Stub*> stubs_;
     TVectorD trackParams_;
     uint nPar_;
     float largestresid_;

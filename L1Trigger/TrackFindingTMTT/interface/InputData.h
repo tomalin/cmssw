@@ -38,7 +38,9 @@ class StubWindowSuggest;
     // Get tracking particles
     const std::list<TP>& getTPs() const { return vTPs_; }
     // Get stubs that would be output by the front-end readout electronics
-    const std::list<const Stub*>& stubs() const { return vStubs_; }
+    const std::list<Stub*>& stubs() const { return vStubs_; }
+    // Ditto but const
+    const std::list<const Stub*>& stubsConst() const { return vStubsConst_; }
 
     //--- of minor importance ...
 
@@ -50,8 +52,9 @@ class StubWindowSuggest;
 
     std::list<TrackerModule> trackerModules_; // Info about each tracker module.
 
-    std::list<TP> vTPs_;             // tracking particles
-    std::list<const Stub*> vStubs_;  // stubs that would be output by the front-end readout electronics.
+    std::list<TP> vTPs_;            // tracking particles
+    std::list<Stub*> vStubs_;  // stubs that would be output by the front-end readout electronics.
+    std::list<const Stub*> vStubsConst_;  // ditto but const
 
     //--- Used for a few minor studies ...
 

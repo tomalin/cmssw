@@ -42,7 +42,7 @@ namespace tmtt {
     vecTracks3D_unfiltered_.clear();
 
     for (const L1track2D& trkRphi : vecTracksRphi) {
-      const vector<const Stub*>& stubsOnTrkRphi = trkRphi.stubs();  // stubs assigned to track
+      const vector<Stub*>& stubsOnTrkRphi = trkRphi.stubs();  // stubs assigned to track
 
       float qOverPt = trkRphi.helix2D().first;
       float phi0 = trkRphi.helix2D().second;

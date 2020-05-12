@@ -1,7 +1,7 @@
-///=== Create requested track fitter
-
 #ifndef L1Trigger_TrackFindingTMTT_TrackFitFactory_h
 #define L1Trigger_TrackFindingTMTT_TrackFitFactory_h
+
+///=== Create requested track fitter
 
 #include "L1Trigger/TrackFindingTMTT/interface/L1fittedTrack.h"
 #include "L1Trigger/TrackFindingTMTT/interface/L1track3D.h"

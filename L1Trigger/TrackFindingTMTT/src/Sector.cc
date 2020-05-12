@@ -136,7 +136,7 @@ Sector::Sector(const Settings* settings, unsigned int iPhiSec, unsigned int iEta
       float tolerancePhiTrk = assumedPhiTrkRes_ * (2 * sectorHalfWidth_);  
       if (calcPhiTrkRes_) {
         // Calculate uncertainty in phiTrk due to poor resolution in stub bend
-        float phiTrkRes = stub->trkPhiAtRres(chosenRofPhi_);
+        float phiTrkRes = stub->trkPhiAtRcut(chosenRofPhi_);
         // Reduce tolerance if this is smaller than the nominal assumed resolution.
         tolerancePhiTrk = min(tolerancePhiTrk, phiTrkRes);
       }
@@ -225,7 +225,7 @@ Sector::Sector(const Settings* settings, unsigned int iPhiSec, unsigned int iEta
 
     // Number of bits used by DSP in UltraScale-Plus FPGA (where DSP does D = A*B + C)
     constexpr unsigned int nDSPa = 27;
-    constexpr unsigned int nDSPb = 18;
+    //constexpr unsigned int nDSPb = 18;
     constexpr unsigned int nDSPc = 48;
     constexpr unsigned int nDSPd = 48;
 

@@ -50,11 +50,11 @@ namespace tmtt {
 
   protected:
     // Do KF fit (internal)
-    const KalmanState *doKF(const L1track3D &l1track3D, const std::vector<const Stub *> &stubs, const TP *tpa);
+    const KalmanState *doKF(const L1track3D &l1track3D, const std::vector<Stub *> &stubs, const TP *tpa);
 
     // Add one stub to a helix state
     virtual const KalmanState *kalmanUpdate(
-        unsigned nSkipped, unsigned layer, const Stub *stub, const KalmanState *state, const TP *tp);
+        unsigned nSkipped, unsigned layer, Stub *stub, const KalmanState *state, const TP *tp);
 
     // Create a KalmanState, containing a helix state & next stub it is to be updated with.
     const KalmanState *mkState(const L1track3D &candidate,
@@ -65,7 +65,7 @@ namespace tmtt {
                                const TMatrixD &pxx,
                                const TMatrixD &K,
                                const TMatrixD &dcov,
-                               const Stub *stub,
+                               Stub *stub,
                                double chi2rphi,
                                double chi2rz);
 
@@ -145,9 +145,9 @@ namespace tmtt {
 
     //--- Debug printout
     void printTP(const TP *tp) const;
-    void printStubLayers(const std::vector<const Stub *> &stubs, unsigned int iEtaReg) const;
+    void printStubLayers(const std::vector<Stub *> &stubs, unsigned int iEtaReg) const;
     void printStub(const Stub *stub) const;
-    void printStubs(const std::vector<const Stub *> &stubs) const;
+    void printStubs(const std::vector<Stub *> &stubs) const;
 
   protected:
     unsigned nPar_;

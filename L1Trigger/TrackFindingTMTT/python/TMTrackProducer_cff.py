@@ -43,7 +43,7 @@ TMTrackProducer = cms.EDProducer('tmtt::TMTrackProducer',
 #TMTrackProducer.TrackFitSettings.KalmanHOhelixExp   = cms.bool(True)
 #TMTrackProducer.TrackFitSettings.KalmanHOalpha      = cms.uint32(2)
 #TMTrackProducer.TrackFitSettings.KalmanHOprojZcorr  = cms.uint32(2)
-#TMTrackProducer.TrackFitSettings.KalmanHOdodgy      = cms.bool(False)
+#TMTrackProducer.TrackFitSettings.KalmanHOfw      = cms.bool(False)
 
 #--- Switch off parts of the track reconstruction chain.
 

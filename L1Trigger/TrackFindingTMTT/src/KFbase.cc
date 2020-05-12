@@ -41,7 +41,7 @@ namespace tmtt {
     resetStates();
     numUpdateCalls_ = 0;
 
-    vector<const Stub *> stubs = l1track3D.stubs();
+    vector<Stub *> stubs = l1track3D.stubs();
 
     auto orderByLayer = [](const Stub *a, const Stub *b) { return bool(a->layerId() < b->layerId()); };
     sort(stubs.begin(), stubs.end(), orderByLayer);  // Makes debug printout pretty.
@@ -181,7 +181,7 @@ namespace tmtt {
 
   /* Do track fit (internal function) */
 
-  const KalmanState *KFbase::doKF(const L1track3D &l1track3D, const vector<const Stub *> &stubs, const TP *tpa) {
+  const KalmanState *KFbase::doKF(const L1track3D &l1track3D, const vector<Stub *> &stubs, const TP *tpa) {
     const KalmanState *finished_state = nullptr;
 
     map<unsigned int, const KalmanState *, std::greater<unsigned int>>
@@ -206,7 +206,7 @@ namespace tmtt {
 
     // arrange stubs into Kalman layers according to eta region
     int etaReg = l1track3D.iEtaReg();
-    map<int, vector<const Stub *>> layerStubs;
+    map<int, vector<Stub *>> layerStubs;
 
     for (auto stub : stubs) {
       // Get Kalman encoded layer ID for this stub.
@@ -260,11 +260,11 @@ namespace tmtt {
 
         // find stubs for this layer
         // (If layer > 6, this will return empty vector, so safe).
-        vector<const Stub *> thislay_stubs = layerStubs[layer];  
+        vector<Stub *> thislay_stubs = layerStubs[layer];  
 
         // find stubs for next layer if we skip a layer, except when we are on the penultimate layer,
         // or we have exceeded the max skipped layers
-        vector<const Stub *> nextlay_stubs;
+        vector<Stub *> nextlay_stubs;
 
         // If the next layer (layer+1) is a dead layer, then proceed to the layer after next (layer+2), if possible
         // Also note if we need to increase "skipped" by one more for these states
@@ -297,8 +297,8 @@ namespace tmtt {
         // (iteration 0 will always include a PS hit, but iteration 1 could use 2S hits 
 	// unless we include this)
         if (iteration == 1 && !remove2PSCut) {
-          vector<const Stub *> temp_thislaystubs;
-          vector<const Stub *> temp_nextlaystubs;
+          vector<Stub *> temp_thislaystubs;
+          vector<Stub *> temp_nextlaystubs;
           for (auto stub : thislay_stubs) {
             if (stub->psModule())
               temp_thislaystubs.push_back(stub);
@@ -315,7 +315,7 @@ namespace tmtt {
 
         // loop over each stub in this layer and check for compatibility with this state
         for (unsigned i = 0; i < thislay_stubs.size(); i++) {
-          const Stub *stub = thislay_stubs[i];
+          Stub *stub = thislay_stubs[i];
 
           // Update helix params by adding this stub.
           const KalmanState *new_state = kalmanUpdate(nSkipped, layer, stub, the_state, tpa);
@@ -327,7 +327,7 @@ namespace tmtt {
 
         // loop over each stub in next layer if we skip, and check for compatibility with this state
         for (unsigned i = 0; i < nextlay_stubs.size(); i++) {
-          const Stub *stub = nextlay_stubs[i];
+          Stub *stub = nextlay_stubs[i];
 
           const KalmanState *new_state =
               kalmanUpdate(nSkipped + 1 + nSkippedDeadLayers_nextStubs + nSkippedAmbiguousLayers_nextStubs,
@@ -420,7 +420,7 @@ namespace tmtt {
   /*--- Update a helix state by adding a stub. */
 
   const KalmanState *KFbase::kalmanUpdate(
-      unsigned nSkipped, unsigned int layer, const Stub *stub, const KalmanState *state, const TP *tpa) {
+      unsigned nSkipped, unsigned int layer, Stub *stub, const KalmanState *state, const TP *tpa) {
     if (settings_->kalmanDebugLevel() >= 4) {
       PrintL1trk() << "---------------";
       PrintL1trk() << "kalmanUpdate";
@@ -546,7 +546,7 @@ namespace tmtt {
                                      const TMatrixD &matC,
                                      const TMatrixD &matK,
                                      const TMatrixD &matV,
-                                     const Stub *stub,
+                                     Stub *stub,
                                      double chi2rphi,
                                      double chi2rz) {
     auto new_state = std::make_unique<const KalmanState>(
@@ -606,7 +606,7 @@ namespace tmtt {
 
     // Calculate higher order corrections to residuals.
 
-    if (not settings_->kalmanHOdodgy()) {
+    if (not settings_->kalmanHOfw()) {
       TVectorD correction(2);
 
       float inv2R = (settings_->invPtToInvR()) * 0.5 * candQoverPt;
@@ -926,7 +926,7 @@ namespace tmtt {
 
   /* Print tracker layers with stubs */
 
-  void KFbase::printStubLayers(const vector<const Stub *> &stubs, unsigned int iEtaReg) const {
+  void KFbase::printStubLayers(const vector<Stub *> &stubs, unsigned int iEtaReg) const {
     std::stringstream text;
     text <<  std::fixed << std::setprecision(4);
     if (stubs.size() == 0)
@@ -974,7 +974,7 @@ namespace tmtt {
 
   /* Print all stubs */
 
-  void KFbase::printStubs(const vector<const Stub *> &stubs) const {
+  void KFbase::printStubs(const vector<Stub *> &stubs) const {
     for (auto &stub : stubs) {
       printStub(stub);
     }

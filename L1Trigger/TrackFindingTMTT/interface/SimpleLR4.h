@@ -1,9 +1,9 @@
+#ifndef L1Trigger_TrackFindingTMTT_SimpleLR4_h
+#define L1Trigger_TrackFindingTMTT_SimpleLR4_h
+
 ///=== This is the simple linear regression with 4 helix parameters (qOverPt, phiT, z0, tanLambda) track fit algorithm.
 
 ///=== Written by: Davide Cieri (davide.cieri@stfc.ac.uk)
-
-#ifndef L1Trigger_TrackFindingTMTT_SimpleLR4_h
-#define L1Trigger_TrackFindingTMTT_SimpleLR4_h
 
 #include "L1Trigger/TrackFindingTMTT/interface/TrackFitGeneric.h"
 #include "L1Trigger/TrackFindingTMTT/interface/Settings.h"

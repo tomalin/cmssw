@@ -184,8 +184,8 @@ namespace tmtt {
     const int min_array_bin = 0;
     const int max_array_bin = nbinsPt - 1;
     // Now calculate range of q/Pt bins allowed by bend filter.
-    float qOverPtMin = this->qOverPtOverBend() * (this->bend() - this->bendRes());
-    float qOverPtMax = this->qOverPtOverBend() * (this->bend() + this->bendRes());
+    float qOverPtMin = this->qOverPtOverBend() * (this->bend() - this->bendCut());
+    float qOverPtMax = this->qOverPtOverBend() * (this->bend() + this->bendCut());
     int houghNbinsPt = settings_->houghNbinsPt();
     const float houghMaxInvPt = 1. / settings_->houghMinPt();
     float qOverPtBinSize = (2. * houghMaxInvPt) / houghNbinsPt;
@@ -275,7 +275,7 @@ void Stub::digitize(unsigned int iPhiSec, Stub::DigiStage digiStep) {
       float invPtMax = 1. / (settings_->houghMinPt());
       windowFE = invPtMax / std::abs(this->qOverPtOverBend());
       // Increase half-indow size to allow for resolution in bend.
-      windowFE += this->bendResInFrontend();
+      windowFE += this->bendCutInFrontend();
     } else {
       windowFE = rejectedStubBend_;  // TMTT is not tightening windows.
     }
@@ -296,7 +296,7 @@ void Stub::digitize(unsigned int iPhiSec, Stub::DigiStage digiStep) {
     const float qOverPtCut = 1. / settings_->houghMinPt();
     if (settings_->killLowPtStubs()) {
       // Apply this cut in the front-end electronics.
-      if (std::abs(this->bendInFrontend()) - this->bendResInFrontend() > qOverPtCut / this->qOverPtOverBend()) frontendPass_ = false;
+      if (std::abs(this->bendInFrontend()) - this->bendCutInFrontend() > qOverPtCut / this->qOverPtOverBend()) frontendPass_ = false;
     }
 
     if (frontendPass_ && this->bend() == rejectedStubBend_) {
@@ -306,7 +306,7 @@ void Stub::digitize(unsigned int iPhiSec, Stub::DigiStage digiStep) {
     if (settings_->killLowPtStubs()) {
       // Reapply the same cut using the degraded bend information available in the off-detector electronics.
       // The reason is  that the bend degredation can move the Pt below the Pt cut, making the stub useless to the off-detector electronics.
-      if (std::abs(this->bend()) - this->bendRes() > qOverPtCut / this->qOverPtOverBend())
+      if (std::abs(this->bend()) - this->bendCut() > qOverPtCut / this->qOverPtOverBend())
         frontendPass_ = false;
     }
 

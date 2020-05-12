@@ -21,7 +21,7 @@ namespace tmtt {
   public:
     // Give stubs on track, its cell location inside HT array, its 2D helix parameters.
     L1track2D(const Settings* settings,
-              const std::vector<const Stub*>& stubs,
+              const std::vector<Stub*>& stubs,
               std::pair<unsigned int, unsigned int> cellLocationHT,
               std::pair<float, float> helix2D,
               unsigned int iPhiSec,
@@ -31,6 +31,7 @@ namespace tmtt {
         : L1trackBase(),
           settings_(settings),
           stubs_(stubs),
+	  stubsConst_(stubs_.begin(), stubs_.end()),
           cellLocationHT_(cellLocationHT),
           helix2D_(helix2D),
           estValid_(false),
@@ -40,9 +41,9 @@ namespace tmtt {
           iEtaReg_(iEtaReg),
           optoLinkID_(optoLinkID),
           mergedHTcell_(mergedHTcell) {
-      nLayers_ = Utility::countLayers(settings, stubs);  // Count tracker layers these stubs are in
+      nLayers_ = Utility::countLayers(settings, stubs_);  // Count tracker layers these stubs are in
       matchedTP_ = Utility::matchingTP(settings,
-                                       stubs,
+                                       stubs_,
                                        nMatchedLayers_,
                                        matchedStubs_);  // Find associated truth particle & calculate info about match.
     }
@@ -54,7 +55,8 @@ namespace tmtt {
     //--- Get information about the reconstructed track.
 
     // Get stubs on track candidate.
-    const std::vector<const Stub*>& stubs() const { return stubs_; }
+    const std::vector<const Stub*>& stubsConst() const { return stubsConst_; }
+    const std::vector<Stub*>& stubs() const { return stubs_; }
     // Get number of stubs on track candidate.
     unsigned int numStubs() const { return stubs_.size(); }
     // Get number of tracker layers these stubs are in.
@@ -113,7 +115,8 @@ namespace tmtt {
     const Settings* settings_;
 
     //--- Information about the reconstructed track from Hough transform.
-    std::vector<const Stub*> stubs_;
+    std::vector<Stub*> stubs_;
+    std::vector<const Stub*> stubsConst_;
     unsigned int nLayers_;
     std::pair<unsigned int, unsigned int> cellLocationHT_;
     std::pair<float, float> helix2D_;

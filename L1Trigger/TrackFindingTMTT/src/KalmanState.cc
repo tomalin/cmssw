@@ -26,7 +26,7 @@ namespace tmtt {
                            const TMatrixD &matC,
                            const TMatrixD &matK,
                            const TMatrixD &matV,
-                           const Stub *stub,
+                           Stub *stub,
                            double chi2rphi,
                            double chi2rz)
       : settings_(settings),
@@ -110,7 +110,7 @@ namespace tmtt {
   bool KalmanState::good(const TP *tp) const {
     const KalmanState *state = this;
     while (state) {
-      const Stub *stub = state->stub();
+      Stub *stub = state->stub();
       if (stub != nullptr) {
         const set<const TP *> &tps = stub->assocTPs();
         if (tps.find(tp) == tps.end())
@@ -138,12 +138,12 @@ namespace tmtt {
     return 0;
   }
 
-  std::vector<const Stub *> KalmanState::stubs() const {
-    std::vector<const Stub *> all_stubs;
+  std::vector<Stub *> KalmanState::stubs() const {
+    std::vector<Stub *> all_stubs;
 
     const KalmanState *state = this;
     while (state) {
-      const Stub *stub = state->stub();
+      Stub *stub = state->stub();
       if (stub != nullptr)
         all_stubs.push_back(stub);
       state = state->last_state();

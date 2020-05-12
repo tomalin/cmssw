@@ -60,7 +60,8 @@ namespace tmtt {
       for (unsigned int i = 0; i < tpHandle->size(); i++) {
         const TrackingParticle& tPart = tpHandle->at(i);
         // Creating Ptr uses CPU, so apply Pt cut here, copied from TP::fillUse(), to avoid doing it too often.
-        const float ptMin = min(settings->genMinPt(), 0.7 * settings->houghMinPt());
+	constexpr float ptMinScale = 0.7;
+        const float ptMin = min(settings->genMinPt(), ptMinScale * settings->houghMinPt());
         if (tPart.pt() > ptMin) {
           TrackingParticlePtr tpPtr(tpHandle, i);
           // Store the TrackingParticle info, using class TP to provide easy access to the most useful info.
@@ -121,9 +122,11 @@ namespace tmtt {
     
     // Produced reduced list containing only the subset of stubs that the user has declared will be
     // output by the front-end readout electronics.
-    for (const Stub& s : vAllStubs_) {
-      if (s.frontendPass())
+    for (Stub& s : vAllStubs_) {
+      if (s.frontendPass()) {
         vStubs_.push_back(&s);
+        vStubsConst_.push_back(&s);
+      }
     }
     // Optionally sort stubs according to bend, so highest Pt ones are sent from DTC to GP first.
     if (settings->orderStubsByBend()) {

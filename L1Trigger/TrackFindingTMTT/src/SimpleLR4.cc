@@ -101,7 +101,7 @@ namespace tmtt {
     unsigned int numStubs = 0;
     // Calc helix parameters on Rphi Plane (STEP 1)
     // This loop calculates the sums needed to calculate the numerators and the denominator to compute the helix parameters in the R-Phi plane (q/pT, phiT)
-    for (const Stub* stub : l1track3D.stubs()) {
+    for (Stub* stub : l1track3D.stubs()) {
       numStubs++;
 
       if (digitize_) {
@@ -135,8 +135,8 @@ namespace tmtt {
     double denominator, digiDenominator;
     double numeratorPhi, digiNumeratorPhi;
     double reciprocal, digiReciprocal;
-    double numeratorZ0, digiNumeratorZ0;
-    double numeratorLambda, digiNumeratorLambda;
+    double numeratorZ0;
+    double numeratorLambda;
 
     digiNumeratorPt = (numStubs * SumRPhi - SumR * SumPhi);
     digiDenominator = (numStubs * SumR2 - SumR * SumR);
@@ -178,9 +178,9 @@ namespace tmtt {
     }
 
     // ================== RESIDUAL CALCULATION ON RPHI ========================
-    std::vector<std::pair<const Stub*, double> > vRes;
+    std::vector<std::pair<Stub*, double> > vRes;
     unsigned int psStubs = 0;
-    for (const Stub* stub : l1track3D.stubs()) {
+    for (Stub* stub : l1track3D.stubs()) {
       if (stub->psModule())
         psStubs++;
       double ResPhi;
@@ -203,11 +203,11 @@ namespace tmtt {
 
       double Res = std::abs(ResPhi);
 
-      std::pair<const Stub*, double> ResStubPair(stub, Res);
+      std::pair<Stub*, double> ResStubPair(stub, Res);
       vRes.push_back(ResStubPair);
       if (debug_) {
-        if (const_cast<Stub*>(stub)->assocTP() != nullptr)
-          PrintL1trk() << " Stub rphi residual " << Res << " TP " << const_cast<Stub*>(stub)->assocTP()->index();
+        if (stub->assocTP() != nullptr)
+          PrintL1trk() << " Stub rphi residual " << Res << " TP " << stub->assocTP()->index();
         else
           PrintL1trk() << " Stub rphi residual " << Res << " TP nullptr";
       }
@@ -216,7 +216,7 @@ namespace tmtt {
     double largestResidual = 9999.;
     // Find largest residuals
     while (vRes.size() > minStubLayersRed_ and largestResidual > settings_->ResidualCut()) {
-      std::vector<std::pair<const Stub*, double> >::iterator maxResIt =
+      std::vector<std::pair<Stub*, double> >::iterator maxResIt =
           max_element(vRes.begin(), vRes.end(), pair_compare);
       largestResidual = (*maxResIt).second;
       if (debug_)
@@ -242,8 +242,8 @@ namespace tmtt {
       }
     }
 
-    std::vector<const Stub*> fitStubs;
-    for (std::pair<const Stub*, double> ResStubPair : vRes) {
+    std::vector<Stub*> fitStubs;
+    for (std::pair<Stub*, double> ResStubPair : vRes) {
       fitStubs.push_back(ResStubPair.first);
     }
 

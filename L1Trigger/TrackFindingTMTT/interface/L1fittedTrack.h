@@ -36,7 +36,7 @@ namespace tmtt {
     // And if track fit declared this to be a valid track (enough stubs left on track after fit etc.).
     L1fittedTrack(const Settings* settings,
                   const L1track3D* l1track3D,
-                  const std::vector<const Stub*>& stubs,
+                  const std::vector<Stub*>& stubs,
                   unsigned int hitPattern,
                   float qOverPt,
                   float d0,
@@ -51,6 +51,7 @@ namespace tmtt {
           settings_(settings),
           l1track3D_(l1track3D),
           stubs_(stubs),
+	  stubsConst_(stubs_.begin(), stubs_.end()),
           hitPattern_(hitPattern),
           qOverPt_(qOverPt),
           d0_(d0),
@@ -81,10 +82,10 @@ namespace tmtt {
       }
       if (settings != nullptr) {
 	// Count tracker layers these stubs are in
-        nLayers_ = Utility::countLayers(settings, stubs);  
+        nLayers_ = Utility::countLayers(settings, stubs_);  
 	// Find associated truth particle & calculate info about match.
         matchedTP_ = Utility::matchingTP(settings,
-                                         stubs,
+                                         stubs_,
                                          nMatchedLayers_,
                                          matchedStubs_);  
       } else { // Rejected track
@@ -156,7 +157,7 @@ namespace tmtt {
 
     KFTrackletTrack returnKFTrackletTrack() {
       KFTrackletTrack trk_(l1track3D(),
-                           stubs(),
+                           stubsConst(),
                            hitPattern(),
                            qOverPt(),
                            d0(),
@@ -179,7 +180,8 @@ namespace tmtt {
     const L1track3D* l1track3D() const { return l1track3D_; }
 
     // Get stubs on fitted track (can differ from those on HT track if track fit kicked out stubs with bad residuals)
-    const std::vector<const Stub*>& stubs() const { return stubs_; }
+    const std::vector<const Stub*>& stubsConst() const { return stubsConst_; }
+    const std::vector<Stub*>& stubs() const { return stubs_; }
     // Get number of stubs on fitted track.
     unsigned int numStubs() const { return stubs_.size(); }
     // Get number of tracker layers these stubs are in.
@@ -352,7 +354,8 @@ namespace tmtt {
     const L1track3D* l1track3D_;
 
     //--- The stubs on the fitted track (can differ from those on HT track if fit kicked off stubs with bad residuals)
-    std::vector<const Stub*> stubs_;
+    std::vector<Stub*> stubs_;
+    std::vector<const Stub*> stubsConst_;
     unsigned int nLayers_;
 
     //--- Bit-encoded hit pattern (where layer number assigned by increasing distance from origin, according to layers track expected to cross).
@@ -408,7 +411,7 @@ namespace tmtt {
 
     bool consistentCell_;
 
-    static const std::vector<const Stub*> noStubs_; // Empty vector used to initialize rejected tracks.
+    static const std::vector<Stub*> noStubs_; // Empty vector used to initialize rejected tracks.
   };
 
 }  // namespace tmtt

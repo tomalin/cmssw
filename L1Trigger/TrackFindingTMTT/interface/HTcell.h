@@ -35,10 +35,10 @@ namespace tmtt {
               bool miniHTcell = false);
 
     // Add stub to this cell in HT array.
-    void store(const Stub* stub) { vStubs_.push_back(stub); }
+    void store(Stub* stub) { vStubs_.push_back(stub); }
 
     // Add stub to this cell in HT array, indicating also which subsectors within the sector is consistent with.
-    void store(const Stub* stub, const std::vector<bool>& inSubSecs) {
+    void store(Stub* stub, const std::vector<bool>& inSubSecs) {
       this->store(stub);
       subSectors_[stub] = inSubSecs;
       if (inSubSecs.size() != numSubSecs_)
@@ -58,7 +58,7 @@ namespace tmtt {
     //=== If no filters were requested, they are identical to the unfiltered stubs.)
 
     // Get filtered stubs in this cell in HT array.
-    const std::vector<const Stub*>& stubs() const { return vFilteredStubs_; }
+    const std::vector<Stub*>& stubs() const { return vFilteredStubs_; }
 
     // Check if a specific stub is in this cell and survived filtering.
     bool stubInCell(const Stub* stub) const {
@@ -105,11 +105,11 @@ namespace tmtt {
     float dphi(float rad) const { return (invPtToDphi_ * rad * qOverPtCell_); }
 
     // Produce a filtered collection of stubs in this cell that all have consistent bend
-    std::vector<const Stub*> bendFilter(const std::vector<const Stub*>& stubs) const;
+    std::vector<Stub*> bendFilter(const std::vector<Stub*>& stubs) const;
 
     // Filter stubs so as to prevent more than specified number of stubs being stored in one cell.
     // This reflects finite memory of hardware.
-    std::vector<const Stub*> maxStubCountFilter(const std::vector<const Stub*>& stubs) const;
+    std::vector<Stub*> maxStubCountFilter(const std::vector<Stub*>& stubs) const;
 
   private:
     //=== Configuration parameters
@@ -144,8 +144,8 @@ namespace tmtt {
 
     //=== data
 
-    std::vector<const Stub*> vStubs_;          // Stubs in this cell
-    std::vector<const Stub*> vFilteredStubs_;  // Ditto after all requested stub filters (e.g. bend filter)
+    std::vector<Stub*> vStubs_;          // Stubs in this cell
+    std::vector<Stub*> vFilteredStubs_;  // Ditto after all requested stub filters (e.g. bend filter)
 
     unsigned int numFilteredLayersInCell_;
     unsigned int numFilteredLayersInCellBestSubSec_;

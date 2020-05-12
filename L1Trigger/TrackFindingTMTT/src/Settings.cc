@@ -62,7 +62,7 @@ namespace tmtt {
     kalmanHOtilted_ = true;
     kalmanHOhelixExp_ = true;
     kalmanHOalpha_ = 1;
-    kalmanHOdodgy_ = false;
+    kalmanHOfw_ = false;
     kalmanHOprojZcorr_ = 1;
     bApprox_gradient_ = 0.886454;
     bApprox_intercept_ = 0.504148;
@@ -162,8 +162,8 @@ namespace tmtt {
         maxStubEta_(stubCuts_.getParameter<double>("MaxStubEta")),
         killLowPtStubs_(stubCuts_.getParameter<bool>("KillLowPtStubs")),
         printStubWindows_(stubCuts_.getParameter<bool>("PrintStubWindows")),
-        bendResolution_(stubCuts_.getParameter<double>("BendResolution")),
-        bendResolutionExtra_(stubCuts_.getParameter<double>("BendResolutionExtra")),
+        bendCut_(stubCuts_.getParameter<double>("BendCut")),
+        bendCutExtra_(stubCuts_.getParameter<double>("BendCutExtra")),
         orderStubsByBend_(stubCuts_.getParameter<bool>("OrderStubsByBend")),
 
         //=== Optional stub digitization.
@@ -311,7 +311,7 @@ namespace tmtt {
         kalmanHOhelixExp_(trackFitSettings_.getParameter<bool>("KalmanHOhelixExp")),
         kalmanHOalpha_(trackFitSettings_.getParameter<unsigned int>("KalmanHOalpha")),
         kalmanHOprojZcorr_(trackFitSettings_.getParameter<unsigned int>("KalmanHOprojZcorr")),
-        kalmanHOdodgy_(trackFitSettings_.getParameter<bool>("KalmanHOdodgy")),
+        kalmanHOfw_(trackFitSettings_.getParameter<bool>("KalmanHOfw")),
 
         //=== Treatment of dead modules.
 

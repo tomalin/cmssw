@@ -80,7 +80,7 @@ namespace tmtt {
     list<L1track3D> filteredTracks;
 
     for (const L1track2D& trkIN : tracks) {
-      const vector<const Stub*>& stubs = trkIN.stubs();  // stubs assigned to track
+      const vector<Stub*>& stubs = trkIN.stubs();  // stubs assigned to track
 
       // Declare this to be worth keeping (for now).
       bool trackAccepted = true;
@@ -90,8 +90,8 @@ namespace tmtt {
 
       // Digitize stubs for r-z filter if required.
       if (settings_->enableDigitize()) {
-        for (const Stub* s : stubs) {
-  	  (const_cast<Stub*>(s))->digitize(iPhiSec_, Stub::DigiStage::SF);
+        for (Stub* s : stubs) {
+  	  s->digitize(iPhiSec_, Stub::DigiStage::SF);
         }
       }
 
@@ -100,7 +100,7 @@ namespace tmtt {
       // Get debug printout for specific regions.
       bool print = false;
 
-      vector<const Stub*> filteredStubs = stubs;
+      vector<Stub*> filteredStubs = stubs;
       if (rzFilterName_ == "SeedFilter") {
         filteredStubs = this->seedFilter(filteredStubs, trkIN.qOverPt(), print);
       } else {
@@ -140,31 +140,31 @@ namespace tmtt {
   //=== Use Seed Filter to produce a filtered collection of stubs on this track candidate that are consistent with a straight line
   //=== in r-z using tracklet algo.
 
-  vector<const Stub*> TrkRZfilter::seedFilter(const std::vector<const Stub*>& stubs, float trkQoverPt, bool print) {
+  vector<Stub*> TrkRZfilter::seedFilter(const std::vector<Stub*>& stubs, float trkQoverPt, bool print) {
     unsigned int numLayers;                      //Num of Layers in the cell after that filter has been applied
-    std::vector<const Stub*> filtStubs = stubs;  // Copy stubs vector in filtStubs
+    std::vector<Stub*> filtStubs = stubs;  // Copy stubs vector in filtStubs
     bool FirstSeed = true;
     //Allowed layers for the first & second seeding stubs
     static const std::vector<unsigned int> FirstSeedLayers = {1, 2, 11, 21, 3, 12, 22, 4};
     static const std::vector<unsigned int> SecondSeedLayers = {1, 2, 11, 3, 21, 22, 12, 23, 13, 4};
-    set<const Stub*> uniqueFilteredStubs;
+    set<Stub*> uniqueFilteredStubs;
 
     unsigned int numSeedCombinations = 0;      // Counter for number of seed combinations considered.
     unsigned int numGoodSeedCombinations = 0;  // Counter for seed combinations with z0 within beam spot length.
-    vector<const Stub*> filteredStubs;         // Filter Stubs vector to be returned
+    vector<Stub*> filteredStubs;         // Filter Stubs vector to be returned
 
     unsigned int oldNumLay = 0;  //Number of Layers counter, used to keep the seed with more layers
 
     std::sort(filtStubs.begin(), filtStubs.end(), SortStubsByLayer());
 
     // Loop over stubs in the HT Cell
-    for (const Stub* s0 : filtStubs) {
+    for (Stub* s0 : filtStubs) {
       // Select the first available seeding stub (r<70)
       if (s0->psModule() && std::find(std::begin(FirstSeedLayers), std::end(FirstSeedLayers), s0->layerId()) !=
                                 std::end(FirstSeedLayers)) {
         unsigned int numSeedsPerStub = 0;
 
-        for (const Stub* s1 : filtStubs) {
+        for (Stub* s1 : filtStubs) {
           if (numGoodSeedCombinations < maxGoodSeedCombinations_ && numSeedCombinations < maxSeedCombinations_ &&
               numSeedsPerStub < maxSeedsPerStub_) {
             // Select the second seeding stub (r<90)
@@ -179,7 +179,7 @@ namespace tmtt {
                      << "z: " << s1->z() << ", r: " << s1->r() << ", id:" << s1->layerId();
               //double sumSeedDist = 0.;
               //double oldSumSeedDist = 1000000.;  //Define variable used to estimate the quality of seeds
-              vector<const Stub*> tempStubs;  //Create a temporary container for stubs
+              vector<Stub*> tempStubs;  //Create a temporary container for stubs
               tempStubs.push_back(s0);        //Store the first seeding stub in the temporary container
               tempStubs.push_back(s1);        //Store the second seeding stub in the temporary container
 
@@ -204,7 +204,7 @@ namespace tmtt {
                   //                                double oldseed = 1000.; //Store the seed value of the current stub (KEEP JUST ONE STUB PER LAYER)
 
                   // Loop over stubs in vector different from the seeding stubs
-                  for (const Stub* s : filtStubs) {
+                  for (Stub* s : filtStubs) {
                     // if(s!= s0 && s!= s1){
                     // Calculate the seed and its tolerance
                     double seedDist =
@@ -265,7 +265,7 @@ namespace tmtt {
 
     // Copy stubs from the uniqueFilteredStubs set to the filteredStubs vector (Keep all seed algorithm)
     if (keepAllSeed_ == true) {
-      for (const Stub* stub : uniqueFilteredStubs) {
+      for (Stub* stub : uniqueFilteredStubs) {
         filteredStubs.push_back(stub);
       }
     }

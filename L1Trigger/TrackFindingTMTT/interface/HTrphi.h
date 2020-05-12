@@ -46,7 +46,7 @@ namespace tmtt {
 
     // Add stub to HT array.
     // If eta subsectors are being used within each sector, specify which ones the stub is compatible with.
-    void store(const Stub* stub, const std::vector<bool>& inEtaSubSecs);
+    void store(Stub* stub, const std::vector<bool>& inEtaSubSecs);
 
     // Termination. Causes HT array to search for tracks etc.
     // ... function end() is in base class ...

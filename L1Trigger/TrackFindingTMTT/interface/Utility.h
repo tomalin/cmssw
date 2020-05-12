@@ -27,8 +27,13 @@ namespace tmtt {
 
     enum AlgoStep { HT, SEED, DUP, FIT };
 
-    unsigned int countLayers(const Settings* settings,
+    unsigned int countLayersConst(const Settings* settings,
                              const std::vector<const Stub*>& stubs,
+                             bool disableReducedLayerID = false,
+                             bool onlyPS = false);
+
+    unsigned int countLayers(const Settings* settings,
+                             const std::vector<Stub*>& stubs,
                              bool disableReducedLayerID = false,
                              bool onlyPS = false);
 
@@ -37,8 +42,13 @@ namespace tmtt {
     // the number of tracker layers in which one of the stubs matched one from this tracking particle,
     // and the list of the subset of the stubs which match those on the tracking particle.
 
-    const TP* matchingTP(const Settings* settings,
+    const TP* matchingTPConst(const Settings* settings,
                          const std::vector<const Stub*>& vstubs,
+                         unsigned int& nMatchedLayersBest,
+                         std::vector<const Stub*>& matchedStubsBest);
+
+    const TP* matchingTP(const Settings* settings,
+                         const std::vector<Stub*>& vstubs,
                          unsigned int& nMatchedLayersBest,
                          std::vector<const Stub*>& matchedStubsBest);
 

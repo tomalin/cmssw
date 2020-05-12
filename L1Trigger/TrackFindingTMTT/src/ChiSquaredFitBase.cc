@@ -80,7 +80,7 @@ namespace tmtt {
           if (largestresid_ > killingResidualCut_) {
             killWorstStub = true;
           } else if (largestresid_ > generalResidualCut_) {
-            std::vector<const Stub*> stubsTmp = stubs_;
+            std::vector<Stub*> stubsTmp = stubs_;
             stubsTmp.erase(stubsTmp.begin() + ilargestresid_);
             if (Utility::countLayers(settings_, stubsTmp) >= minStubLayersRed_)
               killWorstStub = true;

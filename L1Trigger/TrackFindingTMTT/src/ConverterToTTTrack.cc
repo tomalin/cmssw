@@ -65,8 +65,8 @@ namespace tmtt {
 
   std::vector<TTStubRef> ConverterToTTTrack::stubRefs(const L1trackBase* trk) const {
     std::vector<TTStubRef> ttstubrefs;
-    const std::vector<const Stub*> stubs = trk->stubs();
-    for (const Stub* s : stubs) {
+    const std::vector<Stub*> stubs = trk->stubs();
+    for (Stub* s : stubs) {
       const TTStubRef& ref = s->ttStubRef();
       ttstubrefs.push_back(ref);
     }

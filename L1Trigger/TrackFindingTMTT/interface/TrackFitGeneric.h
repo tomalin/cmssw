@@ -1,9 +1,9 @@
+#ifndef L1Trigger_TrackFindingTMTT_TrackFitGeneric_h
+#define L1Trigger_TrackFindingTMTT_TrackFitGeneric_h
+
 ///=== This is the base class for all the track fit algorithms
 
 ///=== Written by: Alexander D. Morton and Sioni Summers
-
-#ifndef L1Trigger_TrackFindingTMTT_TrackFitGeneric_h
-#define L1Trigger_TrackFindingTMTT_TrackFitGeneric_h
 
 #include "L1Trigger/TrackFindingTMTT/interface/L1fittedTrack.h"
 #include "L1Trigger/TrackFindingTMTT/interface/L1track3D.h"

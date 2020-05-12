@@ -27,8 +27,9 @@ namespace tmtt {
   enum TrackletSeedType {L1L2, L2L3, L3L4, L5L6, D1D2, D3D4, L1D1, L2D1, L3L4L2, L5L6L4, L2L3D1, D1D2L2, NONE};
 
   public:
+
     L1track3D(const Settings* settings,
-              const std::vector<const Stub*>& stubs,
+              const std::vector<Stub*>& stubs,
               std::pair<unsigned int, unsigned int> cellLocationHT,
               std::pair<float, float> helixRphi,
               std::pair<float, float> helixRz,
@@ -40,6 +41,7 @@ namespace tmtt {
         : L1trackBase(),
           settings_(settings),
           stubs_(stubs),
+	  stubsConst_(stubs_.begin(), stubs_.end()),
           cellLocationHT_(cellLocationHT),
           helixRphi_(helixRphi),
           helixRz_(helixRz),
@@ -50,15 +52,17 @@ namespace tmtt {
           mergedHTcell_(mergedHTcell),
           seedLayerType_(TrackletSeedType::NONE),
           seedPS_(999) {
-      nLayers_ = Utility::countLayers(settings, stubs);  // Count tracker layers these stubs are in
+      nLayers_ = Utility::countLayers(settings, stubs_);  // Count tracker layers these stubs are in
       matchedTP_ = Utility::matchingTP(settings,
-                                       stubs,
+                                       stubs_,
                                        nMatchedLayers_,
                                        matchedStubs_);  // Find associated truth particle & calculate info about match.
     }
 
+    // TMTT tracking: constructor
+
     L1track3D(const Settings* settings,
-              const std::vector<const Stub*>& stubs,
+              const std::vector<Stub*>& stubs,
               std::pair<unsigned int, unsigned int> cellLocationHT,
               std::pair<float, float> helixRphi,
               std::pair<float, float> helixRz,
@@ -90,7 +94,8 @@ namespace tmtt {
     //--- Get information about the reconstructed track.
 
     // Get stubs on track candidate.
-    const std::vector<const Stub*>& stubs() const { return stubs_; }
+    const std::vector<const Stub*>& stubsConst() const { return stubsConst_; }
+    const std::vector<Stub*>& stubs() const { return stubs_; }
     // Get number of stubs on track candidate.
     unsigned int numStubs() const { return stubs_.size(); }
     // Get number of tracker layers these stubs are in.
@@ -200,9 +205,9 @@ namespace tmtt {
     bool cheat() {
       bool keep = false;
 
-      std::vector<const Stub*> stubsSel;
+      std::vector<Stub*> stubsSel;
       if (matchedTP_ != nullptr) {  // Genuine track
-        for (const Stub* s : stubs_) {
+        for (Stub* s : stubs_) {
           const TP* tp = s->assocTP();
           if (tp != nullptr) {
             if (matchedTP_->index() == tp->index()) {
@@ -212,6 +217,7 @@ namespace tmtt {
         }
       }
       stubs_ = stubsSel;
+      stubsConst_ = std::vector<const Stub*>(stubs_.begin(), stubs_.end());
 
       nLayers_ = Utility::countLayers(settings_, stubs_);  // Count tracker layers these stubs are in
       matchedTP_ = Utility::matchingTP(settings_,
@@ -252,7 +258,8 @@ namespace tmtt {
     const Settings* settings_;
 
     //--- Information about the reconstructed track.
-    std::vector<const Stub*> stubs_;
+    std::vector<Stub*> stubs_;
+    std::vector<const Stub*> stubsConst_;
     std::unordered_set<const Stub*> bestStubs_;
     unsigned int nLayers_;
     std::pair<unsigned int, unsigned int> cellLocationHT_;

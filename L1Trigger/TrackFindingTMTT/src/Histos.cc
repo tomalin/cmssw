@@ -342,7 +342,7 @@ std::once_flag printOnce;
   //=== Fill histograms using input stubs and tracking particles.
 
   void Histos::fillInputData(const InputData& inputData) {
-    const list<const Stub*>& vStubs = inputData.stubs();
+    const list<const Stub*>& vStubs = inputData.stubsConst();
     const list<TP>& vTPs = inputData.getTPs();
 
     hisNumEvents_->Fill(0.);
@@ -433,8 +433,8 @@ std::once_flag printOnce;
       // Number of bend values merged together by loss of a bit.
       hisNumMergedBend_->Fill(stub->numMergedBend());
       // Min. & max allowed q/Pt obtained from stub bend.
-      float minQoverPt = max(float(-1. / (houghMinPt_)), stub->qOverPt() - stub->qOverPtres());
-      float maxQoverPt = min(float(1. / (houghMinPt_)), stub->qOverPt() + stub->qOverPtres());
+      float minQoverPt = max(float(-1. / (houghMinPt_)), stub->qOverPt() - stub->qOverPtcut());
+      float maxQoverPt = min(float(1. / (houghMinPt_)), stub->qOverPt() + stub->qOverPtcut());
       // Frac. of full q/Pt range allowed by stub bend.
       float fracAllowed = (maxQoverPt - minQoverPt) / (2. / (houghMinPt_));
       hisBendFilterPower_->Fill(fracAllowed);
@@ -476,8 +476,8 @@ std::once_flag printOnce;
         hisNum2SStubsPerTP_->Fill(num2Sstubs);
 
         if (std::abs(tp.eta()) < 0.5) {
-          double nLayersOnTP = Utility::countLayers(settings_, assStubs, true, false);
-          double nPSLayersOnTP = Utility::countLayers(settings_, assStubs, true, true);
+          double nLayersOnTP = Utility::countLayersConst(settings_, assStubs, true, false);
+          double nPSLayersOnTP = Utility::countLayersConst(settings_, assStubs, true, true);
           hisNumLayersPerTP_->Fill(nLayersOnTP);
           hisNumPSLayersPerTP_->Fill(nPSLayersOnTP);
           hisNum2SLayersPerTP_->Fill(nLayersOnTP - nPSLayersOnTP);
@@ -781,7 +781,7 @@ std::once_flag printOnce;
   //=== Fill histograms checking if (eta,phi) sector definition choices are good.
 
 void Histos::fillEtaPhiSectors(const InputData& inputData, const matrix<unique_ptr<Sector>>& mSectors) {
-    const list<const Stub*>& vStubs = inputData.stubs();
+    const list<const Stub*>& vStubs = inputData.stubsConst();
     const list<TP>& vTPs = inputData.getTPs();
 
     //=== Loop over good tracking particles, looking for the (eta,phi) sector in which each has the most stubs.
@@ -1256,7 +1256,7 @@ void Histos::fillEtaPhiSectors(const InputData& inputData, const matrix<unique_p
 
     // Debug histogram for LR track fitter.
     for (const L1track3D& t : tracks) {
-      const std::vector<const Stub*> stubs = t.stubs();
+      const std::vector<const Stub*> stubs = t.stubsConst();
       std::map<unsigned int, unsigned int> layerMap;
       for (auto s : stubs)
         layerMap[s->layerIdReduced()]++;
@@ -1301,7 +1301,7 @@ void Histos::fillEtaPhiSectors(const InputData& inputData, const matrix<unique_p
 
     matrix<unsigned int> nStubsOnTrksInSec(numPhiSectors_, numEtaRegions_, 0);
     for (const L1track3D& t : tracks) {
-      const vector<const Stub*>& stubs = t.stubs();
+      const vector<const Stub*>& stubs = t.stubsConst();
       unsigned int nStubs = stubs.size();
       unsigned int iNonant = floor((t.iPhiSec()) * numPhiNonants / (numPhiSectors_));  // phi nonant number
       // Count stubs on all tracks in this sector & nonant.
@@ -1387,13 +1387,13 @@ void Histos::fillEtaPhiSectors(const InputData& inputData, const matrix<unique_p
         }
       }
       hisLayersPerTrack_[tName]->Fill(trk.numLayers());  // Number of reduced layers with stubs per track.
-      hisPSLayersPerTrack_[tName]->Fill(Utility::countLayers(
-          settings_, trk.stubs(), false, true));  // Number of reduced PS layers with stubs per track.
+      hisPSLayersPerTrack_[tName]->Fill(Utility::countLayersConst(
+          settings_, trk.stubsConst(), false, true));  // Number of reduced PS layers with stubs per track.
       // Also plot just for genuine tracks.
       if (tp != nullptr && tp->useForAlgEff()) {
         hisLayersPerTrueTrack_[tName]->Fill(trk.numLayers());  // Number of reduced layers with stubs per track.
-        hisPSLayersPerTrueTrack_[tName]->Fill(Utility::countLayers(
-            settings_, trk.stubs(), false, true));  // Number of reduced PS layers with stubs per track.
+        hisPSLayersPerTrueTrack_[tName]->Fill(Utility::countLayersConst(
+            settings_, trk.stubsConst(), false, true));  // Number of reduced PS layers with stubs per track.
       }
     }
 
@@ -1406,7 +1406,7 @@ void Histos::fillEtaPhiSectors(const InputData& inputData, const matrix<unique_p
         if (tp->useForAlgEff()) {
           hisFracMatchStubsOnTracks_[tName]->Fill(trk.purity());
 
-          const vector<const Stub*> stubs = trk.stubs();
+          const vector<const Stub*> stubs = trk.stubsConst();
           for (const Stub* s : stubs) {
             // Was this stub produced by correct truth particle?
             const set<const TP*> stubTPs = s->assocTPs();
@@ -1418,9 +1418,9 @@ void Histos::fillEtaPhiSectors(const InputData& inputData, const matrix<unique_p
             // Check how much stub bend differs from predicted one, relative to nominal bend resolution.
             float diffBend = (s->qOverPt() - trk.qOverPt()) / s->qOverPtOverBend();
             if (trueStub) {
-              hisDeltaBendTrue_[tName]->Fill(diffBend / s->bendRes());
+              hisDeltaBendTrue_[tName]->Fill(diffBend / s->bendCut());
             } else {
-              hisDeltaBendFake_[tName]->Fill(diffBend / s->bendRes());
+              hisDeltaBendFake_[tName]->Fill(diffBend / s->bendCut());
             }
           }
         }
@@ -1662,10 +1662,10 @@ void Histos::fillEtaPhiSectors(const InputData& inputData, const matrix<unique_p
 
         } else {
           //--- Check if TP was still reconstructable after cuts applied to stubs by front-end electronics.
-          vector<const Stub*> fePassStubs;
+          vector<Stub*> fePassStubs;
           for (const Stub* s : tp.assocStubs()) {
             if (s->frontendPass())
-              fePassStubs.push_back(s);
+              fePassStubs.push_back(const_cast<Stub*>(s));
           }
           bool fePass = (Utility::countLayers(settings_, fePassStubs) >= genMinStubLayers_);
 
@@ -1679,17 +1679,17 @@ void Histos::fillEtaPhiSectors(const InputData& inputData, const matrix<unique_p
             bool insideEtaRegPass = false;
             unsigned int nLayers = 0;
             // The next to variables are vectors in case track could be recontructed in more than one sector.
-            vector<vector<const Stub*>> insideSecStubs;
+            vector<vector<Stub*>> insideSecStubs;
             vector<Sector> sectorBest;
             for (unsigned int iPhiSec = 0; iPhiSec < numPhiSectors_; iPhiSec++) {
               for (unsigned int iEtaReg = 0; iEtaReg < numEtaRegions_; iEtaReg++) {
                 Sector sectorTmp(settings_, iPhiSec, iEtaReg);
 
                 // Get stubs on given tracking particle which are inside this (phi,eta) sector;
-                vector<const Stub*> insideSecStubsTmp;
-                vector<const Stub*> insidePhiSecStubsTmp;
-                vector<const Stub*> insideEtaRegStubsTmp;
-                for (const Stub* s : fePassStubs) {
+                vector<Stub*> insideSecStubsTmp;
+                vector<Stub*> insidePhiSecStubsTmp;
+                vector<Stub*> insideEtaRegStubsTmp;
+                for (Stub* s : fePassStubs) {
                   if (sectorTmp.inside(s))
                     insideSecStubsTmp.push_back(s);
                   if (sectorTmp.insidePhi(s))
@@ -1746,7 +1746,7 @@ void Histos::fillEtaPhiSectors(const InputData& inputData, const matrix<unique_p
                                       secBest.etaMax(),
                                       secBest.phiCentre());
                 htRphiUnfiltered.disableBendFilter();  // Switch off bend filter
-                for (const Stub* s : insideSecStubs[iSec]) {
+                for (Stub* s : insideSecStubs[iSec]) {
                   // Check which eta subsectors within the sector the stub is compatible with (if subsectors being used).
                   const vector<bool> inEtaSubSecs = secBest.insideEtaSubSecs(s);
                   htRphiUnfiltered.store(s, inEtaSubSecs);
@@ -1774,7 +1774,7 @@ void Histos::fillEtaPhiSectors(const InputData& inputData, const matrix<unique_p
                                  secBest.etaMin(),
                                  secBest.etaMax(),
                                  secBest.phiCentre());
-                  for (const Stub* s : insideSecStubs[iSec]) {
+                  for (Stub* s : insideSecStubs[iSec]) {
                     // Check which eta subsectors within the sector the stub is compatible with (if subsectors being used).
                     const vector<bool> inEtaSubSecs = secBest.insideEtaSubSecs(s);
                     htRphiTmp.store(s, inEtaSubSecs);
@@ -2407,7 +2407,7 @@ void Histos::fillEtaPhiSectors(const InputData& inputData, const matrix<unique_p
           // Study incorrect hits on matched tracks.
           hisNumStubsVsPurityMatched_[fitName]->Fill(fitTrk->numStubs(), fitTrk->purity());
 
-          const vector<const Stub*>& stubs = fitTrk->stubs();
+          const vector<const Stub*>& stubs = fitTrk->stubsConst();
           for (const Stub* s : stubs) {
             // Was this stub produced by correct truth particle?
             const set<const TP*>& stubTPs = s->assocTPs();
@@ -2472,7 +2472,7 @@ void Histos::fillEtaPhiSectors(const InputData& inputData, const matrix<unique_p
           float recalcChiSquared_1_rphi = 0.;
           float recalcChiSquared_1_rz = 0.;
           float recalcChiSquared_2 = 0.;
-          const vector<const Stub*> stubs = fitTrk->stubs();
+          const vector<const Stub*> stubs = fitTrk->stubsConst();
           for (const Stub* s : stubs) {
             // Was this stub produced by correct truth particle?
             const set<const TP*> stubTPs = s->assocTPs();

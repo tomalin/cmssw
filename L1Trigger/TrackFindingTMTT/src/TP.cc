@@ -72,9 +72,11 @@ namespace tmtt {
 
     // Range big enough to include all TP needed to measure tracking efficiency
     // and big enough to include any TP that might be reconstructed for fake rate measurement.
-    const float ptMin = min(settings_->genMinPt(), 0.7 * settings_->houghMinPt());
+    constexpr float ptMinScale = 0.7;
+    const float ptMin = min(settings_->genMinPt(), ptMinScale * settings_->houghMinPt());
     constexpr double ptMax = 9.9e9;
-    const float etaMax = max(settings_->genMaxAbsEta(), 0.2 + std::abs(settings_->etaRegions()[0]));
+    const float etaExtra = 0.2;
+    const float etaMax = max(settings_->genMaxAbsEta(), etaExtra + std::abs(settings_->etaRegions()[0]));
     constexpr double fixedVertRcut = 10.;
     constexpr double fixedVertZcut = 35.;
 
@@ -130,7 +132,7 @@ namespace tmtt {
   void TP::fillUseForAlgEff() {
     useForAlgEff_ = false;
     if (useForEff_) {
-      useForAlgEff_ = (Utility::countLayers(settings_, assocStubs_, true) >= settings_->genMinStubLayers());
+      useForAlgEff_ = (Utility::countLayersConst(settings_, assocStubs_, true) >= settings_->genMinStubLayers());
     }
   }
 

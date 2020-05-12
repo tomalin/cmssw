@@ -62,7 +62,7 @@ void MiniHTstage::exec(matrix<unique_ptr<HTrphi>>& mHtRphis) {
             float roughTrkPhi =
                 reco::deltaPhi(roughTrk.phi0() - chosenRofPhi_ * invPtToDphi_ * roughTrk.qOverPt() - phiCentre, 0.);
             const pair<unsigned int, unsigned int>& cell = roughTrk.cellLocationHT();
-            const vector<const Stub*>& stubs = roughTrk.stubs();
+            const vector<Stub*>& stubs = roughTrk.stubs();
             bool fineTrksFound = false;
             bool storeCoarseTrack = false;
             const unsigned int& link = roughTrk.optoLinkID();
