@@ -373,7 +373,7 @@ etaRegions_({-2.4,-2.08,-1.68,-1.26,-0.90,-0.62,-0.41,-0.20,0.0,0.20,0.41,0.62,0
           << "Settings: Invalid cfg parameters - You are setting the minimum number of layers incorrectly : type C.";
 
     // If reducing number of required layers for high Pt tracks, then above checks must be redone.
-    bool doReduceLayers = (minPtToReduceLayers_ < 10000. || etaSecsReduceLayers_.size() > 0);
+    bool doReduceLayers = (minPtToReduceLayers_ < 10000. || not etaSecsReduceLayers_.empty());
     if (doReduceLayers && minStubLayers_ > 4) {
       if (minNumMatchLayers_ > minStubLayers_ - 1)
         throw cms::Exception("BadConfig")

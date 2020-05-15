@@ -58,7 +58,7 @@ namespace tmtt {
     constexpr bool goOutsideArray = true;  // Also store in memory stubs outside the HT array during 2nd pass.
     constexpr bool limitDiff = true;       // Limit allowed diff. between HT & Fit cell to <= 1.
 
-    if (debug && tracks.size() > 0)
+    if (debug && not tracks.empty())
       PrintL1trk() << "Start DupFitTrkKiller" << tracks.size();
 
     list<const L1fittedTrack*> tracksFiltered;
@@ -211,7 +211,7 @@ namespace tmtt {
     // Hard-wired options to play with.
     const bool debug = false;
 
-    if (debug && tracks.size() > 0)
+    if (debug && not tracks.empty())
       PrintL1trk() << "START " << tracks.size();
 
     list<const L1fittedTrack*> tracksFiltered;
@@ -268,7 +268,7 @@ namespace tmtt {
         }
       }
     }
-    if (tracks.size() > 0)
+    if (not tracks.empty())
       PrintL1trk() << "FOUND " << tracks.size();
   }
 

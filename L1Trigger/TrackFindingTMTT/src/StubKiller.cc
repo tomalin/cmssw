@@ -145,7 +145,7 @@ namespace tmtt {
                             const double fractionOfStubsToKillInLayers,
                             const double fractionOfStubsToKillEverywhere) const {
     // Only kill stubs in specified layers
-    if (layersToKill.size() > 0) {
+    if (not layersToKill.empty()) {
       // Get the layer the stub is in, and check if it's in the layer you want to kill
       DetId stackDetid = stub->getDetId();
       DetId geoDetId(stackDetid.rawId() + 1);
@@ -197,7 +197,7 @@ namespace tmtt {
   // Indicate if given stub was in (partially) dead tracker module, based on dead module scenario.
 
   bool StubKiller::killStubInDeadModule(const TTStub<Ref_Phase2TrackerDigi_>* stub) const {
-    if (deadModules_.size() > 0) {
+    if (not deadModules_.empty()) {
       DetId stackDetid = stub->getDetId();
       DetId geoDetId(stackDetid.rawId() + 1);
       if (deadModules_.find(geoDetId) != deadModules_.end())

@@ -158,7 +158,7 @@ namespace tmtt {
             for (const TP *tp_i : stub->assocTPs())
               text << " " << tp_i->index();
             PrintL1trk() << text.str();
-            if (stub->assocTPs().size() == 0)
+            if (stub->assocTPs().empty())
               PrintL1trk() << " none";
           }
           PrintL1trk() << "=====================";
@@ -244,7 +244,7 @@ namespace tmtt {
         // Continue to skip until you reach a functioning layer (or a layer with stubs)
         unsigned nSkippedDeadLayers = 0;
         unsigned nSkippedAmbiguousLayers = 0;
-        while (kfDeadLayers.find(layer) != kfDeadLayers.end() && layerStubs[layer].size() == 0) {
+        while (kfDeadLayers.find(layer) != kfDeadLayers.end() && layerStubs[layer].empty()) {
           layer += 1;
           ++nSkippedDeadLayers;
         }
@@ -270,10 +270,10 @@ namespace tmtt {
         unsigned nSkippedDeadLayers_nextStubs = 0;
         unsigned nSkippedAmbiguousLayers_nextStubs = 0;
         if (nSkipped < kalmanMaxSkipLayers) {
-          if (kfDeadLayers.find(layer + 1) != kfDeadLayers.end() && layerStubs[layer + 1].size() == 0) {
+          if (kfDeadLayers.find(layer + 1) != kfDeadLayers.end() && layerStubs[layer + 1].empty()) {
             nextlay_stubs = layerStubs[layer + 2];
             nSkippedDeadLayers_nextStubs++;
-          } else if (this->kalmanAmbiguousLayer(etaReg, layer) && layerStubs[layer + 1].size() == 0) {
+          } else if (this->kalmanAmbiguousLayer(etaReg, layer) && layerStubs[layer + 1].empty()) {
             nextlay_stubs = layerStubs[layer + 2];
             nSkippedAmbiguousLayers_nextStubs++;
           } else {
@@ -283,8 +283,8 @@ namespace tmtt {
 
         // If track was not rejected by isGoodState() is previous iteration, failure here usually means the tracker ran out of layers to explore.
         // (Due to "kalmanLay" not having unique ID for each layer within a given eta sector).
-        if (settings_->kalmanDebugLevel() >= 2 && best_state_by_nstubs.size() == 0 && thislay_stubs.size() == 0 &&
-            nextlay_stubs.size() == 0)
+        if (settings_->kalmanDebugLevel() >= 2 && best_state_by_nstubs.empty() && thislay_stubs.empty() &&
+            nextlay_stubs.empty())
           PrintL1trk() << "State is lost by start of iteration " << iteration
                        << " : #thislay_stubs=" << thislay_stubs.size() << " #nextlay_stubs=" << nextlay_stubs.size()
                        << " layer=" << layer << " eta=" << l1track3D.iEtaReg();
@@ -374,7 +374,7 @@ namespace tmtt {
 
       unsigned int nStubs = iteration + 1;
       // Success. We have at least one state that passes all cuts. Save best state found with this number of stubs.
-      if (nStubs >= settings_->kalmanMinNumStubs() && new_states.size() > 0)
+      if (nStubs >= settings_->kalmanMinNumStubs() && not new_states.empty())
         best_state_by_nstubs[nStubs] = new_states[0];
 
       if (nStubs == settings_->kalmanMaxNumStubs()) {
@@ -389,7 +389,7 @@ namespace tmtt {
       }
     }
 
-    if (best_state_by_nstubs.size()) {
+    if (not best_state_by_nstubs.empty()) {
       // Select state with largest number of stubs.
       finished_state = best_state_by_nstubs.begin()->second;  // First element has largest number of stubs.
       if (settings_->kalmanDebugLevel() >= 1) {
@@ -929,7 +929,7 @@ namespace tmtt {
   void KFbase::printStubLayers(const vector<Stub *> &stubs, unsigned int iEtaReg) const {
     std::stringstream text;
     text << std::fixed << std::setprecision(4);
-    if (stubs.size() == 0)
+    if (stubs.empty())
       text << "stub layers = []\n";
     else {
       text << "stub layers = [ ";

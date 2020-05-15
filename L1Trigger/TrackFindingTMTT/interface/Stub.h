@@ -164,7 +164,7 @@ namespace tmtt {
     const std::set<const TP*>& assocTPs() const {
       return assocTPs_;
     }  // Return TPs associated to this stub. (Whether only TPs contributing to both clusters are returned is determined by "StubMatchStrict" config param.)
-    bool genuine() const { return (assocTPs_.size() > 0); }  // Did stub match at least one TP?
+    bool genuine() const { return (not assocTPs_.empty()); }  // Did stub match at least one TP?
     const TP* assocTP() const {
       return assocTP_;
     }  // If only one TP contributed to both clusters, this tells you which TP it is. Returns nullptr if none.

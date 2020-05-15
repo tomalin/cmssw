@@ -51,7 +51,7 @@ namespace tmtt {
     chosenRofZ_ = settings->chosenRofZ();
     trackFitters_ = settings->trackFitters();
     useRZfilter_ = settings->useRZfilter();
-    ranRZfilter_ = (useRZfilter_.size() > 0);  // Was any r-z track filter run?
+    ranRZfilter_ = (not useRZfilter_.empty());  // Was any r-z track filter run?
     resPlotOpt_ = settings->resPlotOpt();      // Only use signal events for helix resolution plots?
   }
 

@@ -31,7 +31,7 @@ namespace tmtt {
         busySectorNumStubs_(settings_->busySectorNumStubs()),  // Max. num. of stubs that can be sent within TM period
         busySectorMbinRanges_(
             settings_->busySectorMbinRanges()),  // Individual m bin (=q/Pt) ranges to be output to opto-links.
-        busySectorUseMbinRanges_(busySectorMbinRanges_.size() > 0)  // m bin ranges option disabled if vector empty.
+        busySectorUseMbinRanges_(not busySectorMbinRanges_.empty())  // m bin ranges option disabled if vector empty.
   {
     // Implemented MUX algorithm relies on same number of sectors per nonant.
     if (numPhiSectors_ % numPhiNonants_ != 0)

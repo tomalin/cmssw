@@ -46,7 +46,7 @@ namespace tmtt {
       std::lock_guard<std::mutex> myGuard(myMutex);
 
       // Only need one copy of tracker geometry for histogramming.
-      if (listTrackerModule_.size() == 0)
+      if (listTrackerModule_.empty())
         listTrackerModule_ = list;
     }
 
