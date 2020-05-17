@@ -154,34 +154,37 @@ namespace tmtt {
       DetId stackDetid = stub->getDetId();
       DetId geoDetId(stackDetid.rawId() + 1);
 
-      bool isInBarrel = geoDetId.subdetId() == StripSubdetector::TOB || geoDetId.subdetId() == StripSubdetector::TIB;
+      // If this module is in the deadModule list, don't also try to kill the stub here
+      if ( deadModules_.empty() || deadModules_.find(geoDetId) == deadModules_.end() ) {
+        bool isInBarrel = geoDetId.subdetId() == StripSubdetector::TOB || geoDetId.subdetId() == StripSubdetector::TIB;
 
-      int layerID = 0;
-      if (isInBarrel) {
-        layerID = trackerTopology_->layer(geoDetId);
-      } else {
-        layerID = 10 * trackerTopology_->side(geoDetId) + trackerTopology_->tidWheel(geoDetId);
-      }
+        int layerID = 0;
+        if (isInBarrel) {
+          layerID = trackerTopology_->layer(geoDetId);
+        } else {
+          layerID = 10 * trackerTopology_->side(geoDetId) + trackerTopology_->tidWheel(geoDetId);
+        }
 
-      if (find(layersToKill.begin(), layersToKill.end(), layerID) != layersToKill.end()) {
-        // Get the phi and z of stub, and check if it's in the region you want to kill
-        const GeomDetUnit* det0 = trackerGeometry_->idToDetUnit(geoDetId);
-        const PixelGeomDetUnit* theGeomDet = dynamic_cast<const PixelGeomDetUnit*>(det0);
-        const PixelTopology* topol = dynamic_cast<const PixelTopology*>(&(theGeomDet->specificTopology()));
-        MeasurementPoint measurementPoint = stub->clusterRef(0)->findAverageLocalCoordinatesCentered();
-        LocalPoint clustlp = topol->localPosition(measurementPoint);
-        GlobalPoint pos = theGeomDet->surface().toGlobal(clustlp);
+        if (find(layersToKill.begin(), layersToKill.end(), layerID) != layersToKill.end()) {
+          // Get the phi and z of stub, and check if it's in the region you want to kill
+          const GeomDetUnit* det0 = trackerGeometry_->idToDetUnit(geoDetId);
+          const PixelGeomDetUnit* theGeomDet = dynamic_cast<const PixelGeomDetUnit*>(det0);
+          const PixelTopology* topol = dynamic_cast<const PixelTopology*>(&(theGeomDet->specificTopology()));
+          MeasurementPoint measurementPoint = stub->clusterRef(0)->findAverageLocalCoordinatesCentered();
+          LocalPoint clustlp = topol->localPosition(measurementPoint);
+          GlobalPoint pos = theGeomDet->surface().toGlobal(clustlp);
 
-        double stubPhi = reco::deltaPhi(pos.phi(), 0.);
+          double stubPhi = reco::deltaPhi(pos.phi(), 0.);
 
-        if (stubPhi > minPhiToKill && stubPhi < maxPhiToKill && pos.z() > minZToKill && pos.z() < maxZToKill &&
-            pos.perp() > minRToKill && pos.perp() < maxRToKill) {
-          // Kill fraction of stubs
-          if (fractionOfStubsToKillInLayers == 1) {
-            return true;
-          } else {
-            if (rndmEngine_->flat() < fractionOfStubsToKillInLayers) {
+          if (stubPhi > minPhiToKill && stubPhi < maxPhiToKill && pos.z() > minZToKill && pos.z() < maxZToKill &&
+              pos.perp() > minRToKill && pos.perp() < maxRToKill) {
+            // Kill fraction of stubs
+            if (fractionOfStubsToKillInLayers == 1) {
               return true;
+            } else {
+              if (rndmEngine_->flat() < fractionOfStubsToKillInLayers) {
+                return true;
+              }
             }
           }
         }
