@@ -111,6 +111,8 @@ namespace tmtt {
     if (killScenario_ == KillOptions::none)
       return false;
     else {
+      // Check if stub is in dead region specified by *ToKill_
+      // And randomly kill stubs throughout tracker (not just thos in specific regions/modules)
       bool killStubRandomly = killStub(stub,
                                        layersToKill_,
                                        minPhiToKill_,
@@ -121,13 +123,15 @@ namespace tmtt {
                                        maxRToKill_,
                                        fractionOfStubsToKillInLayers_,
                                        fractionOfStubsToKillEverywhere_);
+      // Kill modules in specifid modules
+      // Random modules throughout the tracker, and those modules in specific regions (so may already have been killed by killStub above)
       bool killStubInDeadModules = killStubInDeadModule(stub);
       return killStubRandomly || killStubInDeadModules;
     }
   }
 
-  // Indicate if given stub was killed by dead tracker module, based on dead regions specified here,
-  // and ignoring dead module scenario.
+  // Indicate if given stub was killed by dead tracker module, based on specified dead regions 
+  // rather than based on the dead module scenario.
   // layersToKill - a vector stating the layers we are killing stubs in.  Can be an empty vector.
   // Barrel layers are encoded as 1-6. The endcap layers are encoded as 11-15 (-z) and 21-25 (+z)
   // min/max Phi/Z/R - stubs within the region specified by these boundaries and layersToKill are flagged for killing
@@ -200,8 +204,15 @@ namespace tmtt {
     if (not deadModules_.empty()) {
       DetId stackDetid = stub->getDetId();
       DetId geoDetId(stackDetid.rawId() + 1);
-      if (deadModules_.find(geoDetId) != deadModules_.end())
-        return true;
+      if (deadModules_.find(geoDetId) != deadModules_.end()) {
+        if (fractionOfStubsToKillInLayers_  == 1) {
+          return true;
+        } else {
+          if (rndmEngine_->flat() < fractionOfStubsToKillInLayers_ ) {
+            return true;
+          }
+        }
+      }
     }
 
     return false;
