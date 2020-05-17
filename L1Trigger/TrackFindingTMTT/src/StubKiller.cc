@@ -207,11 +207,12 @@ namespace tmtt {
     if (not deadModules_.empty()) {
       DetId stackDetid = stub->getDetId();
       DetId geoDetId(stackDetid.rawId() + 1);
-      if (deadModules_.find(geoDetId) != deadModules_.end()) {
-        if (fractionOfStubsToKillInLayers_  == 1) {
+      auto deadModule = deadModules_.find(geoDetId);
+      if (deadModule != deadModules_.end()) {
+        if (deadModule->second == 1) {
           return true;
         } else {
-          if (rndmEngine_->flat() < fractionOfStubsToKillInLayers_ ) {
+          if (rndmEngine_->flat() < deadModule->second ) {
             return true;
           }
         }
