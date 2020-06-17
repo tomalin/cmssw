@@ -1,7 +1,7 @@
 #ifndef DataFormats_L1TrackTrigger_TTIRMemory_h
 #define DataFormats_L1TrackTrigger_TTIRMemory_h
 
-#include "DataFormats/L1TrackTrigger/interface/TTDTC.h"
+#include "L1Trigger/TrackerDTC/interface/Setup.h"
 #include "DataFormats/L1TrackTrigger/interface/TTTypes.h"
 #include "InputRouterTop.h"
 
@@ -16,24 +16,27 @@
 class TTIRMemory {
 public:
 
+  static constexpr int stubWordIRNBits_ = 36;
+
   typedef std::vector<StubsBarrelPS> IRMemoryCollection;
 
 public:
   TTIRMemory() {}
-  TTIRMemory(int numRegions, int numOverlappingRegions, int numDTCsPerRegion);
+  TTIRMemory( const trackerDTC::Setup& setup );
   ~TTIRMemory() {}
 
 
-  const StubsBarrelPS& IRMemory(int tfpRegion, int tfpChannel) const;
-  void setIRMemory(int tfpRegion, int tfpChannel, const StubsBarrelPS& stubsBarrelPS);
+  const StubsBarrelPS& IRMemory(int dtcId) const;
+  void setIRMemory(int dtcId, const StubsBarrelPS& stubsBarrelPS);
 
 
 private:
-  // DTC Class
-  TTDTC TTDTC_;
-
   // IR Memories
   IRMemoryCollection irMemories_;
+
+  // TTStubRefs corresponding to stubs in irMemories_ ???
+  // std::vector< std::map< std::bitset<stubWordIRNBits_>, TTStubRef > > mapStubWordsToTTStubRefs_;
+  // std::vector< std::vector< std::vector< TTStubRef > > > ttStubRefs_;
 };
 
 #endif

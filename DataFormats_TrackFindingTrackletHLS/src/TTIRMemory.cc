@@ -3,23 +3,26 @@
 using namespace std;
 using namespace edm;
 
-TTIRMemory::TTIRMemory(int numRegions, int numOverlappingRegions, int numDTCsPerRegion) :
-	TTDTC_(numRegions, numOverlappingRegions, numDTCsPerRegion ),
-	irMemories_( numRegions * numOverlappingRegions * numDTCsPerRegion )
+TTIRMemory::TTIRMemory( const trackerDTC::Setup& setup ) :
+	irMemories_( setup.numRegions() * setup.numOverlappingRegions() * setup.numDTCsPerRegion() )
 {
 }
 
-void TTIRMemory::setIRMemory(int tfpRegion, int tfpChannel, const StubsBarrelPS& stubsBarrelPS) {
+void TTIRMemory::setIRMemory(int dtcId, const StubsBarrelPS& stubsBarrelPS) {
 	// Check arguments, or that the dtc helper function would catch dodgy indices?
-	int dtcId = TTDTC_.dtcId( tfpRegion, tfpChannel );
+	// int dtcId = setup_.dtcId( tfpRegion, tfpChannel );
+
+	// Check irMemories_ is large enough
+
 	irMemories_[dtcId] = move(stubsBarrelPS);
 }
 
 
-// read one specific stream of TTStubRefs using TFP identifier (region[0-8], channel[0-47])
-// tfpRegions aka processing regions are rotated by -0.5 region width w.r.t detector regions
-const StubsBarrelPS& TTIRMemory::IRMemory(int tfpRegion, int tfpChannel) const {
+const StubsBarrelPS& TTIRMemory::IRMemory(int dtcId ) const {
 	// Check arguments, or that the dtc helper function would catch dodgy indices?
-	int dtcId = TTDTC_.dtcId( tfpRegion, tfpChannel );
+	// int dtcId = setup_.dtcId( tfpRegion, tfpChannel );
+	
+	// Check irMemories_ large enough
+
 	return irMemories_.at( dtcId );
 }

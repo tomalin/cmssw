@@ -1,0 +1,8 @@
+nohup: ignoring input
+----- Begin Fatal Exception 04-May-2020 13:58:41 BST-----------------------
+An exception of category 'StdException' occurred while
+   [0] Processing the python configuration file named config.py
+Exception Message:
+A std::exception was thrown.
+File "config.py" could not be opened!
+----- End Fatal Exception -------------------------------------------------

@@ -6,6 +6,7 @@
 <use   name="DataFormats/SiStripDetId"/>
 <use   name="DataFormats/TrackerCommon"/> -->
 <use   name="DataFormats/L1TrackTrigger"/>
+<use   name="L1Trigger/TrackerDTC"/>
 <use   name="hls"/>
 <use   name="myTrackFindingLib"/>
 <export>
