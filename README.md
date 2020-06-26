@@ -52,6 +52,7 @@ sed -i 's|.*environment name="TFIR_BASE".*|     <environment name="TFIR_BASE" de
 scram setup myTrackFindingLib.xml
 cd $CMSSW_BASE/src
 scram b -j 8
+cd L1Trigger/TrackFindingTrackletHLS/
 cmsRun config.py Events=10
 ```
 
@@ -92,5 +93,6 @@ sed -i 's|.*environment name="TFIR_BASE".*|     <environment name="TFIR_BASE" de
 scram setup myTrackFindingLib.xml
 cd $CMSSW_BASE/src
 scram b -j 8
+cd L1Trigger/TrackFindingTrackletHLS/
 cmsRun config.py Events=10
 ```
