@@ -17,5 +17,6 @@ IRProducer = cms.EDProducer('IRProducer',
 			# TrackerDTCAnalyzer_params
 	)
 
-IRAnalyzer = cms.EDAnalyzer('IRAnalyzer'
+IRAnalyzer = cms.EDAnalyzer('IRAnalyzer',
+	IRProducer_params,
 	)
