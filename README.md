@@ -39,7 +39,7 @@ cmsenv
 export hlsIncludeDir=`scram tool info hls | grep 'HLS_BASE' | cut -d '=' -f 2`/include
 
 cd $HLS_BASE/project
-c++ -std=c++11 -c -Wall  -fpic -I/software/CAD/Xilinx/2019.1/Vivado/2019.1/include/ -I$HLS_BASE/firmware-hls/TrackletAlgorithm/ ../TrackletAlgorithm/InputRouterTop.cpp
+c++ -std=c++11 -c -Wall  -fpic -I$hlsIncludeDir -I$HLS_BASE/firmware-hls/TrackletAlgorithm/ ../TrackletAlgorithm/InputRouterTop.cpp
 c++ -shared -o libTFIR.so InputRouterTop.o 
 export HLS_LIB_DIR=$PWD
 ```
@@ -84,7 +84,7 @@ cd $CMSSW_BASE/src/
 cmsenv
 export hlsIncludeDir=`scram tool info hls | grep 'HLS_BASE' | cut -d '=' -f 2`/include
 cd $HLS_BASE/project
-c++ -std=c++11 -c -Wall  -fpic -I/software/CAD/Xilinx/2019.1/Vivado/2019.1/include/ -I$HLS_BASE/firmware-hls/TrackletAlgorithm/ ../TrackletAlgorithm/InputRouterTop.cpp
+c++ -std=c++11 -c -Wall  -fpic -I$hlsIncludeDir -I$HLS_BASE/firmware-hls/TrackletAlgorithm/ ../TrackletAlgorithm/InputRouterTop.cpp
 c++ -shared -o libTFIR.so InputRouterTop.o 
 export HLS_LIB_DIR=$PWD
 cd $CMSSW_BASE/src
