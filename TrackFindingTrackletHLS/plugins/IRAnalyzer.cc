@@ -72,7 +72,6 @@ void IRAnalyzer::beginRun(const Run& iEvent, const EventSetup& iSetup) {
 
 void IRAnalyzer::analyze(const Event& iEvent, const EventSetup& iSetup) {
 
-  std::cout << "In ANALYZER" << std::endl;
   // Read IR Memories
   Handle<TTIRMemory> handleTTIRMemory;
   iEvent.getByToken<TTIRMemory>(getTokenTTIRMemory_, handleTTIRMemory);

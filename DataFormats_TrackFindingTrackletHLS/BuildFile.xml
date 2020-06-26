@@ -8,7 +8,7 @@
 <use   name="DataFormats/L1TrackTrigger"/>
 <use   name="L1Trigger/TrackerDTC"/>
 <use   name="hls"/>
-<use   name="myTrackFindingLib"/>
+<use   name="mytrackfindinglib"/>
 <export>
   <lib   name="1"/>
 </export>

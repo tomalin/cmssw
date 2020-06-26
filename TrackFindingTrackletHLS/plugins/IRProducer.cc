@@ -130,10 +130,10 @@ ap_uint< IRProducer::linkWordNBits_ > IRProducer::getLinkWord( const unsigned in
 
   const int thisDtcId{ setup_.dtcId( region, channel ) };
 
-  const std::vector<std::set<int>> layerIdEncodings = setup_.encodingsLayerId();
-  const std::set<int>* thisDtcLayerEncodings{ &layerIdEncodings.at( channel % setup_.numDTCsPerRegion() ) };
+  const std::vector<int>* thisDtcLayerEncodings{ &setup_.encodingLayerId( channel ) };
 
-  bool readsFromFirstBarrelLayer = ( thisDtcLayerEncodings->find( setup_.offsetLayerId() ) != thisDtcLayerEncodings->end() );
+  bool readsFromFirstBarrelLayer =  ( find (thisDtcLayerEncodings->begin(), thisDtcLayerEncodings->end(), setup_.offsetLayerId() ) != thisDtcLayerEncodings->end() );
+
   linkWord |= ( readsFromFirstBarrelLayer << ( linkWord_hasFirstBarrelLayerBit_ - 1 ) );
 
   bool is2S = !setup_.psModule( thisDtcId );
@@ -158,7 +158,7 @@ ap_uint< IRProducer::linkWordNBits_ > IRProducer::getLinkWord( const unsigned in
 
 std::pair<unsigned int, unsigned int> IRProducer::getNBarrelAndDisks( const unsigned int channel ) {
 
-  const std::set<int>* layerEncodings{ &setup_.encodingsLayerId().at( channel % setup_.numDTCsPerRegion() ) };
+  const std::vector<int>* layerEncodings{ &setup_.encodingLayerId( channel ) };
 
   unsigned int nBarrelLayers = 0;
   unsigned int nDiskLayers = 0;
