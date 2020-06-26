@@ -15,8 +15,6 @@ git clone ssh://git@gitlab.cern.ch:7999/ejclemen/cmssw_trackfinding_hlsframework
 git checkout -b AddHLSIR origin/AddHLSIR
 cd ../
 
-# Get latest DTC branch, not yet in release
-# This is getting a branch called "emyr" from Thomas' repo
 git cms-addpkg L1Trigger/TrackerDTC
 git cms-addpkg DataFormats/L1TrackTrigger
 ```
@@ -48,6 +46,46 @@ export HLS_LIB_DIR=$PWD
 
 ### Going back to CMSSW
 ```
+cd $CMSSW_BASE/src
+cd L1Trigger/TrackFindingTrackletHLS
+sed -i 's|.*environment name="TFIR_BASE".*|     <environment name="TFIR_BASE" default="'$HLS_BASE'"/>|g' myTrackFindingLib.xml
+scram setup myTrackFindingLib.xml
+cd $CMSSW_BASE/src
+scram b -j 8
+cmsRun config.py Events=10
+```
+
+### All commands for quick copy&paste
+```
+export TOPDIR=$PWD
+export CMSSW_VERSION=CMSSW_11_2_0_pre1
+cmsrel $CMSSW_VERSION
+cd $CMSSW_VERSION/src/
+cmsenv
+git-cms-init
+mkdir L1Trigger
+cd L1Trigger/
+git clone ssh://git@gitlab.cern.ch:7999/ejclemen/cmssw_trackfinding_hlsframework.git .
+git checkout -b AddHLSIR origin/AddHLSIR
+cd ../
+git cms-addpkg L1Trigger/TrackerDTC
+git cms-addpkg DataFormats/L1TrackTrigger
+cd $TOPDIR
+git clone git@github.com:sseifeln/firmware-hls.git
+cd firmware-hls
+export HLS_BASE=$PWD
+git checkout -b IRTests origin/IRTests
+sed -i 's|#include "hls_math.h"|//#include "hls_math.h"|g' TrackletAlgorithm/InputRouterTop.h
+cd $HLS_BASE/emData
+./clean.sh
+./download.sh 
+cd $CMSSW_BASE/src/
+cmsenv
+export hlsIncludeDir=`scram tool info hls | grep 'HLS_BASE' | cut -d '=' -f 2`/include
+cd $HLS_BASE/project
+c++ -std=c++11 -c -Wall  -fpic -I/software/CAD/Xilinx/2019.1/Vivado/2019.1/include/ -I$HLS_BASE/firmware-hls/TrackletAlgorithm/ ../TrackletAlgorithm/InputRouterTop.cpp
+c++ -shared -o libTFIR.so InputRouterTop.o 
+export HLS_LIB_DIR=$PWD
 cd $CMSSW_BASE/src
 cd L1Trigger/TrackFindingTrackletHLS
 sed -i 's|.*environment name="TFIR_BASE".*|     <environment name="TFIR_BASE" default="'$HLS_BASE'"/>|g' myTrackFindingLib.xml
