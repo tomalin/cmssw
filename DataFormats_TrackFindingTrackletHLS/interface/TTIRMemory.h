@@ -6,19 +6,19 @@
 #include "InputRouterTop.h"
 
 #include <vector>
+#include <variant>
 
 /*! 
  * \class  TTIRMemory
- * \brief  Class to store hardware like structured TTStub Collection used by Track Trigger emulators
+ * \brief  Class to store output from IR track finding HLS module
  * \author Emyr Clement
  * \date   2020, May
  */
 class TTIRMemory {
 public:
 
-  static constexpr int stubWordIRNBits_ = 36;
-
-  typedef std::vector<StubsBarrelPS> IRMemoryCollection;
+  typedef std::vector< std::variant< AllStubMemory<BARRELPS>, AllStubMemory<BARREL2S>, AllStubMemory<DISKPS>, AllStubMemory<DISK2S> > > IRMemories;
+  typedef std::vector<IRMemories> IRMemoryCollection;
 
 public:
   TTIRMemory() {}
@@ -26,17 +26,13 @@ public:
   ~TTIRMemory() {}
 
 
-  const StubsBarrelPS& IRMemory(int dtcId) const;
-  void setIRMemory(int dtcId, const StubsBarrelPS& stubsBarrelPS);
+  const IRMemories& IRMemory(int dtcId) const;
+  void setIRMemory(int dtcId, const IRMemories& irMemories);
 
 
 private:
   // IR Memories
   IRMemoryCollection irMemories_;
-
-  // TTStubRefs corresponding to stubs in irMemories_ ???
-  // std::vector< std::map< std::bitset<stubWordIRNBits_>, TTStubRef > > mapStubWordsToTTStubRefs_;
-  // std::vector< std::vector< std::vector< TTStubRef > > > ttStubRefs_;
 };
 
 #endif

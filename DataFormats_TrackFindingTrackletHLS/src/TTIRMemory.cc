@@ -8,21 +8,16 @@ TTIRMemory::TTIRMemory( const trackerDTC::Setup& setup ) :
 {
 }
 
-void TTIRMemory::setIRMemory(int dtcId, const StubsBarrelPS& stubsBarrelPS) {
-	// Check arguments, or that the dtc helper function would catch dodgy indices?
-	// int dtcId = setup_.dtcId( tfpRegion, tfpChannel );
 
-	// Check irMemories_ is large enough
+void TTIRMemory::setIRMemory(int dtcId, const IRMemories& irMemories) {
 
-	irMemories_[dtcId] = move(stubsBarrelPS);
+	// TODO : Add checks on arguments, that irMemories_ is large enough
+	irMemories_[dtcId] = move(irMemories);
 }
 
 
-const StubsBarrelPS& TTIRMemory::IRMemory(int dtcId ) const {
-	// Check arguments, or that the dtc helper function would catch dodgy indices?
-	// int dtcId = setup_.dtcId( tfpRegion, tfpChannel );
-	
-	// Check irMemories_ large enough
+const TTIRMemory::IRMemories& TTIRMemory::IRMemory(int dtcId ) const {
 
+	// TODO : Add checks on arguments, that irMemories_ is large enough
 	return irMemories_.at( dtcId );
 }
