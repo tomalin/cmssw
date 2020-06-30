@@ -17,6 +17,9 @@ cd ../
 
 git cms-addpkg L1Trigger/TrackerDTC
 git cms-addpkg DataFormats/L1TrackTrigger
+git remote add emyr git@github.com:EmyrClement/cmssw.git
+git fetch emyr DTC_For_HLS
+git checkout -b DTC_For_HLS emyr/DTC_For_HLS
 ```
 
 ### Setting up HLS repo
