@@ -5,7 +5,8 @@ IRProducer_params = cms.PSet (
 	ProductLabel	       = cms.string    ( "IRMemories" ),                                    #
 	linkWord_is2sBit = cms.uint32( 17 ),
 	linkWord_hasFirstBarrelLayerBit = cms.uint32( 18 ),
-	linkWord_layerBarrelEndcapOffset = cms.uint32( 3 ),
+	linkWord_layerBarrelEndcapOffset = cms.uint32( 0 ),
+	linkWord_layerOrDiskNumberOffset = cms.uint32( 1 ),
 	maxNStubsPerDTC = cms.uint32( 256 )
 
 )

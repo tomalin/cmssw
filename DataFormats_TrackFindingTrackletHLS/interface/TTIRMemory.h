@@ -20,19 +20,26 @@ public:
   typedef std::vector< std::variant< AllStubMemory<BARRELPS>, AllStubMemory<BARREL2S>, AllStubMemory<DISKPS>, AllStubMemory<DISK2S> > > IRMemories;
   typedef std::vector<IRMemories> IRMemoryCollection;
 
+  typedef std::vector< std::vector< TTStubRef > > TTStubRefs;
+  typedef std::vector< TTStubRefs > TTStubRefsCollection;
+
 public:
   TTIRMemory() {}
   TTIRMemory( const trackerDTC::Setup& setup );
   ~TTIRMemory() {}
 
 
-  const IRMemories& IRMemory(int dtcId) const;
-  void setIRMemory(int dtcId, const IRMemories& irMemories);
+  const IRMemories& IRMemory(int streamId) const;
+  void setIRMemory(int streamId, const IRMemories& irMemories);
 
+  const TTStubRefs& TTStubs(int streamId ) const;
+  void setTTStubs(int streamId, const TTStubRefs& ttStubRefs);
 
 private:
   // IR Memories
   IRMemoryCollection irMemories_;
+
+  TTStubRefsCollection ttStubRefs_;
 };
 
 #endif

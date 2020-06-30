@@ -2,5 +2,6 @@
   <class name="TTIRMemory"/>
   <class name="edm::Wrapper<TTIRMemory>"/>
   <class name="TTIRMemory::IRMemoryCollection"/>
+  <class name="TTIRMemory::TTStubRefsCollection"/>
 </lcgdict>
 
