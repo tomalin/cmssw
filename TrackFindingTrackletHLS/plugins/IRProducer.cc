@@ -70,7 +70,7 @@ class IRProducer : public edm::stream::EDProducer<> {
       std::pair<unsigned int, unsigned int> getNBarrelAndDisks( const unsigned int channel );
 
       template<int ASType> 
-      std::vector< TTStubRef > getTTStubRefsForIRStubs( const AllStubMemory<ASType>& memory, const TTDTC::Stream& dtcStubs );
+      std::vector< TTStubRef > getTTStubRefsForIRStubs( const AllStubMemory<ASType>& memory, const TTDTC::Stream& dtcStubs, const unsigned int encodedLayer );
 
 
       // ----------member data ---------------------------
@@ -176,7 +176,7 @@ std::pair<unsigned int, unsigned int> IRProducer::getNBarrelAndDisks( const unsi
 }
 
 template<int ASType> 
-std::vector< TTStubRef > IRProducer::getTTStubRefsForIRStubs( const AllStubMemory<ASType>& memory, const TTDTC::Stream& dtcStubs ) {
+std::vector< TTStubRef > IRProducer::getTTStubRefsForIRStubs( const AllStubMemory<ASType>& memory, const TTDTC::Stream& dtcStubs,  const unsigned int encodedLayer ) {
 
   std::vector< TTStubRef > matchedTTStubs;
   matchedTTStubs.reserve( memory.getEntries(0) );
@@ -185,9 +185,13 @@ std::vector< TTStubRef > IRProducer::getTTStubRefsForIRStubs( const AllStubMemor
     const std::bitset< irStubWordNBits_ > stubWord { memory.read_mem(0, iMem).raw() };
 
     auto dtcFrame = std::find_if( dtcStubs.begin(), dtcStubs.end(),
-                                [&](const TTDTC::Frame f) { 
+                                [&](const TTDTC::Frame f) {
+                                  const std::bitset< TTBV::S > mask{3};
+                                  const std::bitset< 2 > dtcEncodedLayer{ ( ( f.second >> 36 ) & mask ).to_ulong()  };
+                                  const bool sameEncodedLayer = ( encodedLayer == dtcEncodedLayer.to_ulong() );
+
                                   const std::bitset< irStubWordNBits_ > dtcWord { ( f.second<< ( TTBV::S - irStubWordNBits_) ).to_string() }; 
-                                  return dtcWord == stubWord;
+                                  return ( sameEncodedLayer && dtcWord == stubWord );
                                 }
                                 );
     if ( dtcFrame != dtcStubs.end() ) {
@@ -218,7 +222,7 @@ IRProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
       ap_uint< linkWordNBits_ > linkWord_ap = getLinkWord( region, channel );
 
       // Container for input stubs to the IR
-      std::vector< ap_uint< stubWordNBits_ > > stubsForIR( maxNStubsPerDTC_ );
+      std::vector< ap_uint< stubWordNBits_ > > stubsForIR( maxNStubsPerDTC_, 0 );
 
       // Get the stubs from the DTC
       const TTDTC::Stream& streamFromDTC{ handleDTC->stream( region, channel ) };
@@ -275,23 +279,23 @@ IRProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
 
         for ( auto memory : L1 ) {
           outputMemories.push_back( memory );
-          outputTTStubs.push_back( getTTStubRefsForIRStubs( memory, streamFromDTC ) );
+          outputTTStubs.push_back( getTTStubRefsForIRStubs( memory, streamFromDTC, 0 ) );
 
         }
 
         for ( auto memory : L2 ) {
           outputMemories.push_back( memory );
-          outputTTStubs.push_back( getTTStubRefsForIRStubs( memory, streamFromDTC ) );
+          outputTTStubs.push_back( getTTStubRefsForIRStubs( memory, streamFromDTC, 1 ) );
         }
 
         for ( auto memory : L3 ) {
           outputMemories.push_back( memory );
-          outputTTStubs.push_back( getTTStubRefsForIRStubs( memory, streamFromDTC ) );
+          outputTTStubs.push_back( getTTStubRefsForIRStubs( memory, streamFromDTC, 2 ) );
         }
 
         for ( auto memory : L4 ) {
           outputMemories.push_back( memory );
-          outputTTStubs.push_back( getTTStubRefsForIRStubs( memory, streamFromDTC ) );
+          outputTTStubs.push_back( getTTStubRefsForIRStubs( memory, streamFromDTC, 3 ) );
         }
       }
       else if ( is2S && nLayers.first == 1 && nLayers.second == 1 ) {
@@ -306,12 +310,12 @@ IRProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
 
         for ( auto memory : L1 ) {
           outputMemories.push_back( memory );
-          outputTTStubs.push_back( getTTStubRefsForIRStubs( memory, streamFromDTC ) );
+          outputTTStubs.push_back( getTTStubRefsForIRStubs( memory, streamFromDTC, 0 ) );
         }
 
         for ( auto memory : L2 ) {
           outputMemories.push_back( memory );
-          outputTTStubs.push_back( getTTStubRefsForIRStubs( memory, streamFromDTC ) );
+          outputTTStubs.push_back( getTTStubRefsForIRStubs( memory, streamFromDTC, 1 ) );
         }
       }
 
