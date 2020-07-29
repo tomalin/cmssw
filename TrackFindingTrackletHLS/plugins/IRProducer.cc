@@ -56,6 +56,36 @@ class IRProducer : public edm::stream::EDProducer<> {
       static constexpr int stubWordNBits_ = 38;
       static constexpr int irStubWordNBits_ = 36;
 
+      // LUTs from HLS
+      // Need to store these/access via and ESSource?
+      // Or provided from wiring map?
+
+      // // link assignment table 
+      // // link assignment table 
+      // static constexpr ap_uint<kLINKMAPwidth> kLinkAssignmentTable[] = 
+      // #include "emData/LinkAssignment.dat"
+      // ;
+      // LUT with phi corrections to the nominal radius. Only used by layers.
+      // Values are determined by the radius and the bend of the stub.
+      static constexpr int kPhiCorrtable_L1[] = 
+      #include "emData/MemPrints/Tables/VMPhiCorrL1.txt"
+      ;
+      static constexpr int kPhiCorrtable_L2[] = 
+      #include "emData/MemPrints/Tables/VMPhiCorrL2.txt"
+      ;
+      static constexpr int kPhiCorrtable_L3[] = 
+      #include "emData/MemPrints/Tables/VMPhiCorrL3.txt"
+      ;
+      static constexpr int kPhiCorrtable_L4[] = 
+      #include "emData/MemPrints/Tables/VMPhiCorrL4.txt"
+      ;
+      static constexpr int kPhiCorrtable_L5[] = 
+      #include "emData/MemPrints/Tables/VMPhiCorrL5.txt"
+      ;
+      static constexpr int kPhiCorrtable_L6[] = 
+      #include "emData/MemPrints/Tables/VMPhiCorrL6.txt"
+      ;
+
    private:
       virtual void beginStream(edm::StreamID) override;
       virtual void produce(edm::Event&, const edm::EventSetup&) override;
@@ -262,62 +292,77 @@ IRProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
       std::pair<unsigned int, unsigned int> nLayers = getNBarrelAndDisks( channel );
       const int thisDtcId{ setup_.dtcId( region, channel ) };
       bool is2S = !setup_.psModule( thisDtcId );
+
+
+// void InputRouterTop( const ap_uint<6> hLinkId 
+//       kLinkAssignmentTable,
+//       kPhiCorrtable_L1 ,
+//       kPhiCorrtable_L2,
+//       kPhiCorrtable_L3,
+//       kPhiCorrtable_L4,
+//       kPhiCorrtable_L5,
+//       kPhiCorrtable_L6,
+//   , ap_uint<kNBits_DTC> hStubs[kMaxStubsFromLink]
+//   , InputStubMemory<TRACKER> hMemories[20]);
+
+
+
       TTIRMemory::IRMemories outputMemories;
       TTIRMemory::TTStubRefs outputTTStubs;
-      if ( !is2S && nLayers.first == 1 && nLayers.second == 3 ) {
-        AllStubMemory<BARRELPS> L1[8];
-        AllStubMemory<DISKPS> L2[4];
-        AllStubMemory<DISKPS> L3[4];
-        AllStubMemory<DISKPS> L4[4];
+      // if ( !is2S && nLayers.first == 1 && nLayers.second == 3 ) {
+      //   AllStubMemory<BARRELPS> L1[8];
+      //   AllStubMemory<DISKPS> L2[4];
+      //   AllStubMemory<DISKPS> L3[4];
+      //   AllStubMemory<DISKPS> L4[4];
 
-        for ( auto memory : L1 ) memory.clear();
-        for ( auto memory : L2 ) memory.clear();
-        for ( auto memory : L3 ) memory.clear();
-        for ( auto memory : L4 ) memory.clear();
+      //   for ( auto memory : L1 ) memory.clear();
+      //   for ( auto memory : L2 ) memory.clear();
+      //   for ( auto memory : L3 ) memory.clear();
+      //   for ( auto memory : L4 ) memory.clear();
 
-        InputRouter_PS_1Barrel3Disk( 0, stubsForIR.data(), linkWord_ap, L1, L2, L3, L4 );
+      //   InputRouter_PS_1Barrel3Disk( 0, stubsForIR.data(), linkWord_ap, L1, L2, L3, L4 );
 
-        for ( auto memory : L1 ) {
-          outputMemories.push_back( memory );
-          outputTTStubs.push_back( getTTStubRefsForIRStubs( memory, streamFromDTC, 0 ) );
+      //   for ( auto memory : L1 ) {
+      //     outputMemories.push_back( memory );
+      //     outputTTStubs.push_back( getTTStubRefsForIRStubs( memory, streamFromDTC, 0 ) );
 
-        }
+      //   }
 
-        for ( auto memory : L2 ) {
-          outputMemories.push_back( memory );
-          outputTTStubs.push_back( getTTStubRefsForIRStubs( memory, streamFromDTC, 1 ) );
-        }
+      //   for ( auto memory : L2 ) {
+      //     outputMemories.push_back( memory );
+      //     outputTTStubs.push_back( getTTStubRefsForIRStubs( memory, streamFromDTC, 1 ) );
+      //   }
 
-        for ( auto memory : L3 ) {
-          outputMemories.push_back( memory );
-          outputTTStubs.push_back( getTTStubRefsForIRStubs( memory, streamFromDTC, 2 ) );
-        }
+      //   for ( auto memory : L3 ) {
+      //     outputMemories.push_back( memory );
+      //     outputTTStubs.push_back( getTTStubRefsForIRStubs( memory, streamFromDTC, 2 ) );
+      //   }
 
-        for ( auto memory : L4 ) {
-          outputMemories.push_back( memory );
-          outputTTStubs.push_back( getTTStubRefsForIRStubs( memory, streamFromDTC, 3 ) );
-        }
-      }
-      else if ( is2S && nLayers.first == 1 && nLayers.second == 1 ) {
+      //   for ( auto memory : L4 ) {
+      //     outputMemories.push_back( memory );
+      //     outputTTStubs.push_back( getTTStubRefsForIRStubs( memory, streamFromDTC, 3 ) );
+      //   }
+      // }
+      // else if ( is2S && nLayers.first == 1 && nLayers.second == 1 ) {
 
-        AllStubMemory<BARREL2S> L1[4];
-        AllStubMemory<DISK2S> L2[4];
+      //   AllStubMemory<BARREL2S> L1[4];
+      //   AllStubMemory<DISK2S> L2[4];
 
-        for ( auto memory : L1 ) memory.clear();
-        for ( auto memory : L2 ) memory.clear();
+      //   for ( auto memory : L1 ) memory.clear();
+      //   for ( auto memory : L2 ) memory.clear();
 
-        InputRouter_2S_1Barrel1Disk( 0, stubsForIR.data(), linkWord_ap, L1, L2 );
+      //   InputRouter_2S_1Barrel1Disk( 0, stubsForIR.data(), linkWord_ap, L1, L2 );
 
-        for ( auto memory : L1 ) {
-          outputMemories.push_back( memory );
-          outputTTStubs.push_back( getTTStubRefsForIRStubs( memory, streamFromDTC, 0 ) );
-        }
+      //   for ( auto memory : L1 ) {
+      //     outputMemories.push_back( memory );
+      //     outputTTStubs.push_back( getTTStubRefsForIRStubs( memory, streamFromDTC, 0 ) );
+      //   }
 
-        for ( auto memory : L2 ) {
-          outputMemories.push_back( memory );
-          outputTTStubs.push_back( getTTStubRefsForIRStubs( memory, streamFromDTC, 1 ) );
-        }
-      }
+      //   for ( auto memory : L2 ) {
+      //     outputMemories.push_back( memory );
+      //     outputTTStubs.push_back( getTTStubRefsForIRStubs( memory, streamFromDTC, 1 ) );
+      //   }
+      // }
 
 
       unsigned int dtcChannel = setup_.numOverlappingRegions() - (channel / setup_.numDTCsPerRegion() ) - 1;

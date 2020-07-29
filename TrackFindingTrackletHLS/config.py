@@ -61,7 +61,7 @@ process.load( 'L1Trigger.TrackerDTC.ProducerES_cff' )
 process.load( 'L1Trigger.TrackerDTC.ProducerED_cff' )
 # load code that analyzes DTCStubs
 process.load( 'L1Trigger.TrackerDTC.Analyzer_cff' )
-process.dtc = cms.Path( process.TrackerDTCProducer )
+process.dtc = cms.Path( process.TrackerDTCProducer )#* process.TrackerDTCAnalyzer )
 
 #--- Load code that runs IR
 process.load( 'L1Trigger.TrackFindingTrackletHLS.IR_cff' )

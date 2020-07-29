@@ -2,7 +2,7 @@
 <tool name="myTrackFindingLib" version="1">
     <lib name="TFIR"/>
    <client>
-     <environment name="TFIR_BASE" default="/storage/ec6821/TrackTrigger/HLSFramework/IR_in_CMSSW/repoTest/firmware-hls"/>
+     <environment name="TFIR_BASE" default="/storage/ec6821/TrackTrigger/HLSFramework/IR_in_CMSSW/firmware-hls"/>
      <environment name="LIBDIR" default="$TFIR_BASE/project/"/>
      <environment name="INCLUDE" default="$TFIR_BASE/TrackletAlgorithm/"/>
    </client>

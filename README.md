@@ -30,21 +30,21 @@ cd $TOPDIR
 git clone git@github.com:EmyrClement/firmware-hls.git
 cd firmware-hls
 export HLS_BASE=$PWD
-git checkout -b IRTest origin/IRTests
+git checkout -b IR_final origin/IR_final
 sed -i 's|#include "hls_math.h"|//#include "hls_math.h"|g' TrackletAlgorithm/InputRouterTop.h
 
-#cd $HLS_BASE/emData
-#./clean.sh
-#./download.sh
-#cd ../
-#cp -r emData $CMSSW_BASE/src/L1Trigger/TrackFindingTrackletHLS/plugins/
+cd $HLS_BASE/emData
+./clean.sh
+./download.sh
+cd ../
+cp -r emData $CMSSW_BASE/src/L1Trigger/TrackFindingTrackletHLS/plugins/
 
 cd $CMSSW_BASE/src/
 cmsenv
 export hlsIncludeDir=`scram tool info hls | grep 'HLS_BASE' | cut -d '=' -f 2`/include
 
 cd $HLS_BASE/project
-c++ -std=c++11 -c -Wall  -fpic -I$hlsIncludeDir -I$HLS_BASE/firmware-hls/TrackletAlgorithm/ ../TrackletAlgorithm/InputRouterTop.cpp
+c++ -std=c++11 -c -Wall  -fpic -I$hlsIncludeDir -I$HLS_BASE/firmware-hls/TrackletAlgorithm/ ../TrackletAlgorithm/InputRouterTop.cc
 c++ -shared -o libTFIR.so InputRouterTop.o 
 export HLS_LIB_DIR=$PWD
 ```
@@ -83,14 +83,18 @@ cd $TOPDIR
 git clone git@github.com:EmyrClement/firmware-hls.git
 cd firmware-hls
 export HLS_BASE=$PWD
-git checkout -b IRTest origin/IRTests
+git checkout -b IR_final origin/IR_final
 sed -i 's|#include "hls_math.h"|//#include "hls_math.h"|g' TrackletAlgorithm/InputRouterTop.h
+cd $HLS_BASE/emData
+./clean.sh
+./download.sh
+cd ../
+cp -r emData $CMSSW_BASE/src/L1Trigger/TrackFindingTrackletHLS/plugins/
 cd $CMSSW_BASE/src/
 cmsenv
 export hlsIncludeDir=`scram tool info hls | grep 'HLS_BASE' | cut -d '=' -f 2`/include
 cd $HLS_BASE/project
-c++ -std=c++11 -c -Wall  -fpic -I$hlsIncludeDir -I$HLS_BASE/firmware-hls/TrackletAlgorithm/ ../TrackletAlgorithm/InputRouterTop.cpp
-c++ -shared -o libTFIR.so InputRouterTop.o 
+c++ -std=c++11 -c -Wall  -fpic -I$hlsIncludeDir -I$HLS_BASE/firmware-hls/TrackletAlgorithm/ ../TrackletAlgorithm/InputRouterTop.ccc++ -shared -o libTFIR.so InputRouterTop.o 
 export HLS_LIB_DIR=$PWD
 cd $CMSSW_BASE/src
 cd L1Trigger/TrackFindingTrackletHLS
