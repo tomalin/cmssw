@@ -27,15 +27,17 @@ git checkout -b DTC_For_HLS emyr/DTC_For_HLS
 Currently assuming you have set up CMSSW as in previous instructions, and you are in top level dir (i.e. directory containing $CMSSW_VERSION)
 ```
 cd $TOPDIR
-git clone git@github.com:sseifeln/firmware-hls.git
+git clone git@github.com:EmyrClement/firmware-hls.git
 cd firmware-hls
 export HLS_BASE=$PWD
-git checkout -b IRTests origin/IRTests
+git checkout -b IRTest origin/IRTests
 sed -i 's|#include "hls_math.h"|//#include "hls_math.h"|g' TrackletAlgorithm/InputRouterTop.h
 
-cd $HLS_BASE/emData
-./clean.sh
-./download.sh 
+#cd $HLS_BASE/emData
+#./clean.sh
+#./download.sh
+#cd ../
+#cp -r emData $CMSSW_BASE/src/L1Trigger/TrackFindingTrackletHLS/plugins/
 
 cd $CMSSW_BASE/src/
 cmsenv
@@ -74,15 +76,15 @@ git checkout -b AddHLSIR origin/AddHLSIR
 cd ../
 git cms-addpkg L1Trigger/TrackerDTC
 git cms-addpkg DataFormats/L1TrackTrigger
+git remote add emyr git@github.com:EmyrClement/cmssw.git
+git fetch emyr DTC_For_HLS
+git checkout -b DTC_For_HLS emyr/DTC_For_HLS
 cd $TOPDIR
-git clone git@github.com:sseifeln/firmware-hls.git
+git clone git@github.com:EmyrClement/firmware-hls.git
 cd firmware-hls
 export HLS_BASE=$PWD
-git checkout -b IRTests origin/IRTests
+git checkout -b IRTest origin/IRTests
 sed -i 's|#include "hls_math.h"|//#include "hls_math.h"|g' TrackletAlgorithm/InputRouterTop.h
-cd $HLS_BASE/emData
-./clean.sh
-./download.sh 
 cd $CMSSW_BASE/src/
 cmsenv
 export hlsIncludeDir=`scram tool info hls | grep 'HLS_BASE' | cut -d '=' -f 2`/include
