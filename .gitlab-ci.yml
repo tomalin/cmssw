@@ -30,7 +30,7 @@ setup_cmssw:
     - /cvmfs/cms.cern.ch/common/git-cms-addpkg L1Trigger/TrackerDTC
     - /cvmfs/cms.cern.ch/common/git-cms-addpkg DataFormats/L1TrackTrigger
     - git remote add emyr https://gitlab-ci-token:${CI_JOB_TOKEN}@github.com/EmyrClement/cmssw.git
-    - git fetch tschuh DTC_For_HLS
+    - git fetch emyr DTC_For_HLS
     - git checkout -b DTC_For_HLS emyr/DTC_For_HLS
   artifacts:
     expire_in: 1 day
