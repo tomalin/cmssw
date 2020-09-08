@@ -81,13 +81,12 @@ build_hls:
     - export TOPDIR=$PWD
     - export CMSSW_VERSION=CMSSW_11_2_0_pre1
     - export SCRAM_ARCH=slc7_amd64_gcc820
-    - /cvmfs/cms.cern.ch/common/scram project  $CMSSW_VERSION
     - cd $CMSSW_VERSION/src/
     - eval `/cvmfs/cms.cern.ch/common/scram runtime -sh`
     - cd $TOPDIR/firmware-hls
     - export HLS_BASE=$PWD
     - cd $CMSSW_BASE/src/
-    - export hlsIncludeDir=`scram tool info hls | grep 'HLS_BASE' | cut -d '=' -f 2`/include
+    - export hlsIncludeDir=`/cvmfs/cms.cern.ch/common/scram tool info hls | grep 'HLS_BASE' | cut -d '=' -f 2`/include
     - cd $HLS_BASE/project
     - c++ -std=c++11 -c -Wall  -fpic -I$hlsIncludeDir -I$HLS_BASE/firmware-hls/TrackletAlgorithm/ ../TrackletAlgorithm/InputRouterTop.cc
     - c++ -shared -o libTFIR.so InputRouterTop.o
@@ -108,13 +107,13 @@ build_cmssw:
     - export TOPDIR=$PWD
     - export CMSSW_VERSION=CMSSW_11_2_0_pre1
     - export SCRAM_ARCH=slc7_amd64_gcc820
-    - /cvmfs/cms.cern.ch/common/scram project  $CMSSW_VERSION
     - cd $CMSSW_VERSION/src/
     - eval `/cvmfs/cms.cern.ch/common/scram runtime -sh`
     - cd $TOPDIR/firmware-hls
     - export HLS_BASE=$PWD
     - cd $CMSSW_BASE/src/
-    - export hlsIncludeDir=`scram tool info hls | grep 'HLS_BASE' | cut -d '=' -f 2`/include
+    - export hlsIncludeDir=`/cvmfs/cms.cern.ch/common/scram tool info hls | grep 'HLS_BASE' | cut -d '=' -f 2`/include
+    - echo hlsIncludeDir
     - cd $HLS_BASE/project
     - export HLS_LIB_DIR=$PWD
     - cd $CMSSW_BASE/src
