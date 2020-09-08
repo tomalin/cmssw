@@ -17,7 +17,8 @@
 class TTIRMemory {
 public:
 
-  typedef std::vector< std::variant< AllStubMemory<BARRELPS>, AllStubMemory<BARREL2S>, AllStubMemory<DISKPS>, AllStubMemory<DISK2S> > > IRMemories;
+  // typedef std::vector< std::variant< AllStubMemory<BARRELPS>, AllStubMemory<BARREL2S>, AllStubMemory<DISKPS>, AllStubMemory<DISK2S> > > IRMemories;
+  typedef std::vector< InputStubMemory<TRACKER> > IRMemories;
   typedef std::vector<IRMemories> IRMemoryCollection;
 
   typedef std::vector< std::vector< TTStubRef > > TTStubRefs;

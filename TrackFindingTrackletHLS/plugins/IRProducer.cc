@@ -41,6 +41,60 @@
 #include <array>
 #include <iostream>
 
+
+// LUTs from HLS
+// Need to store these/access via and ESSource?
+// Or provided from wiring map?
+
+static const std::vector< ap_uint<20> > kLinkAssignmentTable = {
+ 0x500b9,
+ 0x3000b,
+ 0x3000d,
+ 0x5006d,
+ 0x50082,
+ 0x500a4,
+ 0x60843,
+ 0x8a623,
+ 0x40045, // 0x20005,
+ 0x60a62,
+ 0x40047,
+ 0x40087,
+ 0x500b9,
+ 0x3000b,
+ 0x3000d,
+ 0x5006d,
+ 0x50082,
+ 0x500a4,
+ 0x60843,
+ 0x8a623,
+ 0x40045, // 0x20005,
+ 0x60a62,
+ 0x40047,
+ 0x40087
+};
+
+// LUT with phi corrections to the nominal radius. Only used by layers.
+// Values are determined by the radius and the bend of the stub.
+static constexpr int kPhiCorrtable_L1[] = 
+#include "emData/MemPrints/Tables/VMPhiCorrL1.txt"
+;
+static constexpr int kPhiCorrtable_L2[] = 
+#include "emData/MemPrints/Tables/VMPhiCorrL2.txt"
+;
+static constexpr int kPhiCorrtable_L3[] = 
+#include "emData/MemPrints/Tables/VMPhiCorrL3.txt"
+;
+static constexpr int kPhiCorrtable_L4[] = 
+#include "emData/MemPrints/Tables/VMPhiCorrL4.txt"
+;
+static constexpr int kPhiCorrtable_L5[] = 
+#include "emData/MemPrints/Tables/VMPhiCorrL5.txt"
+;
+static constexpr int kPhiCorrtable_L6[] = 
+#include "emData/MemPrints/Tables/VMPhiCorrL6.txt"
+;
+
+
 //
 // class declaration
 //
@@ -52,39 +106,10 @@ class IRProducer : public edm::stream::EDProducer<> {
 
       static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
 
-      static constexpr int linkWordNBits_ = 18;
+      static constexpr int linkWordNBits_ = 20;
       static constexpr int stubWordNBits_ = 38;
       static constexpr int irStubWordNBits_ = 36;
-
-      // LUTs from HLS
-      // Need to store these/access via and ESSource?
-      // Or provided from wiring map?
-
-      // // link assignment table 
-      // // link assignment table 
-      // static constexpr ap_uint<kLINKMAPwidth> kLinkAssignmentTable[] = 
-      // #include "emData/LinkAssignment.dat"
-      // ;
-      // LUT with phi corrections to the nominal radius. Only used by layers.
-      // Values are determined by the radius and the bend of the stub.
-      static constexpr int kPhiCorrtable_L1[] = 
-      #include "emData/MemPrints/Tables/VMPhiCorrL1.txt"
-      ;
-      static constexpr int kPhiCorrtable_L2[] = 
-      #include "emData/MemPrints/Tables/VMPhiCorrL2.txt"
-      ;
-      static constexpr int kPhiCorrtable_L3[] = 
-      #include "emData/MemPrints/Tables/VMPhiCorrL3.txt"
-      ;
-      static constexpr int kPhiCorrtable_L4[] = 
-      #include "emData/MemPrints/Tables/VMPhiCorrL4.txt"
-      ;
-      static constexpr int kPhiCorrtable_L5[] = 
-      #include "emData/MemPrints/Tables/VMPhiCorrL5.txt"
-      ;
-      static constexpr int kPhiCorrtable_L6[] = 
-      #include "emData/MemPrints/Tables/VMPhiCorrL6.txt"
-      ;
+      static constexpr int maxIRMemories = 20; 
 
    private:
       virtual void beginStream(edm::StreamID) override;
@@ -97,10 +122,8 @@ class IRProducer : public edm::stream::EDProducer<> {
       //virtual void endLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&) override;
 
       ap_uint< linkWordNBits_ > getLinkWord( const unsigned int region, const unsigned int channel );
-      std::pair<unsigned int, unsigned int> getNBarrelAndDisks( const unsigned int channel );
 
-      template<int ASType> 
-      std::vector< TTStubRef > getTTStubRefsForIRStubs( const AllStubMemory<ASType>& memory, const TTDTC::Stream& dtcStubs, const unsigned int encodedLayer );
+      TTIRMemory::TTStubRefs getTTStubRefsForIRStubs( const TTIRMemory::IRMemories& memories, const TTDTC::Stream& dtcStubs, const std::vector<int> encodedLayers );
 
 
       // ----------member data ---------------------------
@@ -115,7 +138,7 @@ class IRProducer : public edm::stream::EDProducer<> {
 
 
       const unsigned int linkWord_is2sBit_;
-      const unsigned int linkWord_hasFirstBarrelLayerBit_;
+      const unsigned int linkWord_nLayersOffset_;
       const unsigned int linkWord_layerBarrelEndcapOffset_;
       const unsigned int linkWord_layerOrDiskNumberOffset_;
       const unsigned int maxNStubsPerDTC_;
@@ -137,7 +160,7 @@ IRProducer::IRProducer(const edm::ParameterSet& iConfig) :
   putTokenTTIRMemory_( produces< TTIRMemory >( iConfig.getParameter<std::string>( "ProductLabel" ) ) ),
   // settings_(iConfig),
   linkWord_is2sBit_( iConfig.getParameter<unsigned int>( "linkWord_is2sBit" ) ),
-  linkWord_hasFirstBarrelLayerBit_( iConfig.getParameter<unsigned int>( "linkWord_hasFirstBarrelLayerBit" ) ),
+  linkWord_nLayersOffset_( iConfig.getParameter<unsigned int>( "linkWord_nLayersOffset" ) ),
   linkWord_layerBarrelEndcapOffset_( iConfig.getParameter<unsigned int>( "linkWord_layerBarrelEndcapOffset" ) ),
   linkWord_layerOrDiskNumberOffset_( iConfig.getParameter<unsigned int>( "linkWord_layerOrDiskNumberOffset" ) ),
   maxNStubsPerDTC_( iConfig.getParameter<unsigned int>( "maxNStubsPerDTC" ) )
@@ -168,11 +191,10 @@ ap_uint< IRProducer::linkWordNBits_ > IRProducer::getLinkWord( const unsigned in
 
   const std::vector<int>* thisDtcLayerEncodings{ &setup_.encodingLayerId( channel ) };
 
-  bool readsFromFirstBarrelLayer =  ( find (thisDtcLayerEncodings->begin(), thisDtcLayerEncodings->end(), setup_.offsetLayerId() ) != thisDtcLayerEncodings->end() );
+  linkWord |= ( thisDtcLayerEncodings->size() << linkWord_nLayersOffset_ );
 
-  linkWord |= ( readsFromFirstBarrelLayer << ( linkWord_hasFirstBarrelLayerBit_ - 1 ) );
   bool is2S = !setup_.psModule( thisDtcId );
-  linkWord |= ( is2S << ( linkWord_is2sBit_ - 1 ) );
+  linkWord |= ( is2S << ( linkWord_is2sBit_ ) );
 
   size_t encodedLayer = 0;
   for ( auto decodedLayer : *thisDtcLayerEncodings ) {
@@ -190,48 +212,59 @@ ap_uint< IRProducer::linkWordNBits_ > IRProducer::getLinkWord( const unsigned in
   return linkWord_ap;
 }
 
-std::pair<unsigned int, unsigned int> IRProducer::getNBarrelAndDisks( const unsigned int channel ) {
+TTIRMemory::TTStubRefs IRProducer::getTTStubRefsForIRStubs( const TTIRMemory::IRMemories& memories, const TTDTC::Stream& dtcStubs,  const std::vector<int> encodedLayers ) {
 
-  const std::vector<int>* layerEncodings{ &setup_.encodingLayerId( channel ) };
+  TTIRMemory::TTStubRefs allMatchedTTStubs;
 
-  unsigned int nBarrelLayers = 0;
-  unsigned int nDiskLayers = 0;
-  for ( auto decodedLayer : *layerEncodings ) {
-    bool isBarrelLayer = decodedLayer < setup_.offsetLayerDisks();
-
-    if ( isBarrelLayer ) ++nBarrelLayers;
-    else ++nDiskLayers;
-  }
-  return std::pair<unsigned int, unsigned int>{nBarrelLayers, nDiskLayers};
-}
-
-template<int ASType> 
-std::vector< TTStubRef > IRProducer::getTTStubRefsForIRStubs( const AllStubMemory<ASType>& memory, const TTDTC::Stream& dtcStubs,  const unsigned int encodedLayer ) {
-
-  std::vector< TTStubRef > matchedTTStubs;
-  matchedTTStubs.reserve( memory.getEntries(0) );
-
-  for ( unsigned int iMem = 0; iMem < memory.getEntries(0); ++iMem ) {
-    const std::bitset< irStubWordNBits_ > stubWord { memory.read_mem(0, iMem).raw() };
-
-    auto dtcFrame = std::find_if( dtcStubs.begin(), dtcStubs.end(),
-                                [&](const TTDTC::Frame f) {
-                                  const std::bitset< TTBV::S > mask{3};
-                                  const std::bitset< 2 > dtcEncodedLayer{ ( ( f.second >> 36 ) & mask ).to_ulong()  };
-                                  const bool sameEncodedLayer = ( encodedLayer == dtcEncodedLayer.to_ulong() );
-
-                                  const std::bitset< irStubWordNBits_ > dtcWord { ( f.second<< ( TTBV::S - irStubWordNBits_) ).to_string() }; 
-                                  return ( sameEncodedLayer && dtcWord == stubWord );
-                                }
-                                );
-    if ( dtcFrame != dtcStubs.end() ) {
-      matchedTTStubs.emplace_back( dtcFrame->first );
+  std::vector<unsigned int> layersOfMemories;
+  unsigned int decodedLayer{0};
+  for ( const auto& layer : encodedLayers ) {
+    if ( layer == setup_.offsetLayerId() ) {
+      layersOfMemories.insert( layersOfMemories.end(), 8, decodedLayer );
     }
     else {
-      matchedTTStubs.emplace_back( TTStubRef() );
+      layersOfMemories.insert( layersOfMemories.end(), 4, decodedLayer );
     }
+    ++decodedLayer;
   }
-  return matchedTTStubs;
+
+  // Add exception, check that layersOfMemories has same size as memories
+  if ( layersOfMemories.size() > memories.size() ) {
+    std::cout << "You might crash soon : " << layersOfMemories.size() << " " << memories.size() << std::endl;
+  }
+
+  unsigned int memoryIndex{0};
+  for ( const auto& memory : memories ) {
+
+    std::vector< TTStubRef > matchedTTStubs;
+    matchedTTStubs.reserve( memory.getEntries(0) );
+
+    const unsigned int encodedLayer{ layersOfMemories[memoryIndex] };
+    ++memoryIndex;
+    for ( unsigned int iMem = 0; iMem < memory.getEntries(0); ++iMem ) {
+      const std::bitset< irStubWordNBits_ > stubWord { memory.read_mem(0, iMem).raw() };
+
+
+      auto dtcFrame = std::find_if( dtcStubs.begin(), dtcStubs.end(),
+                                  [&](const TTDTC::Frame f) {
+                                    const std::bitset< TTBV::S > mask{3};
+                                    const std::bitset< 2 > dtcEncodedLayer{ ( ( f.second >> 36 ) & mask ).to_ulong()  };
+                                    const bool sameEncodedLayer = ( encodedLayer == dtcEncodedLayer.to_ulong() );
+
+                                    const std::bitset< irStubWordNBits_ > dtcWord { ( f.second<< ( TTBV::S - irStubWordNBits_) ).to_string() }; 
+                                    return ( sameEncodedLayer && dtcWord == stubWord );
+                                  }
+                                  );
+      if ( dtcFrame != dtcStubs.end() ) {
+        matchedTTStubs.emplace_back( dtcFrame->first );
+      }
+      else {
+        matchedTTStubs.emplace_back( TTStubRef() );
+      }
+    }
+    allMatchedTTStubs.emplace_back( matchedTTStubs );
+  }
+  return allMatchedTTStubs;
 }
 
 // ------------ method called to produce the data  ------------
@@ -248,8 +281,15 @@ IRProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
   for ( const int& region : handleDTC->tfpRegions() ) {
     for ( const int& channel : handleDTC->tfpChannels() ) {
 
-      // Get the DTC link word
+      // Get the DTC link ID
+      // This is 'reconstructed' from working out the link word
       ap_uint< linkWordNBits_ > linkWord_ap = getLinkWord( region, channel );
+      // And then finding the location of the link word in the link assignment table
+      auto linkWordInMap = std::find( kLinkAssignmentTable.begin(), kLinkAssignmentTable.end(), linkWord_ap );
+      int linkID{-1};
+      if ( linkWordInMap != kLinkAssignmentTable.end() ) {
+        linkID = linkWordInMap - kLinkAssignmentTable.begin();
+      }
 
       // Container for input stubs to the IR
       std::vector< ap_uint< stubWordNBits_ > > stubsForIR( maxNStubsPerDTC_, 0 );
@@ -257,7 +297,7 @@ IRProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
       // Get the stubs from the DTC
       const TTDTC::Stream& streamFromDTC{ handleDTC->stream( region, channel ) };
 
-      // Make this into an exception
+      // Make this check into an exception
       if ( streamFromDTC.size() > stubsForIR.size() ) {
         std::cout << "You might crash soon : " << streamFromDTC.size() << " " << stubsForIR.size() << std::endl;
       }
@@ -269,7 +309,7 @@ IRProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
 
         // Need to modify the stub format to match what the IR expects
         // Should work to remove the need for this and synchronise the stub data formats
-        // Set not valid stubs instead of using valid bit
+        // Set not valid stubs to 0x0000 instead of using valid bit
         if ( stub.first.isNull() ) {
           stubsForIR[ stubIndex ] = ap_uint< stubWordNBits_ >( 0 );
         }
@@ -284,94 +324,27 @@ IRProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
 
       }
 
-      // Have stubs in an array, and word describing where the stubs from this DTC are coming from
+      // Have stubs in an array, and word/index describing where the stubs from this DTC are coming from
       // Now call the HLS IR top level functions
-      // For now, work out which top level function to call based on whether these are 2S or PS stubs
-      // And how many barrel layers/disks are being processed
-      // Perhaps there is a better way to handle output memories, however we are ultimately dictated by how the HLS modules work
-      std::pair<unsigned int, unsigned int> nLayers = getNBarrelAndDisks( channel );
-      const int thisDtcId{ setup_.dtcId( region, channel ) };
-      bool is2S = !setup_.psModule( thisDtcId );
+      InputStubMemory<TRACKER> hMemories[maxIRMemories];
+      InputRouterTop( linkID,
+                      kLinkAssignmentTable.data(),
+                      kPhiCorrtable_L1 ,
+                      kPhiCorrtable_L2,
+                      kPhiCorrtable_L3,
+                      kPhiCorrtable_L4,
+                      kPhiCorrtable_L5,
+                      kPhiCorrtable_L6,
+                      stubsForIR.data(),
+                      hMemories);
 
-
-// void InputRouterTop( const ap_uint<6> hLinkId 
-//       kLinkAssignmentTable,
-//       kPhiCorrtable_L1 ,
-//       kPhiCorrtable_L2,
-//       kPhiCorrtable_L3,
-//       kPhiCorrtable_L4,
-//       kPhiCorrtable_L5,
-//       kPhiCorrtable_L6,
-//   , ap_uint<kNBits_DTC> hStubs[kMaxStubsFromLink]
-//   , InputStubMemory<TRACKER> hMemories[20]);
-
-
-
-      TTIRMemory::IRMemories outputMemories;
+      TTIRMemory::IRMemories outputMemories( std::begin(hMemories), std::end(hMemories) );
       TTIRMemory::TTStubRefs outputTTStubs;
-      // if ( !is2S && nLayers.first == 1 && nLayers.second == 3 ) {
-      //   AllStubMemory<BARRELPS> L1[8];
-      //   AllStubMemory<DISKPS> L2[4];
-      //   AllStubMemory<DISKPS> L3[4];
-      //   AllStubMemory<DISKPS> L4[4];
 
-      //   for ( auto memory : L1 ) memory.clear();
-      //   for ( auto memory : L2 ) memory.clear();
-      //   for ( auto memory : L3 ) memory.clear();
-      //   for ( auto memory : L4 ) memory.clear();
-
-      //   InputRouter_PS_1Barrel3Disk( 0, stubsForIR.data(), linkWord_ap, L1, L2, L3, L4 );
-
-      //   for ( auto memory : L1 ) {
-      //     outputMemories.push_back( memory );
-      //     outputTTStubs.push_back( getTTStubRefsForIRStubs( memory, streamFromDTC, 0 ) );
-
-      //   }
-
-      //   for ( auto memory : L2 ) {
-      //     outputMemories.push_back( memory );
-      //     outputTTStubs.push_back( getTTStubRefsForIRStubs( memory, streamFromDTC, 1 ) );
-      //   }
-
-      //   for ( auto memory : L3 ) {
-      //     outputMemories.push_back( memory );
-      //     outputTTStubs.push_back( getTTStubRefsForIRStubs( memory, streamFromDTC, 2 ) );
-      //   }
-
-      //   for ( auto memory : L4 ) {
-      //     outputMemories.push_back( memory );
-      //     outputTTStubs.push_back( getTTStubRefsForIRStubs( memory, streamFromDTC, 3 ) );
-      //   }
-      // }
-      // else if ( is2S && nLayers.first == 1 && nLayers.second == 1 ) {
-
-      //   AllStubMemory<BARREL2S> L1[4];
-      //   AllStubMemory<DISK2S> L2[4];
-
-      //   for ( auto memory : L1 ) memory.clear();
-      //   for ( auto memory : L2 ) memory.clear();
-
-      //   InputRouter_2S_1Barrel1Disk( 0, stubsForIR.data(), linkWord_ap, L1, L2 );
-
-      //   for ( auto memory : L1 ) {
-      //     outputMemories.push_back( memory );
-      //     outputTTStubs.push_back( getTTStubRefsForIRStubs( memory, streamFromDTC, 0 ) );
-      //   }
-
-      //   for ( auto memory : L2 ) {
-      //     outputMemories.push_back( memory );
-      //     outputTTStubs.push_back( getTTStubRefsForIRStubs( memory, streamFromDTC, 1 ) );
-      //   }
-      // }
-
-
-      unsigned int dtcChannel = setup_.numOverlappingRegions() - (channel / setup_.numDTCsPerRegion() ) - 1;
-      unsigned int streamID = thisDtcId * setup_.numOverlappingRegions() + dtcChannel;
-      
-      // Using stream index to store memories for each IR in the output product
-      // Should we use a different index here?  tfpRegion * nRegions + channel?
-      product.setIRMemory( streamID, outputMemories );
-      product.setTTStubs( streamID, outputTTStubs );
+      // Store IR memories with index based on tfp region and channel, rather than ID of input DTC stream
+      const unsigned int outputIndex( region * handleDTC->tfpChannels().size() + channel );
+      product.setIRMemory( outputIndex, outputMemories );
+      product.setTTStubs( outputIndex, getTTStubRefsForIRStubs( outputMemories, streamFromDTC, setup_.encodingLayerId( channel ) ) );
     }
   }
 
