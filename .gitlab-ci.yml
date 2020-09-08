@@ -3,6 +3,8 @@ image: gitlab-registry.cern.ch/ci-tools/ci-worker:cc7
 stages:
   - setup_cmssw
   - setup_hls
+  - build_hls
+  - build_cmssw
 
 setup_cmssw:
   stage: setup_cmssw
@@ -46,7 +48,6 @@ setup_hls:
     - export TOPDIR=$PWD
     - export CMSSW_VERSION=CMSSW_11_2_0_pre1
     - export SCRAM_ARCH=slc7_amd64_gcc820
-    - /cvmfs/cms.cern.ch/common/scram project  $CMSSW_VERSION
     - cd $CMSSW_VERSION/src/
     - eval `/cvmfs/cms.cern.ch/common/scram runtime -sh`
     - cd $TOPDIR
@@ -65,6 +66,65 @@ setup_hls:
     - cp -r emData $CMSSW_BASE/src/L1Trigger/TrackFindingTrackletHLS/plugins/
   dependencies:
     - setup_cmssw
+  artifacts:
+    expire_in: 1 day
+    paths:
+      - CMSSW_11_2_0_pre1
+      - firmware-hls
+      
+build_hls:
+  stage: build_hls
+  tags:
+    - docker
+    - cvmfs
+  script:
+    - export TOPDIR=$PWD
+    - export CMSSW_VERSION=CMSSW_11_2_0_pre1
+    - export SCRAM_ARCH=slc7_amd64_gcc820
+    - /cvmfs/cms.cern.ch/common/scram project  $CMSSW_VERSION
+    - cd $CMSSW_VERSION/src/
+    - eval `/cvmfs/cms.cern.ch/common/scram runtime -sh`
+    - cd $TOPDIR/firmware-hls
+    - export HLS_BASE=$PWD
+    - cd $CMSSW_BASE/src/
+    - export hlsIncludeDir=`scram tool info hls | grep 'HLS_BASE' | cut -d '=' -f 2`/include
+    - cd $HLS_BASE/project
+    - c++ -std=c++11 -c -Wall  -fpic -I$hlsIncludeDir -I$HLS_BASE/firmware-hls/TrackletAlgorithm/ ../TrackletAlgorithm/InputRouterTop.cc
+    - c++ -shared -o libTFIR.so InputRouterTop.o
+  dependencies:
+    - setup_hls
+  artifacts:
+    expire_in: 1 day
+    paths:
+      - CMSSW_11_2_0_pre1
+      - firmware-hls
+
+build_cmssw:
+  stage: build_cmssw
+  tags:
+    - docker
+    - cvmfs
+  script:
+    - export TOPDIR=$PWD
+    - export CMSSW_VERSION=CMSSW_11_2_0_pre1
+    - export SCRAM_ARCH=slc7_amd64_gcc820
+    - /cvmfs/cms.cern.ch/common/scram project  $CMSSW_VERSION
+    - cd $CMSSW_VERSION/src/
+    - eval `/cvmfs/cms.cern.ch/common/scram runtime -sh`
+    - cd $TOPDIR/firmware-hls
+    - export HLS_BASE=$PWD
+    - cd $CMSSW_BASE/src/
+    - export hlsIncludeDir=`scram tool info hls | grep 'HLS_BASE' | cut -d '=' -f 2`/include
+    - cd $HLS_BASE/project
+    - export HLS_LIB_DIR=$PWD
+    - cd $CMSSW_BASE/src
+    - cd L1Trigger/TrackFindingTrackletHLS
+    - sed -i 's|.*environment name="TFIR_BASE".*|     <environment name="TFIR_BASE" default="'$HLS_BASE'"/>|g' myTrackFindingLib.xml
+    - /cvmfs/cms.cern.ch/common/scram setup myTrackFindingLib.xml
+    - cd $CMSSW_BASE/src
+    - /cvmfs/cms.cern.ch/common/scram b
+  dependencies:
+    - build_hls
   artifacts:
     expire_in: 1 day
     paths:
