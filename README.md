@@ -27,7 +27,7 @@ git checkout -b DTC_For_HLS emyr/DTC_For_HLS
 Currently assuming you have set up CMSSW as in previous instructions, and you are in top level dir (i.e. directory containing $CMSSW_VERSION)
 ```
 cd $TOPDIR
-git clone git@github.com:EmyrClement/firmware-hls.git
+git clone git@github.com:sseifeln/firmware-hls.git
 cd firmware-hls
 export HLS_BASE=$PWD
 git checkout -b IR_final origin/IR_final
@@ -80,7 +80,7 @@ git remote add emyr git@github.com:EmyrClement/cmssw.git
 git fetch emyr DTC_For_HLS
 git checkout -b DTC_For_HLS emyr/DTC_For_HLS
 cd $TOPDIR
-git clone git@github.com:EmyrClement/firmware-hls.git
+git clone git@github.com:sseifeln/firmware-hls.git
 cd firmware-hls
 export HLS_BASE=$PWD
 git checkout -b IR_final origin/IR_final
