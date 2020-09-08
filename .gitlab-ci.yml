@@ -47,10 +47,9 @@ setup_hls:
     - ls
     - pwd
     - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@github.com/sseifeln/firmware-hls.git
-    - git checkout -b IR_final origin/IR_final
     - cd firmware-hls
     - export HLS_BASE=$PWD
-    - git checkout -b IRTest origin/IRTests
+    - git checkout -b IR_final origin/IR_final
     - sed -i 's|#include "hls_math.h"|//#include "hls_math.h"|g' TrackletAlgorithm/InputRouterTop.h
 
     - cd $HLS_BASE/emData
