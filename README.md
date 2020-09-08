@@ -94,7 +94,8 @@ cd $CMSSW_BASE/src/
 cmsenv
 export hlsIncludeDir=`scram tool info hls | grep 'HLS_BASE' | cut -d '=' -f 2`/include
 cd $HLS_BASE/project
-c++ -std=c++11 -c -Wall  -fpic -I$hlsIncludeDir -I$HLS_BASE/firmware-hls/TrackletAlgorithm/ ../TrackletAlgorithm/InputRouterTop.ccc++ -shared -o libTFIR.so InputRouterTop.o 
+c++ -std=c++11 -c -Wall  -fpic -I$hlsIncludeDir -I$HLS_BASE/firmware-hls/TrackletAlgorithm/ ../TrackletAlgorithm/InputRouterTop.cc
+c++ -shared -o libTFIR.so InputRouterTop.o 
 export HLS_LIB_DIR=$PWD
 cd $CMSSW_BASE/src
 cd L1Trigger/TrackFindingTrackletHLS
@@ -105,7 +106,6 @@ scram b -j 8
 cd L1Trigger/TrackFindingTrackletHLS/
 cmsRun config.py Events=10
 ```
-
 
 ### Setup when not starting from scratch
 Assume you have done cmsenv and are in CMSSW_X_Y_Z/src
