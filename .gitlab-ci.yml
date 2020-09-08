@@ -46,7 +46,7 @@ setup_hls:
     - cd $TOPDIR
     - ls
     - pwd
-    - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.cern.ch/sseifeln/firmware-hls.git
+    - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@github.com/sseifeln/firmware-hls.git
     - git checkout -b IR_final origin/IR_final
     - cd firmware-hls
     - export HLS_BASE=$PWD
