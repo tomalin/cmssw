@@ -3,15 +3,17 @@ image: gitlab-registry.cern.ch/ci-tools/ci-worker:cc7
 stages:
   - build
 
-build_cmssw:
+setup_cmssw:
   stage: build
   tags:
     - docker
     - cvmfs
   script:
+    - export TOPDIR=$PWD
+    - export CMSSW_VERSION=CMSSW_11_2_0_pre1
     - export SCRAM_ARCH=slc7_amd64_gcc820
-    - /cvmfs/cms.cern.ch/common/scram project  CMSSW_11_1_0_pre6
-    - cd CMSSW_11_1_0_pre6/src/
+    - /cvmfs/cms.cern.ch/common/scram project  $CMSSW_VERSION
+    - cd $CMSSW_11_2_0_pre1/src/
     - eval `/cvmfs/cms.cern.ch/common/scram runtime -sh`
     - git config --global user.name "Boris Johnson"
     - git config --global user.github Boris
@@ -21,16 +23,43 @@ build_cmssw:
     - mkdir L1Trigger
     - cd L1Trigger/
     - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.cern.ch/ejclemen/cmssw_trackfinding_hlsframework.git .
+    - git checkout -b AddHLSIR origin/AddHLSIR
     - cd ../
 
     - /cvmfs/cms.cern.ch/common/git-cms-addpkg L1Trigger/TrackerDTC
     - /cvmfs/cms.cern.ch/common/git-cms-addpkg DataFormats/L1TrackTrigger
-    - git remote add tschuh https://gitlab-ci-token:${CI_JOB_TOKEN}@github.com/tschuh/cmssw.git
-    - git fetch tschuh emyr
-    - git checkout -b tschuh_emyr tschuh/emyr
-
-    - /cvmfs/cms.cern.ch/common/scram b -v
+    - git remote add emyr https://gitlab-ci-token:${CI_JOB_TOKEN}@github.com/EmyrClement/cmssw.git
+    - git fetch tschuh DTC_For_HLS
+    - git checkout -b DTC_For_HLS emyr/DTC_For_HLS
   artifacts:
     expire_in: 1 day
     paths:
-      - CMSSW_11_1_0_pre6
+      - CMSSW_11_2_0_pre1
+
+setup_hls:
+  stage: build
+  tags:
+    - docker
+    - cvmfs
+  script:
+    - cd $TOPDIR
+    - ls
+    - pwd
+    - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.cern.ch/sseifeln/firmware-hls/tree/IR_final
+    - cd firmware-hls
+    - export HLS_BASE=$PWD
+    - git checkout -b IRTest origin/IRTests
+    - sed -i 's|#include "hls_math.h"|//#include "hls_math.h"|g' TrackletAlgorithm/InputRouterTop.h
+
+    - cd $HLS_BASE/emData
+    - ./clean.sh
+    - ./download.sh
+    - cd ../
+    - cp -r emData $CMSSW_BASE/src/L1Trigger/TrackFindingTrackletHLS/plugins/
+  dependencies:
+    - setup_cmssw
+  artifacts:
+    expire_in: 1 day
+    paths:
+      - CMSSW_11_2_0_pre1
+      - firmware-hls
