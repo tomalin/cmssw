@@ -1,10 +1,11 @@
 image: gitlab-registry.cern.ch/ci-tools/ci-worker:cc7
 
 stages:
-  - build
+  - setup_cmssw
+  - setup_hls
 
 setup_cmssw:
-  stage: build
+  stage: setup_cmssw
   tags:
     - docker
     - cvmfs
@@ -37,7 +38,7 @@ setup_cmssw:
       - CMSSW_11_2_0_pre1
 
 setup_hls:
-  stage: build
+  stage: setup_hls
   tags:
     - docker
     - cvmfs
