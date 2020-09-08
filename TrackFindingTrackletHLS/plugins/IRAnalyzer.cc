@@ -47,7 +47,11 @@ private:
   // Histograms
   TProfile* profStubsPerIR_;
   TProfile* profTTStubsPerIR_;
+
+  TH1F* hisStubsPerCoarseIRRegion_;
+
   TH2F* hisRZStubs_;
+  TH2F* hisRPhiStubs_;
 
   unsigned int nValidDTCStubs_;
   unsigned int nValidIRStubs_;
@@ -76,7 +80,9 @@ void IRAnalyzer::beginRun(const Run& iEvent, const EventSetup& iSetup) {
   const unsigned int nIRs = setup_.numRegions() * setup_.numOverlappingRegions() * setup_.numDTCsPerRegion();
   profStubsPerIR_ = dir.make<TProfile>("NStubs", ";", nIRs, 0.5, nIRs+0.5);
   profTTStubsPerIR_ = dir.make<TProfile>("NTTStubs", ";", nIRs, 0.5, nIRs+0.5);
+  hisStubsPerCoarseIRRegion_ = dir.make<TH1F>("NStubsPerCoarseIRRegion",";",150,0,150);
   hisRZStubs_ = dir.make<TH2F>("RZ Stubs", ";;", 400, -300, 300, 400, 0., 120);
+  hisRPhiStubs_ = dir.make<TH2F>("RPhi Stubs", ";;", 400, -120, 120, 400, -120, 120);
 
 }
 
@@ -92,69 +98,56 @@ void IRAnalyzer::analyze(const Event& iEvent, const EventSetup& iSetup) {
   for ( const int& region : handleDTC->tfpRegions() ) {
     for ( const int& channel : handleDTC->tfpChannels() ) {
 
-      const int thisDtcId{ setup_.dtcId( region, channel ) };
-      unsigned int dtcChannel = setup_.numOverlappingRegions() - (channel / setup_.numDTCsPerRegion() ) - 1;
-      unsigned int streamID = thisDtcId * setup_.numOverlappingRegions() + dtcChannel;
-      
+      unsigned int nValidDTCStubsThisIR{0};
+      unsigned int nValidIRStubsThisIR{0};
+
+      const unsigned int irIndex(region * handleDTC->tfpChannels().size() + channel);
+
       // Get the IR memories containing the output stubs (from the IR)
-      TTIRMemory::IRMemories memories{ handleTTIRMemory->IRMemory( streamID ) };
+      TTIRMemory::IRMemories memories{ handleTTIRMemory->IRMemory( irIndex ) };
 
-      // Only analyze those IRs that are implemented in the HLS
-      if ( memories.size() > 0 ) {
-
-        // Get the stubs from the DTC (input to IR)
-        // Count number of valid stubs 
-        const TTDTC::Stream& streamFromDTC{ handleDTC->stream( region, channel ) };
-        for ( const auto& frame: streamFromDTC ) {
-          if ( frame.first.isNonnull() ) {
-            ++nValidDTCStubs_;
-          }
+      // Get the stubs from the DTC (input to IR)
+      // Count number of valid stubs 
+      const TTDTC::Stream& streamFromDTC{ handleDTC->stream( region, channel ) };
+      for ( const auto& frame: streamFromDTC ) {
+        if ( frame.first.isNonnull() ) {
+          ++nValidDTCStubsThisIR;
         }
-
-        // Count number of stubs in IR memories
-        unsigned int nStubs{ 0 };
-        for ( const auto& memory : memories ) {
-
-          // Is there a better way to write this code?
-          // std::get needs to know index and compile time
-          // so can't write std::get< memory.index() >
-          if ( memory.index() == 0 ) {
-            nStubs += get< 0 >( memory ).getEntries(0);
-          }
-          else if ( memory.index() == 1 ) {
-            nStubs += get< 1 >( memory ).getEntries(0);
-          }
-          else if ( memory.index() == 2 ) {
-            nStubs += get< 2 >( memory ).getEntries(0);
-          }
-          else if ( memory.index() == 3 ) {
-            nStubs += get< 3 >( memory ).getEntries(0);
-          }
-        }
-
-        profStubsPerIR_->Fill(streamID, nStubs);
-
-        // Count number of valid ttStubs
-        TTIRMemory::TTStubRefs ttStubVectors{ handleTTIRMemory->TTStubs( streamID ) };
-        unsigned int nTTStubs{ 0 };
-        for ( const auto& ttStubs : ttStubVectors ) {
-          for ( const auto& ttStub: ttStubs ) {
-            if ( ttStub.isNonnull() ) {
-              nTTStubs += 1;
-
-              ++nValidIRStubs_;
-
-              const GlobalPoint& ttPos = setup_.stubPos(ttStub);
-              hisRZStubs_->Fill(ttPos.z(), ttPos.perp());
-            }
-          }
-        }
-        profTTStubsPerIR_->Fill(streamID, nTTStubs);
       }
+      
+      // Count number of stubs in IR memories
+      unsigned int nStubs{ 0 };
+      for ( const auto& memory : memories ) {
+        const unsigned int nStubsMem( memory.getEntries(0) );
+        nStubs += nStubsMem;
+        hisStubsPerCoarseIRRegion_->Fill( nStubsMem );
+      }
+
+      profStubsPerIR_->Fill(irIndex, nStubs);
+
+      // Count number of valid ttStubs
+      TTIRMemory::TTStubRefs ttStubVectors{ handleTTIRMemory->TTStubs( irIndex ) };
+      unsigned int nTTStubs{ 0 };
+      for ( const auto& ttStubs : ttStubVectors ) {
+        for ( const auto& ttStub: ttStubs ) {
+          if ( ttStub.isNonnull() ) {
+            nTTStubs += 1;
+
+            ++nValidIRStubsThisIR;
+
+            const GlobalPoint& ttPos = setup_.stubPos(ttStub);
+            hisRZStubs_->Fill(ttPos.z(), ttPos.perp());
+            hisRPhiStubs_->Fill(ttPos.x(), ttPos.y());
+          }
+        }
+      }
+      
+      profTTStubsPerIR_->Fill(irIndex, nTTStubs);
+
+      nValidDTCStubs_ += nValidDTCStubsThisIR;
+      nValidIRStubs_ += nValidIRStubsThisIR;
     }
   }
-
-
 }
 
 void IRAnalyzer::endJob() {
