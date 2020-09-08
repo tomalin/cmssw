@@ -14,7 +14,7 @@ setup_cmssw:
     - export CMSSW_VERSION=CMSSW_11_2_0_pre1
     - export SCRAM_ARCH=slc7_amd64_gcc820
     - /cvmfs/cms.cern.ch/common/scram project  $CMSSW_VERSION
-    - cd $CMSSW_11_2_0_pre1/src/
+    - cd $CMSSW_VERSION/src/
     - eval `/cvmfs/cms.cern.ch/common/scram runtime -sh`
     - git config --global user.name "Boris Johnson"
     - git config --global user.github Boris
