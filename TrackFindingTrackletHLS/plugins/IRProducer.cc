@@ -41,6 +41,12 @@
 #include <array>
 #include <iostream>
 
+// IRT
+#include "L1Trigger/TrackFindingTrackletHLS/interface/TxtFileWriter.h"
+#include <utility>
+#include <map>
+#include <mutex>
+
 
 // LUTs from HLS
 // Need to store these/access via and ESSource?
@@ -368,6 +374,17 @@ void
 IRProducer::beginRun(edm::Run const& iRun, edm::EventSetup const& iSetup)
 {
   setup_ = iSetup.getData(esGetToken_);
+
+  // Write txt files (only once if there are multiple threads).
+  const TxtFileWriter txtFileWriter(setup_,
+				    //				    linkWordNBits_,
+				    linkWord_is2sBit_,
+				    linkWord_nLayersOffset_,
+				    linkWord_layerBarrelEndcapOffset_,
+				    linkWord_layerOrDiskNumberOffset_); 
+  static std::once_flag doOnceA, doOnceB;
+  std::call_once(doOnceA, &TxtFileWriter::writeDtcPhiRange, txtFileWriter, "dtcPhiRange.txt");
+  std::call_once(doOnceB, &TxtFileWriter::writeDtcLinkWords, txtFileWriter, "dtcLinkWords.txt");
 }
  
 // ------------ method called when ending the processing of a run  ------------
