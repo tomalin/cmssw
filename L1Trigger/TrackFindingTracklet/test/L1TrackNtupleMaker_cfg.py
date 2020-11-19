@@ -15,8 +15,7 @@ GEOMETRY = "D49"
 # Set L1 tracking algorithm: 
 # 'HYBRID' (baseline, 4par fit) or 'HYBRID_DISPLACED' (extended, 5par fit). 
 # (Or legacy algos 'TMTT' or 'TRACKLET').
-#L1TRKALGO = 'HYBRID'  
-L1TRKALGO = 'TRACKLET'  
+L1TRKALGO = 'HYBRID'  
 
 WRITE_DATA = False
 
