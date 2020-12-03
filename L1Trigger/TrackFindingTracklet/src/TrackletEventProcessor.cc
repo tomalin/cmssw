@@ -10,6 +10,7 @@
 #include "DataFormats/Math/interface/deltaPhi.h"
 
 #include <iomanip>
+#include <filesystem>
 
 using namespace trklet;
 using namespace std;
@@ -227,6 +228,7 @@ void TrackletEventProcessor::event(SLHCEvent& ev) {
       static std::map<string, ofstream*> dtcstubs;
 
       if (settings_->writeMem()) {
+
         vector<string> dtcs = cabling_->DTCs();
         for (const auto& dtc : dtcs) {
           string dtcbase = dtc.substr(2, dtc.size() - 2);
@@ -234,22 +236,30 @@ void TrackletEventProcessor::event(SLHCEvent& ev) {
             dtcbase = dtc.substr(0, 4) + dtc.substr(6, dtc.size() - 6);
           }
 
-          string fname = "../data/MemPrints/InputStubs/Link_";
+	  const string dirIS = settings_->memPath() + "InputStubs/";
+          string fname = dirIS + "Link_";
           fname += dtcbase;
           if (dtcstubs.find(dtcbase + "A") != dtcstubs.end())
             continue;
           fname += "_A.dat";
+
+          if (not std::filesystem::exists( dirIS ) ) {
+	    system((string("mkdir -p ") + dirIS).c_str());
+  	  }
+
           ofstream* out = new ofstream;
-          out->open(fname.c_str());
+          out->open(fname);
+	  if (out->fail()) throw cms::Exception("BadFile") << __FILE__ << " " << __LINE__ << " could not create file " << fname;
           dtcstubs[dtcbase + "A"] = out;
 
-          fname = "../data/MemPrints/InputStubs/Link_";
+          fname = dirIS + "Link_";
           fname += dtcbase;
           if (dtcstubs.find(dtcbase + "B") != dtcstubs.end())
             continue;
           fname += "_B.dat";
           out = new ofstream;
-          out->open(fname.c_str());
+          out->open(fname);
+	  if (out->fail()) throw cms::Exception("BadFile") << __FILE__ << " " << __LINE__ << " could not create file " << fname;
           dtcstubs[dtcbase + "B"] = out;
         }
 
