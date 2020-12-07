@@ -62,13 +62,14 @@ MatchProcessor::MatchProcessor(string name, Settings const& settings, Globals* g
   }
 
   if (iSector_ == 0 && layer_ > 0 && settings_.writeTable()) {
-    if (not std::filesystem::exists( settings_.tablePath() ) ) {
+    if (not std::filesystem::exists(settings_.tablePath())) {
       system((string("mkdir -p ") + settings_.tablePath()).c_str());
     }
 
     const string filephicut = settings_.tablePath() + getName() + "_phicut.tab";
     ofstream outphicut(filephicut);
-    if (outphicut.fail()) throw cms::Exception("BadFile") << __FILE__ << " " << __LINE__ << " could not create file " << filephicut;
+    if (outphicut.fail())
+      throw cms::Exception("BadFile") << __FILE__ << " " << __LINE__ << " could not create file " << filephicut;
 
     outphicut << "{" << endl;
     for (unsigned int seedindex = 0; seedindex < 12; seedindex++) {
@@ -81,7 +82,8 @@ MatchProcessor::MatchProcessor(string name, Settings const& settings, Globals* g
 
     const string filezcut = settings_.tablePath() + getName() + "_zcut.tab";
     ofstream outzcut(filezcut);
-    if (outzcut.fail()) throw cms::Exception("BadFile") << __FILE__ << " " << __LINE__ << " could not create file " << filezcut;
+    if (outzcut.fail())
+      throw cms::Exception("BadFile") << __FILE__ << " " << __LINE__ << " could not create file " << filezcut;
 
     outzcut << "{" << endl;
     for (unsigned int seedindex = 0; seedindex < N_SEED; seedindex++) {
@@ -111,7 +113,7 @@ MatchProcessor::MatchProcessor(string name, Settings const& settings, Globals* g
     }
 
     if (settings_.writeTable()) {
-      if (not std::filesystem::exists( settings_.tablePath() ) ) {
+      if (not std::filesystem::exists(settings_.tablePath())) {
         system((string("mkdir -p ") + settings_.tablePath()).c_str());
       }
 
@@ -121,7 +123,8 @@ MatchProcessor::MatchProcessor(string name, Settings const& settings, Globals* g
       fname += ".tab";
       const string full_fname = settings_.tablePath() + fname;
       ofstream out(full_fname);
-      if (out.fail()) throw cms::Exception("BadFile") << __FILE__ << " " << __LINE__ << " could not create file " << full_fname;
+      if (out.fail())
+        throw cms::Exception("BadFile") << __FILE__ << " " << __LINE__ << " could not create file " << full_fname;
 
       out << "{" << endl;
       for (unsigned int i = 0; i < table_.size(); i++) {

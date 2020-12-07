@@ -38,18 +38,20 @@ void TrackletParametersMemory::writeTPAR(bool first) {
   const string dirTP = settings_.memPath() + "TrackletParameters/";
 
   std::ostringstream oss;
-  oss << dirTP << "TrackletParameters_" << getName() << "_" << std::setfill('0') << std::setw(2) << (iSector_ + 1) << ".dat";
+  oss << dirTP << "TrackletParameters_" << getName() << "_" << std::setfill('0') << std::setw(2) << (iSector_ + 1)
+      << ".dat";
   auto const& fname = oss.str();
 
   if (first) {
     bx_ = 0;
     event_ = 1;
 
-    if (not std::filesystem::exists( dirTP ) ) {
+    if (not std::filesystem::exists(dirTP)) {
       system((string("mkdir -p ") + dirTP).c_str());
     }
     out_.open(fname);
-    if (out_.fail()) throw cms::Exception("BadFile") << __FILE__ << " " << __LINE__ << " could not create file " << fname;
+    if (out_.fail())
+      throw cms::Exception("BadFile") << __FILE__ << " " << __LINE__ << " could not create file " << fname;
 
   } else
     out_.open(fname, std::ofstream::app);

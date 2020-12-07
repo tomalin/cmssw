@@ -59,13 +59,14 @@ MatchCalculator::MatchCalculator(string name, Settings const& settings, Globals*
   }
 
   if (iSector_ == 0 && layerdisk_ < N_LAYER && settings_.writeTable()) {
-    if (not std::filesystem::exists( settings_.tablePath() ) ) {
+    if (not std::filesystem::exists(settings_.tablePath())) {
       system((string("mkdir -p ") + settings_.tablePath()).c_str());
     }
 
     const string filephicut = settings_.tablePath() + getName() + "_phicut.tab";
     ofstream outphicut(filephicut);
-    if (outphicut.fail()) throw cms::Exception("BadFile") << __FILE__ << " " << __LINE__ << " could not create file " << filephicut;
+    if (outphicut.fail())
+      throw cms::Exception("BadFile") << __FILE__ << " " << __LINE__ << " could not create file " << filephicut;
 
     outphicut << "{" << endl;
     for (unsigned int seedindex = 0; seedindex < N_SEED; seedindex++) {
@@ -78,7 +79,8 @@ MatchCalculator::MatchCalculator(string name, Settings const& settings, Globals*
 
     const string filezcut = settings_.tablePath() + getName() + "_zcut.tab";
     ofstream outzcut(filezcut);
-    if (outzcut.fail()) throw cms::Exception("BadFile") << __FILE__ << " " << __LINE__ << " could not create file " << filezcut;
+    if (outzcut.fail())
+      throw cms::Exception("BadFile") << __FILE__ << " " << __LINE__ << " could not create file " << filezcut;
 
     outzcut << "{" << endl;
     for (unsigned int seedindex = 0; seedindex < N_SEED; seedindex++) {
@@ -91,13 +93,14 @@ MatchCalculator::MatchCalculator(string name, Settings const& settings, Globals*
   }
 
   if (iSector_ == 0 && layerdisk_ >= N_LAYER && settings_.writeTable()) {
-    if (not std::filesystem::exists( settings_.tablePath() ) ) {
+    if (not std::filesystem::exists(settings_.tablePath())) {
       system((string("mkdir -p ") + settings_.tablePath()).c_str());
     }
 
     const string filePSphicut = settings_.tablePath() + getName() + "_PSphicut.tab";
     ofstream outPSphicut(filePSphicut);
-    if (outPSphicut.fail()) throw cms::Exception("BadFile") << __FILE__ << " " << __LINE__ << " could not create file " << filePSphicut;
+    if (outPSphicut.fail())
+      throw cms::Exception("BadFile") << __FILE__ << " " << __LINE__ << " could not create file " << filePSphicut;
     outPSphicut << "{" << endl;
     for (unsigned int seedindex = 0; seedindex < N_SEED; seedindex++) {
       if (seedindex != 0)
@@ -109,7 +112,8 @@ MatchCalculator::MatchCalculator(string name, Settings const& settings, Globals*
 
     const string file2Sphicut = settings_.tablePath() + getName() + "_2Sphicut.tab";
     ofstream out2Sphicut(file2Sphicut);
-    if (out2Sphicut.fail()) throw cms::Exception("BadFile") << __FILE__ << " " << __LINE__ << " could not create file " << file2Sphicut;
+    if (out2Sphicut.fail())
+      throw cms::Exception("BadFile") << __FILE__ << " " << __LINE__ << " could not create file " << file2Sphicut;
     out2Sphicut << "{" << endl;
     for (unsigned int seedindex = 0; seedindex < N_SEED; seedindex++) {
       if (seedindex != 0)
@@ -121,7 +125,8 @@ MatchCalculator::MatchCalculator(string name, Settings const& settings, Globals*
 
     const string filePSrcut = settings_.tablePath() + getName() + "_PSrcut.tab";
     ofstream outPSrcut(filePSrcut);
-    if (outPSrcut.fail()) throw cms::Exception("BadFile") << __FILE__ << " " << __LINE__ << " could not create file " << filePSrcut;
+    if (outPSrcut.fail())
+      throw cms::Exception("BadFile") << __FILE__ << " " << __LINE__ << " could not create file " << filePSrcut;
     outPSrcut << "{" << endl;
     for (unsigned int seedindex = 0; seedindex < N_SEED; seedindex++) {
       if (seedindex != 0)
@@ -133,7 +138,8 @@ MatchCalculator::MatchCalculator(string name, Settings const& settings, Globals*
 
     const string file2Srcut = settings_.tablePath() + getName() + "_2Srcut.tab";
     ofstream out2Srcut(file2Srcut);
-    if (out2Srcut.fail()) throw cms::Exception("BadFile") << __FILE__ << " " << __LINE__ << " could not create file " << file2Srcut;
+    if (out2Srcut.fail())
+      throw cms::Exception("BadFile") << __FILE__ << " " << __LINE__ << " could not create file " << file2Srcut;
     out2Srcut << "{" << endl;
     for (unsigned int seedindex = 0; seedindex < N_SEED; seedindex++) {
       if (seedindex != 0)

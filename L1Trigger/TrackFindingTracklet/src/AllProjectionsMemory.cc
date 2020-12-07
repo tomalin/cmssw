@@ -15,7 +15,6 @@ AllProjectionsMemory::AllProjectionsMemory(string name, Settings const& settings
 }
 
 void AllProjectionsMemory::writeAP(bool first) {
-
   const string dirTP = settings_.memPath() + "TrackletProjections/";
 
   std::ostringstream oss;
@@ -26,11 +25,12 @@ void AllProjectionsMemory::writeAP(bool first) {
     bx_ = 0;
     event_ = 1;
 
-    if (not std::filesystem::exists( dirTP ) ) {
+    if (not std::filesystem::exists(dirTP)) {
       system((string("mkdir -p ") + dirTP).c_str());
     }
     out_.open(fname);
-    if (out_.fail()) throw cms::Exception("BadFile") << __FILE__ << " " << __LINE__ << " could not create file " << fname;
+    if (out_.fail())
+      throw cms::Exception("BadFile") << __FILE__ << " " << __LINE__ << " could not create file " << fname;
 
   } else
     out_.open(fname, std::ofstream::app);

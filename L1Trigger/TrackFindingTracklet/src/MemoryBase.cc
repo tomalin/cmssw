@@ -71,8 +71,7 @@ void MemoryBase::findAndReplaceAll(std::string& data, std::string toSearch, std:
 }
 
 void MemoryBase::openFile(bool first, std::string dirName, std::string filebase) {
-
-  if (not std::filesystem::exists( dirName ) ) {
+  if (not std::filesystem::exists(dirName)) {
     system((string("mkdir -p ") + dirName).c_str());
   }
 
@@ -99,7 +98,8 @@ void MemoryBase::openFile(bool first, std::string dirName, std::string filebase)
     bx_ = 0;
     event_ = 1;
     out_.open(fname);
-    if (out_.fail()) throw cms::Exception("BadFile") << __FILE__ << " " << __LINE__ << " could not create file " << fname;
+    if (out_.fail())
+      throw cms::Exception("BadFile") << __FILE__ << " " << __LINE__ << " could not create file " << fname;
 
   } else {
     out_.open(fname, std::ofstream::app);

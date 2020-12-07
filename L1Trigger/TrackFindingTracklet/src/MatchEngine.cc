@@ -57,7 +57,7 @@ MatchEngine::MatchEngine(string name, Settings const& settings, Globals* global,
     }
 
     if (settings_.writeTable()) {
-      if (not std::filesystem::exists( settings_.tablePath() ) ) {
+      if (not std::filesystem::exists(settings_.tablePath())) {
         system((string("mkdir -p ") + settings_.tablePath()).c_str());
       }
 
@@ -68,7 +68,8 @@ MatchEngine::MatchEngine(string name, Settings const& settings, Globals* global,
 
       const string full_fname = settings_.tablePath() + fname;
       ofstream out(full_fname);
-      if (out.fail()) throw cms::Exception("BadFile") << __FILE__ << " " << __LINE__ << " could not create file " << full_fname;
+      if (out.fail())
+        throw cms::Exception("BadFile") << __FILE__ << " " << __LINE__ << " could not create file " << full_fname;
 
       out << "{" << endl;
       for (unsigned int i = 0; i < table_.size(); i++) {

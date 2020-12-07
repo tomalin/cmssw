@@ -101,7 +101,7 @@ void VMRouterTable::init(unsigned int layerdisk, std::string const& name) {
   }
 
   if (settings_.writeTable()) {
-    if (not std::filesystem::exists( settings_.tablePath() ) ) {
+    if (not std::filesystem::exists(settings_.tablePath())) {
       system((string("mkdir -p ") + settings_.tablePath()).c_str());
     }
 
@@ -323,9 +323,9 @@ int VMRouterTable::lookupinnerThird(int zbin, int rbin) {
 }
 
 void VMRouterTable::writeVMTable(std::string const& name, std::vector<int> const& table) {
-
   ofstream out(name);
-  if (out.fail()) throw cms::Exception("BadFile") << __FILE__ << " " << __LINE__ << " could not create file " << name;
+  if (out.fail())
+    throw cms::Exception("BadFile") << __FILE__ << " " << __LINE__ << " could not create file " << name;
 
   out << "{" << endl;
   for (unsigned int i = 0; i < table.size(); i++) {

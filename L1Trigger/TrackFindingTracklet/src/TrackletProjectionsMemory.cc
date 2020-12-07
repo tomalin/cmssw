@@ -36,12 +36,13 @@ void TrackletProjectionsMemory::clean() { tracklets_.clear(); }
 
 void TrackletProjectionsMemory::writeTPROJ(bool first) {
   const string dirTP = settings_.memPath() + "TrackletProjections/";
-  if (not std::filesystem::exists( dirTP ) ) {
+  if (not std::filesystem::exists(dirTP)) {
     system((string("mkdir -p ") + dirTP).c_str());
   }
 
   std::ostringstream oss;
-  oss << dirTP << "TrackletProjections_" << getName() << "_" << std::setfill('0') << std::setw(2) << (iSector_ + 1) << ".dat";
+  oss << dirTP << "TrackletProjections_" << getName() << "_" << std::setfill('0') << std::setw(2) << (iSector_ + 1)
+      << ".dat";
   auto const& fname = oss.str();
 
   if (first) {

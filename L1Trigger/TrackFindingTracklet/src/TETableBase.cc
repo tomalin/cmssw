@@ -9,7 +9,8 @@ void TETableBase::writeVMTable(std::string name, bool positive) {
   // Write LUT table.
 
   ofstream out(name);
-  if (out.fail()) throw cms::Exception("BadFile") << __FILE__ << " " << __LINE__ << " could not create file " << name;
+  if (out.fail())
+    throw cms::Exception("BadFile") << __FILE__ << " " << __LINE__ << " could not create file " << name;
 
   out << "{" << endl;
   for (unsigned int i = 0; i < table_.size(); i++) {

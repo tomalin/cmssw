@@ -50,11 +50,12 @@ void FullMatchMemory::writeMC(bool first) {
     bx_ = 0;
     event_ = 1;
 
-    if (not std::filesystem::exists( dirM ) ) {
+    if (not std::filesystem::exists(dirM)) {
       system((string("mkdir -p ") + dirM).c_str());
     }
     out_.open(fname);
-    if (out_.fail()) throw cms::Exception("BadFile") << __FILE__ << " " << __LINE__ << " could not create file " << fname;
+    if (out_.fail())
+      throw cms::Exception("BadFile") << __FILE__ << " " << __LINE__ << " could not create file " << fname;
 
   } else
     out_.open(fname, std::ofstream::app);

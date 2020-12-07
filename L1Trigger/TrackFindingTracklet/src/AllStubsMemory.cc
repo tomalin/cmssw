@@ -10,7 +10,6 @@ AllStubsMemory::AllStubsMemory(string name, Settings const& settings, unsigned i
     : MemoryBase(name, settings, iSector) {}
 
 void AllStubsMemory::writeStubs(bool first) {
-
   const string dirS = settings_.memPath() + "Stubs/";
   openFile(first, dirS, "AllStubs_");
 

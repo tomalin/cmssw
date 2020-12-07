@@ -267,13 +267,14 @@ void TrackletEngine::setVMPhiBin() {
 }
 
 void TrackletEngine::writeTETable() {
-  if (not std::filesystem::exists( settings_.tablePath() ) ) {
+  if (not std::filesystem::exists(settings_.tablePath())) {
     system((string("mkdir -p ") + settings_.tablePath()).c_str());
   }
 
   const string fnameI = settings_.tablePath() + getName() + "_stubptinnercut.tab";
   ofstream outstubptinnercut(fnameI);
-  if (outstubptinnercut.fail()) throw cms::Exception("BadFile") << __FILE__ << " " << __LINE__ << " could not create file " << fnameI;
+  if (outstubptinnercut.fail())
+    throw cms::Exception("BadFile") << __FILE__ << " " << __LINE__ << " could not create file " << fnameI;
 
   outstubptinnercut << "{" << endl;
   for (unsigned int i = 0; i < pttableinner_.size(); i++) {
@@ -286,7 +287,8 @@ void TrackletEngine::writeTETable() {
 
   const string fnameO = settings_.tablePath() + getName() + "_stubptoutercut.tab";
   ofstream outstubptoutercut(fnameO);
-  if (outstubptoutercut.fail()) throw cms::Exception("BadFile") << __FILE__ << " " << __LINE__ << " could not create file " << fnameI;
+  if (outstubptoutercut.fail())
+    throw cms::Exception("BadFile") << __FILE__ << " " << __LINE__ << " could not create file " << fnameI;
 
   outstubptoutercut << "{" << endl;
   for (unsigned int i = 0; i < pttableouter_.size(); i++) {

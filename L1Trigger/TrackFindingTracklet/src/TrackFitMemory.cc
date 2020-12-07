@@ -24,11 +24,12 @@ void TrackFitMemory::writeTF(bool first) {
     bx_ = 0;
     event_ = 1;
 
-    if (not std::filesystem::exists( dirFT ) ) {
+    if (not std::filesystem::exists(dirFT)) {
       system((string("mkdir -p ") + dirFT).c_str());
     }
     out_.open(fname);
-    if (out_.fail()) throw cms::Exception("BadFile") << __FILE__ << " " << __LINE__ << " could not create file " << fname;
+    if (out_.fail())
+      throw cms::Exception("BadFile") << __FILE__ << " " << __LINE__ << " could not create file " << fname;
 
   } else
     out_.open(fname, std::ofstream::app);

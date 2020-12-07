@@ -33,7 +33,7 @@ void VMRouterPhiCorrTable::init(int layer, int bendbits, int rbits) {
   }
 
   if (settings_.writeTable()) {
-    if (not std::filesystem::exists( settings_.tablePath() ) ) {
+    if (not std::filesystem::exists(settings_.tablePath())) {
       system((string("mkdir -p ") + settings_.tablePath()).c_str());
     }
 
