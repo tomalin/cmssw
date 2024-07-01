@@ -120,9 +120,8 @@ namespace Phase2Tracker {
 
     // Analyze strip tracker FED buffers in data
     std::vector<int> feds = cabling_->listFeds();
-    std::vector<int>::iterator fedIndex;
-    for (fedIndex = feds.begin(); fedIndex != feds.end(); ++fedIndex) {
-      const FEDRawData& fed = buffers->FEDData(*fedIndex);
+    for (size_t fedIndex = Phase2Tracker::FED_ID_MIN; fedIndex <= Phase2Tracker::CMS_FED_ID_MAX; ++fedIndex) {
+      const FEDRawData& fed = buffers->FEDData(fedIndex);
       if (fed.size() == 0)
         continue;
       // construct buffer
@@ -130,7 +129,7 @@ namespace Phase2Tracker {
       // Skip FED if buffer is not a valid tracker FEDBuffer
       if (buffer.isValid() == 0) {
         LogTrace("Phase2TrackerDigiProducer") << "[Phase2Tracker::Phase2TrackerDigiProducer::" << __func__ << "]: \n";
-        LogTrace("Phase2TrackerDigiProducer") << "Skipping invalid buffer for FED nr " << *fedIndex << endl;
+        LogTrace("Phase2TrackerDigiProducer") << "Skipping invalid buffer for FED nr " << fedIndex << endl;
         continue;
       }
 
@@ -200,7 +199,7 @@ namespace Phase2Tracker {
             const Phase2TrackerFEDChannel& channel = buffer.channel(ichan);
             if (channel.length() > 0) {
               // get detid from cabling
-              const Phase2TrackerModule mod = cabling_->findFedCh(std::make_pair(*fedIndex, ife));
+              const Phase2TrackerModule mod = cabling_->findFedCh(std::make_pair(fedIndex, ife));
               uint32_t detid = mod.getDetid();
 #ifdef EDM_ML_DEBUG
               ss << dec << " id from cabling : " << detid << endl;
@@ -262,7 +261,7 @@ namespace Phase2Tracker {
         int ichan = 0;
         for (int ife = 0; ife < MAX_FE_PER_FED; ife++) {
           // get fedid from cabling
-          const Phase2TrackerModule mod = cabling_->findFedCh(std::make_pair(*fedIndex, ife));
+          const Phase2TrackerModule mod = cabling_->findFedCh(std::make_pair(fedIndex, ife));
           uint32_t detid = mod.getDetid();
           // container for this module's digis
           std::vector<Phase2TrackerCluster1D> clustersTop;
@@ -370,13 +369,12 @@ namespace Phase2Tracker {
       }
       it = it2;
     }
-    edm::DetSetVector<Phase2TrackerDigi> proc_raw_dsv(sorted_and_merged, true);
-    auto pr = std::make_unique<edm::DetSetVector<Phase2TrackerDigi>>();
-    pr->swap(proc_raw_dsv);
+    //edm::DetSetVector<Phase2TrackerDigi> proc_raw_dsv( sorted_and_merged, true );
+    //pr->swap( proc_raw_dsv );
+    //event.put(std::unique_ptr<edm::DetSetVector<Phase2TrackerDigi>>(pr), "Unsparsified");
 
-    //Fixme!!! This is not correct
-    auto sm = new std::vector<edm::DetSet<Phase2TrackerDigi>>();
-    event.emplace(putToken_, *sm, true);
+    //Is this correct?..Jerome did the above
+    event.emplace(putToken_, sorted_and_merged, true);
 
     // store Sparsified Digis
     event.emplace(putTokenSparsified_, std::move(*clusters));

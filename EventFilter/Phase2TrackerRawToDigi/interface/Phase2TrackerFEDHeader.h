@@ -97,6 +97,5 @@ namespace Phase2Tracker {
     uint64_t header_first_word_;
 
   };  // end of Phase2TrackerFEDHeader class
-
 }  // namespace Phase2Tracker
 #endif  // } end def EventFilter_Phase2TrackerRawToDigi_Phase2TrackerPhase2TrackerFEDHeader_H

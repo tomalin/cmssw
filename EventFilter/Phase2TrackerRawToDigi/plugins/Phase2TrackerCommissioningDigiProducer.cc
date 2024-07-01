@@ -13,7 +13,7 @@
 #include "FWCore/Utilities/interface/Exception.h"
 
 namespace Phase2Tracker {
-
+  typedef edm::DetSet<Phase2TrackerCommissioningDigi> condata_map;
   class Phase2TrackerCommissioningDigiProducer : public edm::global::EDProducer<> {
   public:
     /// constructor
@@ -25,27 +25,15 @@ namespace Phase2Tracker {
   private:
     edm::EDGetTokenT<FEDRawDataCollection> token_;
   };
-}  // namespace Phase2Tracker
 
-#include "FWCore/Framework/interface/MakerMacros.h"
-typedef Phase2Tracker::Phase2TrackerCommissioningDigiProducer Phase2TrackerCommissioningDigiProducer;
-DEFINE_FWK_MODULE(Phase2TrackerCommissioningDigiProducer);
-
-using namespace std;
-
-namespace Phase2Tracker {
-
-  typedef edm::DetSet<Phase2TrackerCommissioningDigi> condata_map;
-
-  Phase2Tracker::Phase2TrackerCommissioningDigiProducer::Phase2TrackerCommissioningDigiProducer(
-      const edm::ParameterSet& pset) {
+  Phase2TrackerCommissioningDigiProducer::Phase2TrackerCommissioningDigiProducer(const edm::ParameterSet& pset) {
     produces<condata_map>("ConditionData");
     token_ = consumes<FEDRawDataCollection>(pset.getParameter<edm::InputTag>("ProductLabel"));
   }
 
-  void Phase2Tracker::Phase2TrackerCommissioningDigiProducer::produce(edm::StreamID,
-                                                                      edm::Event& event,
-                                                                      const edm::EventSetup& es) const {
+  void Phase2TrackerCommissioningDigiProducer::produce(edm::StreamID,
+                                                       edm::Event& event,
+                                                       const edm::EventSetup& es) const {
     // Retrieve FEDRawData collection
     edm::Handle<FEDRawDataCollection> buffers;
     event.getByToken(token_, buffers);
@@ -62,11 +50,11 @@ namespace Phase2Tracker {
       // print cond data for debug
       LogTrace("Phase2TrackerCommissioningDigiProducer") << "--- Condition data debug ---" << std::endl;
       std::map<uint32_t, uint32_t>::const_iterator it;
-      for (it = cond_data.begin(); it != cond_data.end(); it++) {
+      //for (it = cond_data.begin(); it != cond_data.end(); it++) {
+      for (auto& [key, value] : cond_data) {
         LogTrace("Phase2TrackerCommissioningDigiProducer")
-            << "key: " << std::hex << std::setw(8) << std::setfill('0') << it->first << " value: " << std::hex
-            << std::setw(8) << std::setfill('0') << it->second << " (hex) " << std::dec << it->second << " (dec) "
-            << std::endl;
+            << "key: " << std::hex << std::setw(8) << std::setfill('0') << key << " value: " << std::hex << std::setw(8)
+            << std::setfill('0') << value << " (hex) " << std::dec << value << " (dec) " << std::endl;
       }
       LogTrace("Phase2TrackerCommissioningDigiProducer") << "----------------------------" << std::endl;
       // store it into digis
@@ -79,3 +67,6 @@ namespace Phase2Tracker {
     }
   }
 }  // namespace Phase2Tracker
+#include "FWCore/Framework/interface/MakerMacros.h"
+typedef Phase2Tracker::Phase2TrackerCommissioningDigiProducer Phase2TrackerCommissioningDigiProducer;
+DEFINE_FWK_MODULE(Phase2TrackerCommissioningDigiProducer);

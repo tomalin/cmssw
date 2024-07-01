@@ -28,10 +28,10 @@ namespace Phase2Tracker {
     const Phase2TrackerFEDChannel& channel(const uint32_t internalPhase2TrackerFEDChannelNum) const {
       return channels_[internalPhase2TrackerFEDChannelNum];
     }
+    std::map<uint32_t, uint32_t> conditionData();
     const Phase2TrackerFEDChannel& stubchannel(const uint32_t internalPhase2TrackerFEDChannelNum) const {
       return stub_channels_[internalPhase2TrackerFEDChannelNum];
     }
-    std::map<uint32_t, uint32_t> conditionData();
     int isValid() { return valid_; }
 
     //methods to get info from DAQ header from FEDDAQHeader class

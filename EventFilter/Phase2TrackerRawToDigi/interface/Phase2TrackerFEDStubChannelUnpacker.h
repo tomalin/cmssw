@@ -11,6 +11,7 @@ namespace Phase2Tracker {
   class Phase2TrackerFEDStubChannelUnpacker {
   public:
     Phase2TrackerFEDStubChannelUnpacker(const Phase2TrackerFEDChannel& channel);
+    virtual ~Phase2TrackerFEDStubChannelUnpacker() = default;
     bool hasData() const { return (clustersLeft_ > 0); }
     Phase2TrackerFEDStubChannelUnpacker& operator++();
     Phase2TrackerFEDStubChannelUnpacker& operator++(int);
@@ -50,6 +51,7 @@ namespace Phase2Tracker {
       clusterdatasize_ = STUBS_SIZE_2S;
       clustersLeft_ = channel.length() * 8 / clusterdatasize_;
     }
+    ~Phase2TrackerFEDStubSon2SChannelUnpacker() = default;
     inline uint8_t chipId() const { return (uint8_t)read_n_at_m_l2r(data_, 4, currentOffset_); }
     inline uint8_t rawX() const { return (uint8_t)read_n_at_m_l2r(data_, 8, currentOffset_ + 4); }
     inline uint8_t Bend() const { return (uint8_t)read_n_at_m_l2r(data_, 4, currentOffset_ + 12); }
@@ -73,6 +75,7 @@ namespace Phase2Tracker {
       clusterdatasize_ = STUBS_SIZE_PS;
       clustersLeft_ = channel.length() * 8 / clusterdatasize_;
     }
+    ~Phase2TrackerFEDStubPonPSChannelUnpacker() = default;
     inline uint8_t chipId() const { return (uint8_t)read_n_at_m_l2r(data_, 4, currentOffset_); }
     inline uint8_t rawX() const { return (uint8_t)read_n_at_m_l2r(data_, 8, currentOffset_ + 4); }
     inline uint8_t Bend() const { return (uint8_t)read_n_at_m_l2r(data_, 4, currentOffset_ + 12); }
@@ -91,7 +94,5 @@ namespace Phase2Tracker {
   int Phase2TrackerFEDStubPonPSChannelUnpacker::stubY() const {
     return (chipId() > 7) ? (rawY() + PS_COLS / 2) : rawY();
   }
-
 }  // namespace Phase2Tracker
-
 #endif  // } end def EventFilter_Phase2TrackerRawToDigi_Phase2TrackerPhase2TrackerFEDStubChannelUnpacker_H

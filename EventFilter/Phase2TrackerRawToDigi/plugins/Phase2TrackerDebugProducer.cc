@@ -5,8 +5,6 @@
 #include "DataFormats/DetId/interface/DetIdCollection.h"
 #include "DataFormats/FEDRawData/interface/FEDRawDataCollection.h"
 #include "DataFormats/FEDRawData/interface/FEDNumbering.h"
-//#include "DataFormats/FEDRawData/src/fed_header.h"
-//#include "DataFormats/FEDRawData/src/fed_trailer.h"
 #include "EventFilter/Phase2TrackerRawToDigi/interface/Phase2TrackerFEDBuffer.h"
 #include "EventFilter/Phase2TrackerRawToDigi/interface/Phase2TrackerFEDChannel.h"
 #include "EventFilter/Phase2TrackerRawToDigi/interface/Phase2TrackerFEDHeader.h"
@@ -47,7 +45,7 @@ namespace Phase2Tracker {
   };
 
   Phase2TrackerDebugProducer::Phase2TrackerDebugProducer(const edm::ParameterSet& pset)
-      : ph2CablingESToken_(esConsumes()) {
+      : ph2CablingESToken_(esConsumes<Phase2TrackerCabling, Phase2TrackerCablingRcd, edm::Transition::BeginRun>()) {
     // define product
     produces<edmNew::DetSetVector<Phase2TrackerFEDFEDebug>>("Debugs");
     token_ = consumes<FEDRawDataCollection>(pset.getParameter<edm::InputTag>("ProductLabel"));

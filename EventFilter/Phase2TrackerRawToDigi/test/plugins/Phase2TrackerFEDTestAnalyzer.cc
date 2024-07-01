@@ -114,27 +114,27 @@ void Phase2TrackerFEDTestAnalyzer::analyze(const edm::Event& event, const edm::E
           LOGPRINT << "0";
         }
       }
-      cout << endl;
-      cout << " Nr CBC   : " << hex << setw(16) << (int)tr_header.getNumberOfCBC() << endl;
-      cout << " FE/Chip status : ";
+      LOGPRINT << endl;
+      LOGPRINT << " Nr CBC   : " << hex << setw(16) << (int)tr_header.getNumberOfCBC() << endl;
+      LOGPRINT << " FE/Chip status : ";
       std::vector<Phase2TrackerFEDFEDebug> all_fe_debug = tr_header.CBCStatus();
       std::vector<Phase2TrackerFEDFEDebug>::iterator FE_it;
       for (FE_it = all_fe_debug.begin(); FE_it < all_fe_debug.end(); FE_it++) {
         if (FE_it->IsOn()) {
-          cout << " FE L1ID: " << endl;
-          cout << "    " << hex << setw(4) << FE_it->getFEL1ID()[0] << dec << endl;
-          cout << "    " << hex << setw(4) << FE_it->getFEL1ID()[1] << dec << endl;
+          LOGPRINT << " FE L1ID: " << endl;
+          LOGPRINT << "    " << hex << setw(4) << FE_it->getFEL1ID()[0] << dec << endl;
+          LOGPRINT << "    " << hex << setw(4) << FE_it->getFEL1ID()[1] << dec << endl;
           for (int i = 0; i < 16; i++) {
-            cout << " Chip Error" << hex << setw(1) << FE_it->getChipError(i) << dec << endl;
-            cout << " Chip L1ID " << hex << setw(4) << FE_it->getChipL1ID(i) << dec << endl;
-            cout << " Chip PA   " << hex << setw(4) << FE_it->getChipPipelineAddress(i) << dec << endl;
+            LOGPRINT << " Chip Error" << hex << setw(1) << FE_it->getChipError(i) << dec << endl;
+            LOGPRINT << " Chip L1ID " << hex << setw(4) << FE_it->getChipL1ID(i) << dec << endl;
+            LOGPRINT << " Chip PA   " << hex << setw(4) << FE_it->getChipPipelineAddress(i) << dec << endl;
           }
         }
       }
-      cout << endl;
-      cout << " -------------------------------------------- " << endl;
-      cout << " Payload  ----------------------------------- " << endl;
-      cout << " -------------------------------------------- " << endl;
+      LOGPRINT << endl;
+      LOGPRINT << " -------------------------------------------- " << endl;
+      LOGPRINT << " Payload  ----------------------------------- " << endl;
+      LOGPRINT << " -------------------------------------------- " << endl;
 
       // loop channels
       int ichan = 0;

@@ -11,6 +11,7 @@ namespace Phase2Tracker {
   class Phase2TrackerFEDZSChannelUnpacker {
   public:
     Phase2TrackerFEDZSChannelUnpacker(const Phase2TrackerFEDChannel& channel);
+    virtual ~Phase2TrackerFEDZSChannelUnpacker() = default;
     bool hasData() const { return (clustersLeft_ > 0); }
     // go to next clusters, merge adjacent clusters (default method)
     Phase2TrackerFEDZSChannelUnpacker& operator++();
@@ -48,6 +49,7 @@ namespace Phase2Tracker {
       clusterdatasize_ = Son2S_CLUSTER_SIZE_BITS;
       clustersLeft_ = channel.length() * 8 / clusterdatasize_;
     }
+    ~Phase2TrackerFEDZSSon2SChannelUnpacker() = default;
     inline uint8_t rawX() const { return (uint8_t)read_n_at_m_l2r(data_, 8, currentOffset_ + 4); }
     inline int Plane() const { return rawX() % 2; }
     inline uint8_t rawSize() const { return (uint8_t)read_n_at_m_l2r(data_, 3, currentOffset_ + 12) + 1; }
@@ -66,6 +68,7 @@ namespace Phase2Tracker {
       clusterdatasize_ = SonPS_CLUSTER_SIZE_BITS;
       clustersLeft_ = channel.length() * 8 / clusterdatasize_;
     }
+    ~Phase2TrackerFEDZSSonPSChannelUnpacker() = default;
     inline uint8_t rawX() const { return (uint8_t)read_n_at_m_l2r(data_, 8, currentOffset_ + 4); }
     inline uint8_t rawSize() const { return (uint8_t)read_n_at_m_l2r(data_, 3, currentOffset_ + 12) + 1; }
     inline uint8_t threshold() const { return (uint8_t)read_n_at_m_l2r(data_, 1, currentOffset_ + 15); }
@@ -84,6 +87,7 @@ namespace Phase2Tracker {
       clusterdatasize_ = P_CLUSTER_SIZE_BITS;
       clustersLeft_ = channel.length() * 8 / clusterdatasize_;
     }
+    ~Phase2TrackerFEDZSPonPSChannelUnpacker() = default;
     inline uint8_t rawX() const { return (uint8_t)read_n_at_m_l2r(data_, 7, currentOffset_ + 4); }
     inline uint8_t rawY() const { return (uint8_t)read_n_at_m_l2r(data_, 4, currentOffset_ + 11); }
     inline uint8_t rawSize() const { return (uint8_t)read_n_at_m_l2r(data_, 3, currentOffset_ + 15) + 1; }
@@ -94,7 +98,5 @@ namespace Phase2Tracker {
     bool gluedToNextCluster() const;
     Phase2TrackerFEDZSPonPSChannelUnpacker next() const;
   };
-
 }  // namespace Phase2Tracker
-
 #endif  // } end def EventFilter_Phase2TrackerRawToDigi_Phase2TrackerPhase2TrackerFEDZSChannelUnpacker_H
