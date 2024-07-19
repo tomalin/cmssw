@@ -1,3 +1,6 @@
+# Parse the TkLayout cabling map file, to convert it to the format
+# expected by this unpacker code.
+
 def process_file(input_filename, output_filename):
     rows = []
     
