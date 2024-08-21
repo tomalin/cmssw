@@ -6,9 +6,9 @@ process = cms.Process("RawToDigi")
 #process.load( "FWCore.MessageLogger.MessageLogger_cfi" )
 process.MessageLogger = cms.Service(
   "MessageLogger", 
-   destinations = cms.untracked.vstring ('jobOutput'), # Name of output file
+   destinations = cms.untracked.vstring ('cout'), # Name of output file
    categories = cms.untracked.vstring('Phase2TrackerDigiProducer','Phase2TrackerFEDBuffer','Phase2TrackerFEDFEDDebug','Phase2TrackerStubProducer'),
-   jobOutput = cms.untracked.PSet(
+   cout = cms.untracked.PSet(
      enableStatistics = cms.untracked.bool(True),
      # Threshold=DEBUG for specified L1Trk categories (=argument of edm::Log*()) 
      # & threshold=ERROR for everything else (since WARNING limit=0).

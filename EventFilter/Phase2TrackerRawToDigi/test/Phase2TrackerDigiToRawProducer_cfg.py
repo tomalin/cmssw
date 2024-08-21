@@ -6,9 +6,9 @@ process = cms.Process("DigiToRaw")
 #process.load( "FWCore.MessageLogger.MessageLogger_cfi" )
 process.MessageLogger = cms.Service(
   "MessageLogger", 
-   destinations = cms.untracked.vstring ('jobOutput'), # Name of output file
+   destinations = cms.untracked.vstring ('cout'), # Name of output file
    categories = cms.untracked.vstring('Phase2TrackerDigiToRawProducer','Phase2TrackerDigiProducer','Phase2TrackerFEDBuffer'),
-   jobOutput = cms.untracked.PSet(
+   cout = cms.untracked.PSet(
      enableStatistics = cms.untracked.bool(True),
      # Threshold=DEBUG for specified L1Trk categories (=argument of edm::Log*()) 
      # & threshold=ERROR for everything else (since WARNING limit=0).
@@ -25,7 +25,7 @@ process.MessageLogger = cms.Service(
 
 process.options = cms.untracked.PSet( wantSummary = cms.untracked.bool(True) )
 
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(100) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(10) )
 
 # Input source
 process.source = cms.Source("PoolSource",
