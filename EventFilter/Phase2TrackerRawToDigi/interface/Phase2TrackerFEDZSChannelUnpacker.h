@@ -50,10 +50,10 @@ namespace Phase2Tracker {
       clustersLeft_ = channel.length() * 8 / clusterdatasize_;
     }
     ~Phase2TrackerFEDZSSon2SChannelUnpacker() = default;
-    inline uint8_t rawX() const { return (uint8_t)read_n_at_m_l2r(data_, 8, currentOffset_ + 4); }
+    inline uint8_t rawX() const { return (uint8_t)read_n_at_m_L2R(data_, 8, currentOffset_ + 4); }
     inline int Plane() const { return rawX() % 2; }
-    inline uint8_t rawSize() const { return (uint8_t)read_n_at_m_l2r(data_, 3, currentOffset_ + 12) + 1; }
-    inline uint8_t chipId() const { return (uint8_t)read_n_at_m_l2r(data_, 4, currentOffset_); }
+    inline uint8_t rawSize() const { return (uint8_t)read_n_at_m_L2R(data_, 3, currentOffset_ + 12) + 1; }
+    inline uint8_t chipId() const { return (uint8_t)read_n_at_m_L2R(data_, 4, currentOffset_); }
     int unMergedX() const;
     int unMergedY() const;
     inline int unMergedSize() const { return rawSize(); }
@@ -69,10 +69,10 @@ namespace Phase2Tracker {
       clustersLeft_ = channel.length() * 8 / clusterdatasize_;
     }
     ~Phase2TrackerFEDZSSonPSChannelUnpacker() = default;
-    inline uint8_t rawX() const { return (uint8_t)read_n_at_m_l2r(data_, 8, currentOffset_ + 4); }
-    inline uint8_t rawSize() const { return (uint8_t)read_n_at_m_l2r(data_, 3, currentOffset_ + 12) + 1; }
-    inline uint8_t threshold() const { return (uint8_t)read_n_at_m_l2r(data_, 1, currentOffset_ + 15); }
-    inline uint8_t chipId() const { return (uint8_t)read_n_at_m_l2r(data_, 4, currentOffset_); }
+    inline uint8_t rawX() const { return (uint8_t)read_n_at_m_L2R(data_, 8, currentOffset_ + 4); }
+    inline uint8_t rawSize() const { return (uint8_t)read_n_at_m_L2R(data_, 3, currentOffset_ + 12) + 1; }
+    inline uint8_t threshold() const { return (uint8_t)read_n_at_m_L2R(data_, 1, currentOffset_ + 15); }
+    inline uint8_t chipId() const { return (uint8_t)read_n_at_m_L2R(data_, 4, currentOffset_); }
     int unMergedX() const;
     int unMergedY() const;
     inline int unMergedSize() const { return rawSize(); }
@@ -88,10 +88,10 @@ namespace Phase2Tracker {
       clustersLeft_ = channel.length() * 8 / clusterdatasize_;
     }
     ~Phase2TrackerFEDZSPonPSChannelUnpacker() = default;
-    inline uint8_t rawX() const { return (uint8_t)read_n_at_m_l2r(data_, 7, currentOffset_ + 4); }
-    inline uint8_t rawY() const { return (uint8_t)read_n_at_m_l2r(data_, 4, currentOffset_ + 11); }
-    inline uint8_t rawSize() const { return (uint8_t)read_n_at_m_l2r(data_, 3, currentOffset_ + 15) + 1; }
-    inline uint8_t chipId() const { return (uint8_t)read_n_at_m_l2r(data_, 4, currentOffset_); }
+    inline uint8_t rawX() const { return (uint8_t)read_n_at_m_L2R(data_, 7, currentOffset_ + 4); }
+    inline uint8_t rawY() const { return (uint8_t)read_n_at_m_L2R(data_, 4, currentOffset_ + 11); }
+    inline uint8_t rawSize() const { return (uint8_t)read_n_at_m_L2R(data_, 3, currentOffset_ + 15) + 1; }
+    inline uint8_t chipId() const { return (uint8_t)read_n_at_m_L2R(data_, 4, currentOffset_); }
     int unMergedX() const;
     int unMergedY() const;
     inline int unMergedSize() const { return rawSize(); }

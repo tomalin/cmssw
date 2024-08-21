@@ -53,7 +53,7 @@ namespace Phase2Tracker {
         if (*FE_it) {
           // read first FEDCH_PER_FEUNIT bits to know which CBC are on
           uint16_t cbc_status =
-              static_cast<uint32_t>(read_n_at_m_l2r(payloadPointer_, 16, offsetBeginningOfChannel * 8));
+              static_cast<uint32_t>(read_n_at_m_L2R(payloadPointer_, 16, offsetBeginningOfChannel * 8));
           // uint16_t cbc_status = static_cast<uint16_t>(*(payloadPointer_ + (offsetBeginningOfChannel^7))<<8);
           // cbc_status         += static_cast<uint16_t>(*(payloadPointer_ + ((offsetBeginningOfChannel + 1)^7)));
           // advance pointer by FEDCH_PER_FEUNIT bits
@@ -74,16 +74,17 @@ namespace Phase2Tracker {
           channels_.insert(channels_.end(), size_t(MAX_CBC_PER_FE), Phase2TrackerFEDChannel(payloadPointer_, 0, 0));
         }
       }
+      
     } else if (readoutMode() == READOUT_MODE_ZERO_SUPPRESSED) {
       // save current bit index
       int bitOffset = 0;
-      // loop on FE
+      // loop on enabled stacked modules.
       for (FE_it = status.begin(); FE_it < status.end(); FE_it++) {
         if (*FE_it) {
           // Read FE header :
           // FE header is : P/S (1bit) + #P clusters (5bits if P, 0 otherwise) + #S clusters (5bits)
           // read type of module (2S/PS)
-          uint8_t mod_type = static_cast<uint8_t>(read_n_at_m_l2r(payloadPointer_, 1, bitOffset));
+          uint8_t mod_type = static_cast<uint8_t>(read_n_at_m_L2R(payloadPointer_, 1, bitOffset));
           // note the index of the next channel to fill
           int ichan = channels_.size();
           // add the proper number of channels for this FE (4 channels per module, 1 for each side of S and P)
@@ -93,52 +94,60 @@ namespace Phase2Tracker {
           int s_cluster_size_bits = Son2S_CLUSTER_SIZE_BITS;
           if (mod_type == 0) {
             num_p = 0;
-            num_s = static_cast<uint8_t>(read_n_at_m_l2r(payloadPointer_, 6, bitOffset + 1));
+            num_s = static_cast<uint8_t>(read_n_at_m_L2R(payloadPointer_, 6, bitOffset + 1));
             bitOffset += 7;
           } else {
             // s clusters on PS modules have an extra MIPS threshold bit
             s_cluster_size_bits = SonPS_CLUSTER_SIZE_BITS;
-            num_p = static_cast<uint8_t>(read_n_at_m_l2r(payloadPointer_, 6, bitOffset + 1));
-            num_s = static_cast<uint8_t>(read_n_at_m_l2r(payloadPointer_, 6, bitOffset + 7));
+            num_p = static_cast<uint8_t>(read_n_at_m_L2R(payloadPointer_, 6, bitOffset + 1));
+            num_s = static_cast<uint8_t>(read_n_at_m_L2R(payloadPointer_, 6, bitOffset + 7));
             bitOffset += 13;
           }
-          // start indexing
+          // Loop over clusters in this stacked module, for p & s type sensors,
           int iCBC;
           int iOffset = bitOffset;
+          // 0 = P-left-end, 1 = P-right-end, 2 = S-left-end, 3 = S-right-end
           int chansize_0 = 0, chansize_1 = 0, chansize_2 = 0, chansize_3 = 0;
           for (int i = 0; i < num_p; i++) {
-            iCBC = static_cast<uint8_t>(read_n_at_m_l2r(payloadPointer_, 4, bitOffset + 14));
-            if (iCBC < 8) {
-              chansize_2 += P_CLUSTER_SIZE_BITS;
+            iCBC = static_cast<uint8_t>(read_n_at_m_L2R(payloadPointer_, 4, bitOffset + 14));
+            if (iCBC < 8) { // which end of stacked module
+              chansize_0 += P_CLUSTER_SIZE_BITS;
             } else {
-              chansize_3 += P_CLUSTER_SIZE_BITS;
+              chansize_1 += P_CLUSTER_SIZE_BITS;
             }
             bitOffset += P_CLUSTER_SIZE_BITS;
           }
           for (int i = 0; i < num_s; i++) {
-            iCBC = static_cast<uint8_t>(read_n_at_m_l2r(payloadPointer_, 4, bitOffset + 12));
+            iCBC = static_cast<uint8_t>(read_n_at_m_L2R(payloadPointer_, 4, bitOffset + 12));
             if (iCBC < 8) {
-              chansize_0 += s_cluster_size_bits;
+              chansize_2 += s_cluster_size_bits;
             } else {
-              chansize_1 += s_cluster_size_bits;
+              chansize_3 += s_cluster_size_bits;
             }
             bitOffset += s_cluster_size_bits;
           }
-          // P plane
+          
+          // N.B. Raw2Digi conversion assumes digis on any given DTC input
+          // channel sorted (by StackedDigi::operator<()) in order
+          // lower-left, lower-right, upper-left, upper-right sensor.
+          // where lower is p-type in PS modules.
+          // This order assumed here.
+          
+          // p sensor (left & right end) -- size 0 if 2S module.
           channels_[ichan + 0] =
-              Phase2TrackerFEDChannel(payloadPointer_, iOffset / 8, (chansize_2 + 8 - 1) / 8, iOffset % 8, DET_PonPS);
-          iOffset += chansize_2;
+              Phase2TrackerFEDChannel(payloadPointer_, iOffset / 8, (chansize_0 + 8 - 1) / 8, iOffset % 8, DET_PonPS);
+          iOffset += chansize_0;
           channels_[ichan + 1] =
-              Phase2TrackerFEDChannel(payloadPointer_, iOffset / 8, (chansize_3 + 8 - 1) / 8, iOffset % 8, DET_PonPS);
-          iOffset += chansize_3;
-          // S plane
+              Phase2TrackerFEDChannel(payloadPointer_, iOffset / 8, (chansize_1 + 8 - 1) / 8, iOffset % 8, DET_PonPS);
+          iOffset += chansize_1;
+          // s sensor (left & right end)
           DET_TYPE det_type = (mod_type == 0) ? DET_Son2S : DET_SonPS;
           channels_[ichan + 2] =
-              Phase2TrackerFEDChannel(payloadPointer_, iOffset / 8, (chansize_0 + 8 - 1) / 8, iOffset % 8, det_type);
-          iOffset += chansize_0;
+              Phase2TrackerFEDChannel(payloadPointer_, iOffset / 8, (chansize_2 + 8 - 1) / 8, iOffset % 8, det_type);
+          iOffset += chansize_2;
           channels_[ichan + 3] =
-              Phase2TrackerFEDChannel(payloadPointer_, iOffset / 8, (chansize_1 + 8 - 1) / 8, iOffset % 8, det_type);
-          iOffset += chansize_1;
+              Phase2TrackerFEDChannel(payloadPointer_, iOffset / 8, (chansize_3 + 8 - 1) / 8, iOffset % 8, det_type);
+          iOffset += chansize_3;
         } else {
           // else fill with null channels, don't advance the channel pointer
           channels_.insert(channels_.end(), size_t(4), Phase2TrackerFEDChannel(payloadPointer_, 0, 0));
@@ -147,7 +156,12 @@ namespace Phase2Tracker {
       // compute byte offset for payload
       offsetBeginningOfChannel = (bitOffset + 8 - 1) / 8;
     }
+    
     // round the offset to the next 64 bits word
+    // IAN: No option to switch off reading stub data???
+    //         Why doesn't this crash if it's not present?
+    std::cout<<"READING STUB DATA???"<<std::endl;
+    
     int words64 = (offsetBeginningOfChannel + 8 - 1) / 8;  // size in 64 bit
     int payloadSize = words64 * 8;                         // size in bytes
     triggerPointer_ = (uint8_t*)(payloadPointer_ + payloadSize);
@@ -159,8 +173,8 @@ namespace Phase2Tracker {
       // if the current fronted is on, fill channels and advance pointer to end of channel
       if (*FE_it) {
         // read FE stub header (6 bits)
-        uint8_t nstubs = static_cast<uint8_t>(read_n_at_m_l2r(triggerPointer_, 5, bitOffset));
-        uint8_t modtype = static_cast<uint8_t>(read_n_at_m_l2r(triggerPointer_, 1, bitOffset + 5));
+        uint8_t nstubs = static_cast<uint8_t>(read_n_at_m_L2R(triggerPointer_, 5, bitOffset));
+        uint8_t modtype = static_cast<uint8_t>(read_n_at_m_L2R(triggerPointer_, 1, bitOffset + 5));
         bitOffset += 6;
         // set module type and data size
         DET_TYPE det_type = (modtype == 0) ? DET_Son2S : DET_PonPS;

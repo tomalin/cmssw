@@ -6,6 +6,10 @@
 #include "EventFilter/Phase2TrackerRawToDigi/interface/utils.h"
 #include <cstdint>
 
+// Each DTC input channel organised by raw2digi conversion into 4
+// sub-channels, for p-left, p-right, s-left, s-right sensors. This class
+// represents a single one of these sub-channels.
+
 namespace Phase2Tracker {
 
   class Phase2TrackerFEDBuffer;

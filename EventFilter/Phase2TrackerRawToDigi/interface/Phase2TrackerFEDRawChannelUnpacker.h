@@ -15,7 +15,7 @@ namespace Phase2Tracker {
     Phase2TrackerFEDRawChannelUnpacker(const Phase2TrackerFEDChannel& channel);
     uint8_t stripIndex() const { return currentStrip_; }
     bool stripOn() const {
-      return bool(static_cast<uint8_t>(read_n_at_m_l2r(data_, 1, currentOffset_ * 8 + currentStrip_)));
+      return bool(static_cast<uint8_t>(read_n_at_m_L2R(data_, 1, currentOffset_ * 8 + currentStrip_)));
     }
     bool hasData() const { return valuesLeft_; }
     Phase2TrackerFEDRawChannelUnpacker& operator++();

@@ -45,7 +45,7 @@ namespace Phase2Tracker {
   }
 
   uint8_t Phase2TrackerFEDHeader::dataFormatVersion() {
-    uint8_t Version = static_cast<uint8_t>(read_n_at_m(headercopy_, VERSION_L, VERSION_S));
+    uint8_t Version = static_cast<uint8_t>(read_n_at_m_R2L(headercopy_, VERSION_L, VERSION_S));
     if (Version != 2) {
       std::ostringstream ss;
       ss << "[Phase2Tracker::Phase2TrackerFEDHeader::" << __func__ << "] \n";
@@ -59,16 +59,16 @@ namespace Phase2Tracker {
   }
 
   void Phase2TrackerFEDHeader::setDataFormatVersion(uint8_t version) {
-    write_n_at_m(headercopy_, VERSION_L, VERSION_S, (uint64_t)version);
+    write_n_at_m_R2L(headercopy_, VERSION_L, VERSION_S, (uint64_t)version);
   }
 
   void Phase2TrackerFEDHeader::setDebugMode(READ_MODE mode) {
-    write_n_at_m(headercopy_, HEADER_FORMAT_L, HEADER_FORMAT_S, (uint64_t)mode);
+    write_n_at_m_R2L(headercopy_, HEADER_FORMAT_L, HEADER_FORMAT_S, (uint64_t)mode);
   }
 
   READ_MODE Phase2TrackerFEDHeader::debugMode() {
     // Read debugMode in Tracker Header
-    uint8_t mode = static_cast<uint8_t>(read_n_at_m(headercopy_, HEADER_FORMAT_L, HEADER_FORMAT_S));
+    uint8_t mode = static_cast<uint8_t>(read_n_at_m_R2L(headercopy_, HEADER_FORMAT_L, HEADER_FORMAT_S));
 
     switch (mode) {  // check if it is one of correct modes
       case SUMMARY:
@@ -91,11 +91,11 @@ namespace Phase2Tracker {
   }
 
   void Phase2TrackerFEDHeader::setEventType(uint8_t event_type) {
-    write_n_at_m(headercopy_, EVENT_TYPE_L, EVENT_TYPE_S, (uint64_t)event_type);
+    write_n_at_m_R2L(headercopy_, EVENT_TYPE_L, EVENT_TYPE_S, (uint64_t)event_type);
   }
 
   uint8_t Phase2TrackerFEDHeader::eventType() const {
-    return static_cast<uint8_t>(read_n_at_m(headercopy_, EVENT_TYPE_L, EVENT_TYPE_S));
+    return static_cast<uint8_t>(read_n_at_m_R2L(headercopy_, EVENT_TYPE_L, EVENT_TYPE_S));
   }
 
   // decode eventType_. Read: readoutMode, conditionData and dataType
@@ -125,16 +125,16 @@ namespace Phase2Tracker {
   uint8_t Phase2TrackerFEDHeader::dataType() const { return static_cast<uint8_t>(eventType_) & 0x1; }
 
   void Phase2TrackerFEDHeader::setGlibStatusCode(uint64_t status_code) {
-    write_n_at_m(headercopy_, GLIB_STATUS_L, GLIB_STATUS_S, status_code);
+    write_n_at_m_R2L(headercopy_, GLIB_STATUS_L, GLIB_STATUS_S, status_code);
   }
 
   uint64_t Phase2TrackerFEDHeader::glibStatusCode() const {
-    return read_n_at_m(headercopy_, GLIB_STATUS_L, GLIB_STATUS_S);
+    return read_n_at_m_R2L(headercopy_, GLIB_STATUS_L, GLIB_STATUS_S);
   }
 
   std::vector<bool> Phase2TrackerFEDHeader::frontendStatus() const {
-    uint8_t fe_status_0 = (uint8_t)(read_n_at_m(headercopy_, 8, 0));
-    uint64_t fe_status_1 = (uint64_t)(read_n_at_m(headercopy_, 64, 64));
+    uint8_t fe_status_0 = (uint8_t)(read_n_at_m_R2L(headercopy_, 8, 0));
+    uint64_t fe_status_1 = (uint64_t)(read_n_at_m_R2L(headercopy_, 64, 64));
     std::vector<bool> status(72, false);
     for (int i = 0; i < 72; i++) {
       if (i < 64) {
@@ -161,17 +161,17 @@ namespace Phase2Tracker {
         }
       }
     }
-    write_n_at_m(headercopy_, 8, 0, (uint64_t)fe_status_0);
-    write_n_at_m(headercopy_, 64, 64, (uint64_t)fe_status_1);
+    write_n_at_m_R2L(headercopy_, 8, 0, (uint64_t)fe_status_0);
+    write_n_at_m_R2L(headercopy_, 64, 64, (uint64_t)fe_status_1);
   }
 
   void Phase2TrackerFEDHeader::setNumberOfCBC(uint16_t num) {
-    write_n_at_m(headercopy_, CBC_NUMBER_L, CBC_NUMBER_S, (uint64_t)num);
+    write_n_at_m_R2L(headercopy_, CBC_NUMBER_L, CBC_NUMBER_S, (uint64_t)num);
   }
 
   uint16_t Phase2TrackerFEDHeader::numberOfCBC() const {
     if (debugMode_ != SUMMARY) {
-      return static_cast<uint16_t>(read_n_at_m(headercopy_, CBC_NUMBER_L, CBC_NUMBER_S));
+      return static_cast<uint16_t>(read_n_at_m_R2L(headercopy_, CBC_NUMBER_L, CBC_NUMBER_S));
     } else {
       return 0;
     }
@@ -213,17 +213,17 @@ namespace Phase2Tracker {
           if (readoutMode_ == READOUT_MODE_ZERO_SUPPRESSED) {
             for (uint8_t i = 0; i < ncbc; i++) {
               fe_debug_status.setChipDebugStatus(i,
-                                                 static_cast<uint32_t>(read_n_at_m_l2r(
+                                                 static_cast<uint32_t>(read_n_at_m_L2R(
                                                      trackerHeader_, CBC_STATUS_SIZE_DEBUG_SPARSIFIED, offset_bits)));
               offset_bits += CBC_STATUS_SIZE_DEBUG_SPARSIFIED;
             }
             fe_debug_status.setFEDebugStatus(
-                static_cast<uint32_t>(read_n_at_m_l2r(trackerHeader_, FE_STATUS_SIZE_DEBUG_SPARSIFIED, offset_bits)));
+                static_cast<uint32_t>(read_n_at_m_L2R(trackerHeader_, FE_STATUS_SIZE_DEBUG_SPARSIFIED, offset_bits)));
             offset_bits += FE_STATUS_SIZE_DEBUG_SPARSIFIED;
           } else if (readoutMode_ == READOUT_MODE_PROC_RAW) {
             for (uint8_t i = 0; i < ncbc; i++) {
               fe_debug_status.setChipDebugStatus(i,
-                                                 static_cast<uint32_t>(read_n_at_m_l2r(
+                                                 static_cast<uint32_t>(read_n_at_m_L2R(
                                                      trackerHeader_, CBC_STATUS_SIZE_DEBUG_UNSPARSIFIED, offset_bits)));
               offset_bits += CBC_STATUS_SIZE_DEBUG_UNSPARSIFIED;
             }
@@ -231,7 +231,7 @@ namespace Phase2Tracker {
         } else if (debugMode_ == CBC_ERROR) {
           for (uint8_t i = 0; i < ncbc; i++) {
             fe_debug_status.setChipDebugStatus(
-                i, static_cast<uint32_t>(read_n_at_m_l2r(trackerHeader_, CBC_STATUS_SIZE_ERROR, offset_bits)));
+                i, static_cast<uint32_t>(read_n_at_m_L2R(trackerHeader_, CBC_STATUS_SIZE_ERROR, offset_bits)));
             offset_bits += CBC_STATUS_SIZE_ERROR;
           }
         }

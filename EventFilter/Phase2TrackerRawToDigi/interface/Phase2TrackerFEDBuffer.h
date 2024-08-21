@@ -9,6 +9,8 @@
 #include <vector>
 #include <map>
 
+// Represents raw data from single DTC.
+
 namespace Phase2Tracker {
 
   class Phase2TrackerFEDBuffer {
@@ -25,6 +27,9 @@ namespace Phase2Tracker {
     FEDDAQTrailer daqTrailer() const { return daqTrailer_; }
     size_t bufferSize() const { return bufferSize_; }
     Phase2TrackerFEDHeader trackerHeader() const { return trackerHeader_; }
+    // Each DTC input channel organised by raw2digi conversion into 4
+    // channels, for p-left, p-right, s-left, s-right sensors, so argument here
+    // in range 0 to 4*72-1.
     const Phase2TrackerFEDChannel& channel(const uint32_t internalPhase2TrackerFEDChannelNum) const {
       return channels_[internalPhase2TrackerFEDChannelNum];
     }

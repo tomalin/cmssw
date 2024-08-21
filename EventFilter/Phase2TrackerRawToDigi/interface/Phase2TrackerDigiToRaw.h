@@ -32,11 +32,11 @@ namespace Phase2Tracker {
     // write FE Header to buffer
     void writeFeHeaderSparsified(std::vector<uint64_t>&, uint64_t&, int, int, int);
     // determine if a P or S cluster should be written
-    void writeCluster(std::vector<uint64_t>&, uint64_t&, stackedDigi);
+    void writeCluster(std::vector<uint64_t>&, uint64_t&, StackedDigi);
     // write S cluster to buffer
-    void writeSCluster(std::vector<uint64_t>&, uint64_t&, stackedDigi, bool);
+    void writeSCluster(std::vector<uint64_t>&, uint64_t&, StackedDigi, bool);
     // write P cluster to buffer
-    void writePCluster(std::vector<uint64_t>&, uint64_t&, stackedDigi);
+    void writePCluster(std::vector<uint64_t>&, uint64_t&, StackedDigi);
 
   private:
     // data you get from outside

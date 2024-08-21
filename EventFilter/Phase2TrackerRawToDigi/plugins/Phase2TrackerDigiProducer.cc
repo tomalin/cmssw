@@ -259,6 +259,7 @@ namespace Phase2Tracker {
             ichan++;
           }
         }  // end loop on channels
+
       } else if (tr_header.getReadoutMode() == READOUT_MODE_ZERO_SUPPRESSED) {
         // loop channels
         int ichan = 0;
@@ -278,6 +279,13 @@ namespace Phase2Tracker {
           std::vector<Phase2TrackerCluster1D> clustersTop;
           std::vector<Phase2TrackerCluster1D> clustersBottom;
           // looping over concentrators (4 virtual concentrators in case of PS)
+          // N.B. Digis in each DTC input channel assumed ordered in raw data
+          // by lower-left, lower-right, upper-left, upper-right sensor.
+          // During Raw2Digi conversion, Phase2TrackerFEDBuffer profits
+          // from this to create 4 channels corresponding to
+          // p-left, p-right, s-left, s-right for each DTC input.
+          // (p-left & p-right have zero clusters for 2S module).
+
           for (int iconc = 0; iconc < 4; iconc++) {
             const Phase2TrackerFEDChannel& channel = buffer.channel(ichan);
             if (channel.length() > 0) {
@@ -295,18 +303,13 @@ namespace Phase2Tracker {
                   ss << std::dec << " Son2S " << (int)unpacker.clusterX() << " " << (int)unpacker.clusterSize() << " "
                      << (int)unpacker.chipId() << endl;
 #endif
-                  // BODGE FIX from Ian -- Must understand why strip number wrong!
-                  if (unpacker.clusterX() < 1016) {
-                    if (unpacker.rawX() % 2) {
-                       clustersTop.push_back(
-                          Phase2TrackerCluster1D(unpacker.clusterX(), unpacker.clusterY(), unpacker.clusterSize()));
-                    } else {
-                       clustersBottom.push_back(
-                          Phase2TrackerCluster1D(unpacker.clusterX(), unpacker.clusterY(), unpacker.clusterSize()));
-                    }
+                  if (unpacker.rawX() % 2) {
+                     clustersTop.push_back(
+                        Phase2TrackerCluster1D(unpacker.clusterX(), unpacker.clusterY(), unpacker.clusterSize()));
                   } else {
-                      edm::LogError("Phase2TrackerDigiProducer")<<"MESS UP 2S: STRIP NUMBER OUT OF RANGE  "<<unpacker.clusterX()<<" "<<unpacker.clusterY()<<" "<<unpacker.clusterSize();
-                  }                  
+                     clustersBottom.push_back(
+                        Phase2TrackerCluster1D(unpacker.clusterX(), unpacker.clusterY(), unpacker.clusterSize()));
+                  }
                   unpacker++;
                 }
               } else if (channel.dettype() == DET_SonPS) {
@@ -317,13 +320,8 @@ namespace Phase2Tracker {
                   ss << std::dec << " SonPS " << (int)unpacker.clusterX() << " " << (int)unpacker.clusterSize() << " "
                      << (int)unpacker.chipId() << endl;
 #endif
-                  // BODGE FIX from Ian -- Must understand why strip number wrong!
-                  if (unpacker.clusterX() < 1016) {
-                     clustersTop.push_back(Phase2TrackerCluster1D(
-                      unpacker.clusterX(), unpacker.clusterY(), unpacker.clusterSize(), unpacker.threshold()));
-                  } else {
-                     edm::LogError("Phase2TrackerDigiProducer")<<"MESS UP SonPS: STRIP NUMBER OUT OF RANGE  "<<unpacker.clusterX()<<" "<<unpacker.clusterY()<<" "<<unpacker.clusterSize();
-                  }
+                  clustersTop.push_back(Phase2TrackerCluster1D(
+                  unpacker.clusterX(), unpacker.clusterY(), unpacker.clusterSize(), unpacker.threshold()));
                   unpacker++;
                 }
               } else if (channel.dettype() == DET_PonPS) {
@@ -334,13 +332,8 @@ namespace Phase2Tracker {
                   ss << std::dec << " PonPS " << (int)unpacker.clusterX() << " " << (int)unpacker.clusterSize() << " "
                      << (int)unpacker.clusterY() << " " << (int)unpacker.chipId() << endl;
 #endif
-                  // BODGE FIX from Ian -- Must understand why strip number wrong!
-                  if (unpacker.clusterX() < 1016) {
-                     clustersBottom.push_back(
-                      Phase2TrackerCluster1D(unpacker.clusterX(), unpacker.clusterY(), unpacker.clusterSize()));
-                  } else {
-                     edm::LogError("Phase2TrackerDigiProducer")<<"MESS UP PonPS: STRIP NUMBER OUT OF RANGE  "<<unpacker.clusterX()<<" "<<unpacker.clusterY()<<" "<<unpacker.clusterSize();
-                  }
+                  clustersBottom.push_back(
+                  Phase2TrackerCluster1D(unpacker.clusterX(), unpacker.clusterY(), unpacker.clusterSize()));
                   unpacker++;
                 }
               }
