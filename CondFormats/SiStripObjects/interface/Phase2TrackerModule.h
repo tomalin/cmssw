@@ -39,7 +39,7 @@ public:
   // getters
   uint32_t getDetid() const { return detid_; }
   uint32_t getGbtid() const { return gbtid_; }
-  std::pair<unsigned int, unsigned int> getCh() const { return ch_; }
+  std::pair<unsigned int, unsigned int> getCh() const { return ch_; } // DTC ID & input channel.
   uint32_t getCoolingLoop() const { return coolingLoop_; }
   uint32_t getPowerGroup() const { return powerGroup_; }
   ModuleTypes getModuleType() const { return moduleType_; }
