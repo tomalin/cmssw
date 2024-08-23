@@ -177,10 +177,10 @@ namespace Phase2Tracker {
       // - write the digis
       std::vector<StackedDigi>::iterator its;
       //std::cout<<"=== CHECK ORDER === "<<std::endl;
-      //for (its = digs_stack.begin(); its != digs_stack.end(); its++) {
+      for (its = digs_stack.begin(); its != digs_stack.end(); its++) {
       //  std::cout<<"    CLUS "<<" "<<its->getModuleType()<<" "<<its->getSide()<<" "<<its->getLayer()<<" "<<its->getChipId()<<std::endl;
-      //  writeCluster(fedbuffer, bitindex, *its);
-      //}
+         writeCluster(fedbuffer, bitindex, *its);
+      }
 
     }  // end stack (FE) loop
     // add daq trailer
