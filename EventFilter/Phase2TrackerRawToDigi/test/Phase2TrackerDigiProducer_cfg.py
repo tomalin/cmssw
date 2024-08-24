@@ -37,7 +37,7 @@ process.source = cms.Source("PoolSource",
 
 # use this to use hand-made testbeam cabling
 #process.load('TestbeamCabling_cfi')
-process.load('DummyCablingTxt_cfi')
+process.load('P2TrackerCabling_cfi')
 
 process.load('Configuration.Geometry.GeometryExtended2026D98Reco_cff')
 # process.load('EventFilter.Phase2TrackerRawToDigi.Phase2TrackerCommissioningDigiProducer_cfi')
@@ -64,7 +64,7 @@ process.GlobalTag = GlobalTag(process.GlobalTag, '140X_mcRun4_realistic_v3', '')
 
 process.out = cms.OutputModule(
     "PoolOutputModule",
-    fileName = cms.untracked.string('rawtodigi.root'),
+    fileName = cms.untracked.string('raw2digi.root'),
 )
 
 # process.p = cms.Path(process.Phase2TrackerDigiProducer*process.Phase2TrackerCommissioningDigiProducer)
