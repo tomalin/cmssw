@@ -51,64 +51,66 @@ namespace Phase2Tracker {
     FedHeader_.setEventType((uint8_t)0x04);
   }
 
-void Phase2TrackerDigiToRaw::buildFEDBuffers(std::unique_ptr<FEDRawDataCollection>& rcollection) {
-  // store all clusters for a given fedid
-  std::vector<DetSetVecClus::const_iterator> cluss_t;
-  // note which DTC input channels have one cluster in this event
-  std::vector<bool> festatus(72, false);
+  void Phase2TrackerDigiToRaw::buildFEDBuffers(std::unique_ptr<FEDRawDataCollection>& rcollection) {
+    // store all clusters for a given fedid
+    std::vector<DetSetVecClus::const_iterator> cluss_t;
+    // note which DTC input channels have one cluster in this event
+    std::vector<bool> festatus(72, false);
 
-  std::vector<int> feds = cabling_->listFeds();    
-  for (int fedIndex : feds) {   // Loop over DTCs
-    for (int ife = 0; ife < MAX_FE_PER_FED; ife++) { // Loop inputs of this DTC
+    std::vector<int> feds = cabling_->listFeds();
+    for (int fedIndex : feds) {                         // Loop over DTCs
+      for (int ife = 0; ife < MAX_FE_PER_FED; ife++) {  // Loop inputs of this DTC
 
-      // get detid from cabling
-      const Phase2TrackerModule& mod = cabling_->findFedCh(std::make_pair(fedIndex, ife));
-      if (not mod.connected()) continue; // Skip unconnected DTC inputs.         
-      int detidStack= mod.getDetid();         
-      // detid of first plane is detid of module + 1
-      // FIXME (when it is implemented) : we should get this from the topology / geometry
-      unsigned int detid = stackMap_[detidStack].first;
-      // end of fixme
-        
-      DetSetVecClus::const_iterator cluss;
-      cluss = clusshandle_->find(detid);
-      if (cluss != clusshandle_->end()) {
-        cluss_t.push_back(cluss);
-        festatus[ife] = true;
+        // get detid from cabling
+        const Phase2TrackerModule& mod = cabling_->findFedCh(std::make_pair(fedIndex, ife));
+        if (not mod.connected())
+          continue;  // Skip unconnected DTC inputs.
+        int detidStack = mod.getDetid();
+        // detid of first plane is detid of module + 1
+        // FIXME (when it is implemented) : we should get this from the topology / geometry
+        unsigned int detid = stackMap_[detidStack].first;
+        // end of fixme
+
+        DetSetVecClus::const_iterator cluss;
+        cluss = clusshandle_->find(detid);
+        if (cluss != clusshandle_->end()) {
+          cluss_t.push_back(cluss);
+          festatus[ife] = true;
+        }
+        cluss = clusshandle_->find(tTopo_->partnerDetId(detid));
+        if (cluss != clusshandle_->end()) {
+          cluss_t.push_back(cluss);
+          festatus[ife] = true;
+        }
+        std::cout << "FED CHANNEL " << fedIndex << " " << ife << " " << festatus[ife] << std::endl;
       }
-      cluss = clusshandle_->find(tTopo_->partnerDetId(detid));
-      if (cluss != clusshandle_->end()) {
-        cluss_t.push_back(cluss);
-        festatus[ife] = true;
-      }
-      std::cout<<"FED CHANNEL "<<fedIndex<<" "<<ife<<" "<<festatus[ife]<<std::endl;
+      // save buffer
+      FedHeader_.setFrontendStatus(festatus);
+
+      // Write to buffer the clusters of one DTC.
+      // The vector cluss_t contains one entry for each silicon sensor that contains at
+      // least one cluster and is connected to this DTC.
+      std::vector<uint64_t> fedbuffer = makeBuffer(cluss_t);
+
+      std::cout << "BUFFERMADE " << cluss_t.size() << " ";
+      for (bool aa : festatus)
+        std::cout << aa;
+      std::cout << std::endl;
+
+      FEDRawData& frd = rcollection->FEDData(fedIndex);
+      int size = fedbuffer.size() * 8;
+      frd.resize(size);
+      memcpy(frd.data(), &fedbuffer[0], size);
+      festatus.assign(72, false);
+      cluss_t.clear();
     }
-    // save buffer
-    FedHeader_.setFrontendStatus(festatus);
-      
-    // Write to buffer the clusters of one DTC.
-    // The vector cluss_t contains one entry for each silicon sensor that contains at
-    // least one cluster and is connected to this DTC.
-    std::vector<uint64_t> fedbuffer = makeBuffer(cluss_t);
-      
-    std::cout<<"BUFFERMADE "<<cluss_t.size()<<" ";
-    for (bool aa : festatus) std::cout<<aa;
-    std::cout<<std::endl;
-      
-    FEDRawData& frd = rcollection->FEDData(fedIndex);
-    int size = fedbuffer.size() * 8;
-    frd.resize(size);
-    memcpy(frd.data(), &fedbuffer[0], size);
-    festatus.assign(72, false);
-    cluss_t.clear();
   }
-}
 
   // Build buffer for a single DTC, consisting of FEDDAQHeader & FEDHeader,
   // and for each DTC input channel that receives at least one cluster,
   // a FEDHeaderSparsified and all that channels clusters.
 
-std::vector<uint64_t> Phase2TrackerDigiToRaw::makeBuffer(std::vector<DetSetVecClus::const_iterator> cluss) {
+  std::vector<uint64_t> Phase2TrackerDigiToRaw::makeBuffer(std::vector<DetSetVecClus::const_iterator> cluss) {
     uint64_t bitindex = 0;
     int moduletype = -1;
     // IAN note: buffer size continually increased. Very inefficient. Should calculate size of buffer. Added call to reserve() to help.
@@ -167,7 +169,7 @@ std::vector<uint64_t> Phase2TrackerDigiToRaw::makeBuffer(std::vector<DetSetVecCl
 
       // IAN: This writes one header per active DTC input channel,
       // rather than one per CIC chip, as in latest DTC DAQ format.
-      
+
       std::sort(digs_stack.begin(), digs_stack.end());
       std::pair<int, int> nums = SortExpandAndLimitClusters(digs_stack, MAX_NS, MAX_NP);
       // - write appropriate header
@@ -176,8 +178,8 @@ std::vector<uint64_t> Phase2TrackerDigiToRaw::makeBuffer(std::vector<DetSetVecCl
       std::vector<StackedClus>::iterator its;
       //std::cout<<"=== CHECK ORDER === "<<std::endl;
       for (its = digs_stack.begin(); its != digs_stack.end(); its++) {
-      //  std::cout<<"    CLUS "<<" "<<its->getModuleType()<<" "<<its->getSide()<<" "<<its->getLayer()<<" "<<its->getChipId()<<std::endl;
-         writeCluster(fedbuffer, bitindex, *its);
+        //  std::cout<<"    CLUS "<<" "<<its->getModuleType()<<" "<<its->getSide()<<" "<<its->getLayer()<<" "<<its->getChipId()<<std::endl;
+        writeCluster(fedbuffer, bitindex, *its);
       }
 
     }  // end stack (FE) loop
@@ -204,7 +206,9 @@ std::vector<uint64_t> Phase2TrackerDigiToRaw::makeBuffer(std::vector<DetSetVecCl
   }
 
   // layer = 0 for inner, 1 for outer (-1 if irrelevant)
-  void Phase2TrackerDigiToRaw::writeCluster(std::vector<uint64_t>& buffer, uint64_t& bitpointer, const StackedClus& digi) {
+  void Phase2TrackerDigiToRaw::writeCluster(std::vector<uint64_t>& buffer,
+                                            uint64_t& bitpointer,
+                                            const StackedClus& digi) {
     if (digi.getModuleType() == 0) {
       // 2S module
       writeSCluster(buffer, bitpointer, digi, false);
@@ -244,7 +248,9 @@ std::vector<uint64_t> Phase2TrackerDigiToRaw::makeBuffer(std::vector<DetSetVecCl
 #endif
   }
 
-  void Phase2TrackerDigiToRaw::writePCluster(std::vector<uint64_t>& buffer, uint64_t& bitpointer, const StackedClus& digi) {
+  void Phase2TrackerDigiToRaw::writePCluster(std::vector<uint64_t>& buffer,
+                                             uint64_t& bitpointer,
+                                             const StackedClus& digi) {
     uint32_t pcluster = (digi.getChipId() & 0x0F) << 14;
     pcluster |= (digi.getRawX() & 0x7F) << 7;
     pcluster |= (digi.getRawY() & 0x0F) << 3;

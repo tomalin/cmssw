@@ -118,7 +118,7 @@ namespace Phase2Tracker {
 
     // Analyze strip tracker FED buffers in data
     std::vector<int> feds = cabling_->listFeds();
-    
+
     // Loop over DTCs
     for (int fedIndex : feds) {
       const FEDRawData& fed = buffers->FEDData(fedIndex);
@@ -197,17 +197,18 @@ namespace Phase2Tracker {
       if (tr_header.getReadoutMode() == READOUT_MODE_PROC_RAW) {
         // N.B. RAW mode only exists for 2S modules.
         // loop channels (one per CBC chip)
-        int ichan = -1; 
+        int ichan = -1;
         for (int ife = 0; ife < MAX_FE_PER_FED; ife++) {
           for (int icbc = 0; icbc < MAX_CBC_PER_FE; icbc++) {
             ichan++;
             const Phase2TrackerFEDChannel& channel = buffer.channel(ichan);
-            if (channel.length() > 0) { // DTC input channel active
+            if (channel.length() > 0) {  // DTC input channel active
               // get detid from cabling
               const Phase2TrackerModule& mod = cabling_->findFedCh(std::make_pair(fedIndex, ife));
-              if (not mod.connected()) throw cms::Exception("Phase2TrackerDigiProducer")<<"Active DTC input is disconnected in cabling map";
+              if (not mod.connected())
+                throw cms::Exception("Phase2TrackerDigiProducer") << "Active DTC input is disconnected in cabling map";
               uint32_t detid = mod.getDetid();
-              
+
 #ifdef EDM_ML_DEBUG
               ss << dec << " id from cabling : " << detid << endl;
               ss << dec << " reading channel : " << icbc << " on FE " << ife;
@@ -222,14 +223,15 @@ namespace Phase2Tracker {
 
               // IAN: Think this sets y-position (=iside) and avoids x-overflow.
               // (CBC <= 8 is y-end 0 & >=8 is y-end 1 of module).
-              int icbc8= icbc%(MAX_CBC_PER_FE/2);
-              int iside = icbc/(MAX_CBC_PER_FE/2);
-              
+              int icbc8 = icbc % (MAX_CBC_PER_FE / 2);
+              int iside = icbc / (MAX_CBC_PER_FE / 2);
+
               Phase2TrackerFEDRawChannelUnpacker unpacker = Phase2TrackerFEDRawChannelUnpacker(channel);
               while (unpacker.hasData()) {
                 if (unpacker.stripOn()) {
-                    if (unpacker.stripIndex() % 2) {
-                    stripsTop.push_back(Phase2TrackerDigi((int)(STRIPS_PER_CBC * icbc8 + unpacker.stripIndex()) / 2, iside));
+                  if (unpacker.stripIndex() % 2) {
+                    stripsTop.push_back(
+                        Phase2TrackerDigi((int)(STRIPS_PER_CBC * icbc8 + unpacker.stripIndex()) / 2, iside));
 #ifdef EDM_ML_DEBUG
                     ss << "t";
 #endif
@@ -272,12 +274,12 @@ namespace Phase2Tracker {
       } else if (tr_header.getReadoutMode() == READOUT_MODE_ZERO_SUPPRESSED) {
         // loop channels (4 per DTC input channel)
         int ichan = -1;
-        for (int ife = 0; ife < MAX_FE_PER_FED; ife++) { // Loop inputs of this DTC
+        for (int ife = 0; ife < MAX_FE_PER_FED; ife++) {  // Loop inputs of this DTC
 
           // container for this module's digis
           std::vector<Phase2TrackerCluster1D> clustersTop;
           std::vector<Phase2TrackerCluster1D> clustersBottom;
-          
+
           // loop over concentrators (4 virtual concentrators in case of PS)
           // N.B. Digis in each DTC input channel assumed ordered in raw data
           // by lower-left, lower-right, upper-left, upper-right sensor.
@@ -286,19 +288,24 @@ namespace Phase2Tracker {
           // p-left, p-right, s-left, s-right for each DTC input.
           // (p-left & p-right have zero clusters for 2S module).
 
-          uint32_t detid = 0;          
+          uint32_t detid = 0;
           for (int iconc = 0; iconc < 4; iconc++) {
             ichan++;
             const Phase2TrackerFEDChannel& channel = buffer.channel(ichan);
-            std::cout<<"CHANNEL LENGTH "<<fedIndex<<" "<<ife<<" "<<ichan<<" "<<channel.length()<<" "<< tr_header.frontendStatus()[ife]<<std::endl;
-            if (channel.length() > 0) { // DTC input channel active
+            std::cout << "CHANNEL LENGTH " << fedIndex << " " << ife << " " << ichan << " " << channel.length() << " "
+                      << tr_header.frontendStatus()[ife] << std::endl;
+            if (channel.length() > 0) {  // DTC input channel active
 
               // get detid from cabling
               const Phase2TrackerModule& mod = cabling_->findFedCh(std::make_pair(fedIndex, ife));
-              if (not mod.connected()) throw cms::Exception("Phase2TrackerDigiProducer")<<"Active DTC input is disconnected in cabling map";
+              if (not mod.connected())
+                throw cms::Exception("Phase2TrackerDigiProducer") << "Active DTC input is disconnected in cabling map";
               detid = mod.getDetid();
 
-              std::cout<<"FED channel "<<fedIndex<<" "<<ife<<" "<<iconc<<" ichan "<<ichan<<" detid "<<(uint64_t)detid<<" length "<<channel.length()<<" "<<" status "<< tr_header.frontendStatus()[ife]<<" type "<<int(channel.dettype())<<std::endl;
+              std::cout << "FED channel " << fedIndex << " " << ife << " " << iconc << " ichan " << ichan << " detid "
+                        << (uint64_t)detid << " length " << channel.length() << " "
+                        << " status " << tr_header.frontendStatus()[ife] << " type " << int(channel.dettype())
+                        << std::endl;
 
 #ifdef EDM_ML_DEBUG
               ss << dec << " id from cabling : " << detid << endl;
@@ -315,10 +322,10 @@ namespace Phase2Tracker {
                      << (int)unpacker.chipId() << endl;
 #endif
                   if (unpacker.rawX() % 2) {
-                     clustersTop.push_back(
+                    clustersTop.push_back(
                         Phase2TrackerCluster1D(unpacker.clusterX(), unpacker.clusterY(), unpacker.clusterSize()));
                   } else {
-                     clustersBottom.push_back(
+                    clustersBottom.push_back(
                         Phase2TrackerCluster1D(unpacker.clusterX(), unpacker.clusterY(), unpacker.clusterSize()));
                   }
                   unpacker++;
@@ -326,25 +333,25 @@ namespace Phase2Tracker {
               } else if (channel.dettype() == DET_SonPS) {
                 Phase2TrackerFEDZSSonPSChannelUnpacker unpacker = Phase2TrackerFEDZSSonPSChannelUnpacker(channel);
                 while (unpacker.hasData()) {
-                   unpacker.Merge();
+                  unpacker.Merge();
 #ifdef EDM_ML_DEBUG
                   ss << std::dec << " SonPS " << (int)unpacker.clusterX() << " " << (int)unpacker.clusterSize() << " "
                      << (int)unpacker.chipId() << endl;
 #endif
                   clustersTop.push_back(Phase2TrackerCluster1D(
-                  unpacker.clusterX(), unpacker.clusterY(), unpacker.clusterSize(), unpacker.threshold()));
+                      unpacker.clusterX(), unpacker.clusterY(), unpacker.clusterSize(), unpacker.threshold()));
                   unpacker++;
                 }
               } else if (channel.dettype() == DET_PonPS) {
                 Phase2TrackerFEDZSPonPSChannelUnpacker unpacker = Phase2TrackerFEDZSPonPSChannelUnpacker(channel);
                 while (unpacker.hasData()) {
-                   unpacker.Merge();
+                  unpacker.Merge();
 #ifdef EDM_ML_DEBUG
                   ss << std::dec << " PonPS " << (int)unpacker.clusterX() << " " << (int)unpacker.clusterSize() << " "
                      << (int)unpacker.clusterY() << " " << (int)unpacker.chipId() << endl;
 #endif
                   clustersBottom.push_back(
-                  Phase2TrackerCluster1D(unpacker.clusterX(), unpacker.clusterY(), unpacker.clusterSize()));
+                      Phase2TrackerCluster1D(unpacker.clusterX(), unpacker.clusterY(), unpacker.clusterSize()));
                   unpacker++;
                 }
               }
@@ -355,30 +362,30 @@ namespace Phase2Tracker {
               ss.str("");
 #endif
             }  // end reading left/right/top/bottom sensor.
-          }  // end loop on channels
+          }    // end loop on channels
 
           // Store clusters of this FED.
           std::vector<Phase2TrackerCluster1D>::iterator it;
-            {
-              // outer detid is defined as inner detid + 1 or module detid + 2
-              edmNew::DetSetVector<Phase2TrackerCluster1D>::FastFiller spct(*clusters, stackMap_[detid].second);
-              for (it = clustersTop.begin(); it != clustersTop.end(); it++) {
-                spct.push_back(*it);
-              }
+          {
+            // outer detid is defined as inner detid + 1 or module detid + 2
+            edmNew::DetSetVector<Phase2TrackerCluster1D>::FastFiller spct(*clusters, stackMap_[detid].second);
+            for (it = clustersTop.begin(); it != clustersTop.end(); it++) {
+              spct.push_back(*it);
             }
-            {
-              edmNew::DetSetVector<Phase2TrackerCluster1D>::FastFiller spcb(*clusters, stackMap_[detid].first);
-              for (it = clustersBottom.begin(); it != clustersBottom.end(); it++) {
-                spcb.push_back(*it);
-              }
+          }
+          {
+            edmNew::DetSetVector<Phase2TrackerCluster1D>::FastFiller spcb(*clusters, stackMap_[detid].first);
+            for (it = clustersBottom.begin(); it != clustersBottom.end(); it++) {
+              spcb.push_back(*it);
             }
-          
+          }
+
         }  // end loop on FE
       } else {
-        throw cms::Exception("Phase2TrackerDigiProducer")<<"Unknown readout mode";
+        throw cms::Exception("Phase2TrackerDigiProducer") << "Unknown readout mode";
       }
     }
-    
+
     // Sort and store Unsparsified digis. N.B. Here, digis are from all DTCs.
     std::sort(proc_work_registry_.begin(), proc_work_registry_.end());
     std::vector<edm::DetSet<Phase2TrackerDigi>> sorted_and_merged;

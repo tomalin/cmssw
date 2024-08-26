@@ -1,4 +1,4 @@
-#ifndef EventFilter_Phase2TrackerRawToDigi_FEDHeader_H  
+#ifndef EventFilter_Phase2TrackerRawToDigi_FEDHeader_H
 #define EventFilter_Phase2TrackerRawToDigi_FEDHeader_H
 
 #include "EventFilter/Phase2TrackerRawToDigi/interface/Phase2TrackerFEDDAQHeader.h"

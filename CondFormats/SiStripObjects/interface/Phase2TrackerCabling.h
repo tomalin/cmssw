@@ -54,7 +54,7 @@ public:
 
   // Says which of all 72 inputs of specified DTC are connected to a module.
   std::vector<bool> connectedInputs(unsigned int fedid) const;
-  
+
   // print a summary of the content
   std::string summaryDescription() const;
 
@@ -62,9 +62,8 @@ public:
   std::string description(bool compact = false) const;
 
 private:
-  
   // Dummy to represent unconnected channel.
-  Phase2TrackerModule dummyModule_ COND_TRANSIENT; 
+  Phase2TrackerModule dummyModule_ COND_TRANSIENT;
 
   // the connections
   Store connections_;

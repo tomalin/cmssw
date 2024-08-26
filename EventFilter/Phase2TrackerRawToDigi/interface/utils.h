@@ -9,7 +9,7 @@
 #include <cstring>
 #include <vector>
 #include <cassert>
-#include <iostream> // Debug
+#include <iostream>  // Debug
 #include "DataFormats/FEDRawData/interface/FEDNumbering.h"
 
 namespace Phase2Tracker {
@@ -41,7 +41,7 @@ namespace Phase2Tracker {
   static const int CBC_STATUS_SIZE_ERROR = 1;
   static const int STUBS_SIZE_2S = 16;
   static const int STUBS_SIZE_PS = 20;
-  static const bool MERGE_CLUSTERS = false; // Merge clusters during raw2digi.
+  static const bool MERGE_CLUSTERS = false;  // Merge clusters during raw2digi.
 
   // Current dataformat does not allow to know how many CBC there are per FE, set it here
   static const int CBC_PER_FE_DEBUG = 2;
@@ -237,12 +237,12 @@ namespace Phase2Tracker {
   // Within each word, the MSB is the left-hand one (and on
   // the lower line if the word extends over 2 lines).
   // A word wrapping over 2 lines goes from left-hand-side of line N to
-  // right-hand-side of line N+1. 
+  // right-hand-side of line N+1.
 
-inline uint64_t read_n_at_m_R2L(const uint8_t* buffer, int size, int pos_bit) {
+  inline uint64_t read_n_at_m_R2L(const uint8_t* buffer, int size, int pos_bit) {
     // 1) determine which 64 bit word to read
     int iword = pos_bit / 64;
-    uint64_t data = *(uint64_t*)(buffer + (iword * 8)); // LSBs
+    uint64_t data = *(uint64_t*)(buffer + (iword * 8));  // LSBs
     int start_bit = pos_bit % 64;
     data >>= start_bit;
 
@@ -250,13 +250,13 @@ inline uint64_t read_n_at_m_R2L(const uint8_t* buffer, int size, int pos_bit) {
     int bits_on_line = 64 - start_bit;
     bool lineWrap = (size > bits_on_line);
     if (lineWrap) {
-      uint64_t data_supp = *(uint64_t*)(buffer + ((iword + 1) * 8)); // MSBs
+      uint64_t data_supp = *(uint64_t*)(buffer + ((iword + 1) * 8));  // MSBs
       data |= data_supp << bits_on_line;
     }
 
     // 3) mask according to expected size
     if (size < 64) {
-      uint64_t mask = (1LL << size) - 1; 
+      uint64_t mask = (1LL << size) - 1;
       data &= mask;
     }
     return data;
@@ -271,26 +271,26 @@ inline uint64_t read_n_at_m_R2L(const uint8_t* buffer, int size, int pos_bit) {
   // Nonetheless, within each word, the MSB is the left-hand one (and on
   // the upper line if the word extends over 2 lines).
   // A word wrapping over 2 lines goes from right-hand-side of line N to
-  // left-hand-side of line N+1. 
+  // left-hand-side of line N+1.
 
-inline uint64_t read_n_at_m_L2R(const uint8_t* buffer, int size, int pos_bit) {
+  inline uint64_t read_n_at_m_L2R(const uint8_t* buffer, int size, int pos_bit) {
     int iword = pos_bit / 64;
     uint64_t data = *(uint64_t*)(buffer + (iword * 8));
     int start_bit = pos_bit % 64;
     int bits_remaining_on_line = 64 - (start_bit + size);
-    bool lineWrap = (bits_remaining_on_line < 0);    
+    bool lineWrap = (bits_remaining_on_line < 0);
 
     if (not lineWrap) {
       data >>= bits_remaining_on_line;
     } else {
-      int bits_on_next_line = - bits_remaining_on_line; 
-      data <<= bits_on_next_line; // MSBs
-      uint64_t data_supp = *(uint64_t*)(buffer + ((iword + 1) * 8)); // LSBs
+      int bits_on_next_line = -bits_remaining_on_line;
+      data <<= bits_on_next_line;                                     // MSBs
+      uint64_t data_supp = *(uint64_t*)(buffer + ((iword + 1) * 8));  // LSBs
       data |= data_supp >> (64 - bits_on_next_line);
     }
 
     if (size < 64) {
-      uint64_t mask = (1LL << size) - 1; 
+      uint64_t mask = (1LL << size) - 1;
       data &= mask;
     }
     return data;
@@ -300,7 +300,7 @@ inline uint64_t read_n_at_m_L2R(const uint8_t* buffer, int size, int pos_bit) {
   // The bit count pos_bit increases right-to-left inside each line,
   // as explained in comment for read_n_at_m_R2L.
 
-inline void write_n_at_m_R2L(uint8_t* buffer, int size, int pos_bit, uint64_t data) {
+  inline void write_n_at_m_R2L(uint8_t* buffer, int size, int pos_bit, uint64_t data) {
     //assert (size <= 64 && pos_bit <=64);
     // mask unwanted bits
     uint64_t mask = (size < 64) ? (1LL << size) - 1 : static_cast<uint64_t>(-1);
@@ -310,18 +310,18 @@ inline void write_n_at_m_R2L(uint8_t* buffer, int size, int pos_bit, uint64_t da
     uint64_t curr_data = *(uint64_t*)(buffer + (iword * 8));
     // Set bits to be written to first to zero then to desired value.
     curr_data &= ~(mask << start_bit);
-    curr_data |=  (data << start_bit);
-    memcpy(buffer + (iword * 8), &curr_data, 8); // LSBs
-    
+    curr_data |= (data << start_bit);
+    memcpy(buffer + (iword * 8), &curr_data, 8);  // LSBs
+
     int bits_on_line = 64 - start_bit;
     bool lineWrap = (size > bits_on_line);
 
     if (lineWrap) {
       // there are more bits to write
-      uint64_t data_supp = *(uint64_t*)(buffer + ((iword + 1) * 8)); 
+      uint64_t data_supp = *(uint64_t*)(buffer + ((iword + 1) * 8));
       data_supp &= ~(mask >> bits_on_line);
       data_supp |= (data >> bits_on_line);
-      memcpy(buffer + ((iword + 1) * 8), &data_supp, 8); // MSBs
+      memcpy(buffer + ((iword + 1) * 8), &data_supp, 8);  // MSBs
     }
   }
 
@@ -333,7 +333,7 @@ inline void write_n_at_m_R2L(uint8_t* buffer, int size, int pos_bit, uint64_t da
     //assert (size <= 64 && pos_bit <=64);
     //assert (size <= 64 && pos_bit <=128);
     // assert (size <= 64 && pos_bit <=9999);
-    assert (size <= 128 && pos_bit <=9999);
+    assert(size <= 128 && pos_bit <= 9999);
 
     // mask unwanted bits
     uint64_t mask = (size < 64) ? (1LL << size) - 1 : static_cast<uint64_t>(-1);
@@ -341,9 +341,9 @@ inline void write_n_at_m_R2L(uint8_t* buffer, int size, int pos_bit, uint64_t da
 
     int iword = pos_bit / 64;
     int start_bit = pos_bit % 64;
-    
+
     int bits_remaining_on_line = 64 - (start_bit + size);
-    bool lineWrap = (bits_remaining_on_line < 0);  
+    bool lineWrap = (bits_remaining_on_line < 0);
     uint64_t curr_data = *(uint64_t*)(buffer + (iword * 8));
 
     if (not lineWrap) {
@@ -352,13 +352,13 @@ inline void write_n_at_m_R2L(uint8_t* buffer, int size, int pos_bit, uint64_t da
       curr_data |= (data << bits_remaining_on_line);
       memcpy(buffer + (iword * 8), &curr_data, 8);
     } else {
-      int bits_on_next_line = - bits_remaining_on_line;
+      int bits_on_next_line = -bits_remaining_on_line;
       curr_data &= ~(mask >> bits_on_next_line);
       curr_data |= (data >> bits_on_next_line);
-      memcpy(buffer + (iword * 8), &curr_data, 8); // MSBs
+      memcpy(buffer + (iword * 8), &curr_data, 8);  // MSBs
 
-      int pos_bit_next_line = (iword + 1) * 64; // start of line
-      write_n_at_m_L2R(buffer, bits_on_next_line, pos_bit_next_line, data); // LSBs
+      int pos_bit_next_line = (iword + 1) * 64;                              // start of line
+      write_n_at_m_L2R(buffer, bits_on_next_line, pos_bit_next_line, data);  // LSBs
     }
   }
 
@@ -366,7 +366,7 @@ inline void write_n_at_m_R2L(uint8_t* buffer, int size, int pos_bit, uint64_t da
   // where assumed size <= 64.
   // boolean indicates if bit count pos_bit increases left to right or visa-versa.
   inline void write_n_at_m(std::vector<uint64_t>& buffer, int size, int pos_bit, uint64_t data, bool L2R = true) {
-    assert (size <= 64);
+    assert(size <= 64);
     int iword = pos_bit / 64;
     int toadd = (pos_bit + size - 1 + 64) / 64 - buffer.size();
     if (toadd > 0) {

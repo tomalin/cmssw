@@ -43,7 +43,7 @@ namespace Phase2Tracker {
   public:
     explicit Phase2TrackerHeaderProducer(const edm::ParameterSet&);
     ~Phase2TrackerHeaderProducer() override = default;
-    void beginRun(const edm::Run& run, const edm::EventSetup& es)  override;
+    void beginRun(const edm::Run& run, const edm::EventSetup& es) override;
     void produce(edm::Event& event, const edm::EventSetup& es) override;
 
   private:
@@ -52,13 +52,11 @@ namespace Phase2Tracker {
     const Phase2TrackerCabling* cabling_ = nullptr;
   };
 
-  Phase2Tracker::Phase2TrackerHeaderProducer::Phase2TrackerHeaderProducer(const edm::ParameterSet& pset) :
-    ph2CablingESToken_(esConsumes<Phase2TrackerCabling, Phase2TrackerCablingRcd, edm::Transition::BeginRun>())
-  {
+  Phase2Tracker::Phase2TrackerHeaderProducer::Phase2TrackerHeaderProducer(const edm::ParameterSet& pset)
+      : ph2CablingESToken_(esConsumes<Phase2TrackerCabling, Phase2TrackerCablingRcd, edm::Transition::BeginRun>()) {
     produces<header_map>("TrackerHeader");
     token_ = consumes<FEDRawDataCollection>(pset.getParameter<edm::InputTag>("ProductLabel"));
   }
-
 
   void Phase2TrackerHeaderProducer::beginRun(const edm::Run& run, const edm::EventSetup& es) {
     // fetch cabling from event setup
@@ -75,10 +73,9 @@ namespace Phase2Tracker {
 
     // Analyze strip tracker FED buffers in data
     std::vector<int> feds = cabling_->listFeds();
-    
+
     // Loop over DTCs
     for (int fedIndex : feds) {
-    
       const FEDRawData& fed = buffers->FEDData(fedIndex);
       if (fed.size() == 0)
         continue;

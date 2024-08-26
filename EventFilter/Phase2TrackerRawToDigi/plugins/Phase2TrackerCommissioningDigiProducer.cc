@@ -17,14 +17,14 @@
 
 namespace Phase2Tracker {
   typedef edm::DetSet<Phase2TrackerCommissioningDigi> condata_map;
-class Phase2TrackerCommissioningDigiProducer : public edm::one::EDProducer<edm::one::WatchRuns> {
+  class Phase2TrackerCommissioningDigiProducer : public edm::one::EDProducer<edm::one::WatchRuns> {
   public:
     /// constructor
     Phase2TrackerCommissioningDigiProducer(const edm::ParameterSet& pset);
     /// default constructor
     ~Phase2TrackerCommissioningDigiProducer() override = default;
-    void beginRun(const edm::Run& run, const edm::EventSetup& es)  override;
-    void endRun(const edm::Run& run, const edm::EventSetup& es)  override {}
+    void beginRun(const edm::Run& run, const edm::EventSetup& es) override;
+    void endRun(const edm::Run& run, const edm::EventSetup& es) override {}
     void produce(edm::Event& ev, const edm::EventSetup& es) override;
 
   private:
@@ -33,8 +33,8 @@ class Phase2TrackerCommissioningDigiProducer : public edm::one::EDProducer<edm::
     const Phase2TrackerCabling* cabling_ = nullptr;
   };
 
-Phase2TrackerCommissioningDigiProducer::Phase2TrackerCommissioningDigiProducer(const edm::ParameterSet& pset) :
-  ph2CablingESToken_(esConsumes<Phase2TrackerCabling, Phase2TrackerCablingRcd, edm::Transition::BeginRun>()) {
+  Phase2TrackerCommissioningDigiProducer::Phase2TrackerCommissioningDigiProducer(const edm::ParameterSet& pset)
+      : ph2CablingESToken_(esConsumes<Phase2TrackerCabling, Phase2TrackerCablingRcd, edm::Transition::BeginRun>()) {
     produces<condata_map>("ConditionData");
     token_ = consumes<FEDRawDataCollection>(pset.getParameter<edm::InputTag>("ProductLabel"));
   }
@@ -42,24 +42,21 @@ Phase2TrackerCommissioningDigiProducer::Phase2TrackerCommissioningDigiProducer(c
   void Phase2TrackerCommissioningDigiProducer::beginRun(const edm::Run& run, const edm::EventSetup& es) {
     // fetch cabling from event setup
     cabling_ = &es.getData(ph2CablingESToken_);
-}
+  }
 
-  void Phase2TrackerCommissioningDigiProducer::produce(
-                                                       edm::Event& event,
-                                                       const edm::EventSetup& es)  {
+  void Phase2TrackerCommissioningDigiProducer::produce(edm::Event& event, const edm::EventSetup& es) {
     // Retrieve FEDRawData collection
     edm::Handle<FEDRawDataCollection> buffers;
     event.getByToken(token_, buffers);
 
     // Analyze strip tracker FED buffers in data
     std::vector<int> feds = cabling_->listFeds();
-    
+
     // Loop over DTCs
     for (int fedIndex : feds) {
-
       // Check which DTC inputs are connected to a module.
-      std::vector<bool> connectedInputs = cabling_->connectedInputs(fedIndex);      
-    
+      std::vector<bool> connectedInputs = cabling_->connectedInputs(fedIndex);
+
       // reading
       const FEDRawData& fed = buffers->FEDData(fedIndex);
       if (fed.size() == 0)

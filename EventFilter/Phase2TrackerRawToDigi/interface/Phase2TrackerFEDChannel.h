@@ -1,4 +1,4 @@
-#ifndef EventFilter_Phase2TrackerRawToDigi_FEDChannel_H 
+#ifndef EventFilter_Phase2TrackerRawToDigi_FEDChannel_H
 #define EventFilter_Phase2TrackerRawToDigi_FEDChannel_H
 
 #include "EventFilter/Phase2TrackerRawToDigi/interface/Phase2TrackerFEDDAQHeader.h"
@@ -15,7 +15,7 @@ namespace Phase2Tracker {
 
   class Phase2TrackerFEDBuffer;
 
-class Phase2TrackerFEDChannel {
+  class Phase2TrackerFEDChannel {
   public:
     // Give location of FED buffer, offset to this channel & size of this channel (in bytes).
     Phase2TrackerFEDChannel(const uint8_t* const data,

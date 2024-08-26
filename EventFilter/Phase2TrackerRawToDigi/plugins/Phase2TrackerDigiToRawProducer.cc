@@ -39,7 +39,6 @@ namespace Phase2Tracker {
 
   class Phase2TrackerDigiToRawProducer : public edm::stream::EDProducer<> {
   public:
-    
     /// constructor
     Phase2TrackerDigiToRawProducer(const edm::ParameterSet& pset);
     /// default constructor

@@ -100,7 +100,7 @@ const Phase2TrackerModule& Phase2TrackerCabling::findFedCh(std::pair<unsigned in
   if (itid != fedCabling_.end() && (*itid)->getCh() == fedch) {
     return **itid;
   } else {
-    return dummyModule_; // This DTC input channel is unconnected.
+    return dummyModule_;  // This DTC input channel is unconnected.
   }
 }
 
@@ -175,7 +175,7 @@ std::vector<int> Phase2TrackerCabling::listFeds() const {
 
 std::vector<bool> Phase2TrackerCabling::connectedInputs(unsigned int fedid) const {
   std::vector<bool> inputs(72, false);
-  std::pair<unsigned int, unsigned int> fedch(fedid,0);
+  std::pair<unsigned int, unsigned int> fedch(fedid, 0);
   Cabling::const_iterator itid = std::lower_bound(fedCabling_.begin(), fedCabling_.end(), fedch, chComp);
   while (itid != fedCabling_.end() && (*itid)->getCh().first == fedid) {
     int fedCh = (*itid)->getCh().second;

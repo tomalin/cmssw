@@ -5,8 +5,10 @@
 namespace Phase2Tracker {
 
   // implementation of Phase2TrackerFEDBuffer
-Phase2TrackerFEDBuffer::Phase2TrackerFEDBuffer(const uint8_t* fedBuffer, const size_t fedBufferSize, const std::vector<bool>& connectedInputs)
-  : buffer_(fedBuffer), bufferSize_(fedBufferSize), valid_(1) {
+  Phase2TrackerFEDBuffer::Phase2TrackerFEDBuffer(const uint8_t* fedBuffer,
+                                                 const size_t fedBufferSize,
+                                                 const std::vector<bool>& connectedInputs)
+      : buffer_(fedBuffer), bufferSize_(fedBufferSize), valid_(1) {
     LogTrace("Phase2TrackerFEDBuffer") << "[Phase2Tracker::Phase2TrackerFEDBuffer::" << __func__ << "] "
                                        << "\n";
     LogTrace("Phase2TrackerFEDBuffer") << "content of buffer with size: " << int(fedBufferSize) << std::endl;
@@ -28,7 +30,7 @@ Phase2TrackerFEDBuffer::Phase2TrackerFEDBuffer(const uint8_t* fedBuffer, const s
     // get pointer to payload
     payloadPointer_ = getPointerToPayload();
     // fill list of Phase2TrackerFEDChannels and get pointers to trigger and comissioning data
-    findChannels( connectedInputs );
+    findChannels(connectedInputs);
   }
 
   Phase2TrackerFEDBuffer::~Phase2TrackerFEDBuffer() {}
@@ -47,14 +49,14 @@ Phase2TrackerFEDBuffer::Phase2TrackerFEDBuffer(const uint8_t* fedBuffer, const s
     const std::vector<bool> status = trackerHeader_.frontendStatus();
 
     if (readoutMode() == READOUT_MODE_PROC_RAW) {
-      for (int ife = 0; ife < MAX_FE_PER_FED; ife++) { // Loop inputs of one DTC
+      for (int ife = 0; ife < MAX_FE_PER_FED; ife++) {  // Loop inputs of one DTC
         // Fill channels & advance pointer to end of channel if ...
         // IAN: Need to decide if want (1) or (2) ...
         // (1) DTC input is connected to a tracker module
         // if (connectedInputs[ife]) {
         // (2) DTC input receives at least one digi in this event.
         if (status[ife]) {
-        // read CBC status bits and advance pointer to after them
+          // read CBC status bits and advance pointer to after them
           uint16_t cbc_status =
               static_cast<uint32_t>(read_n_at_m_L2R(payloadPointer_, 16, offsetBeginningOfChannel * 8));
           offsetBeginningOfChannel += MAX_CBC_PER_FE / 8;  // counts bytes
@@ -64,7 +66,7 @@ Phase2TrackerFEDBuffer::Phase2TrackerFEDBuffer(const uint8_t* fedBuffer, const s
               // Warning: STRIPS_PADDING+STRIPS_PER_CBC should always be an entire number of bytes
               channels_.push_back(Phase2TrackerFEDChannel(
                   payloadPointer_, offsetBeginningOfChannel, (STRIPS_PADDING + STRIPS_PER_CBC) / 8));
-              offsetBeginningOfChannel += (STRIPS_PADDING + STRIPS_PER_CBC) / 8; // bytes
+              offsetBeginningOfChannel += (STRIPS_PADDING + STRIPS_PER_CBC) / 8;  // bytes
             } else {
               // Dead CBC. Fill with null channel.
               channels_.push_back(Phase2TrackerFEDChannel(nullptr, 0, 0));
@@ -75,13 +77,13 @@ Phase2TrackerFEDBuffer::Phase2TrackerFEDBuffer(const uint8_t* fedBuffer, const s
           channels_.insert(channels_.end(), size_t(MAX_CBC_PER_FE), Phase2TrackerFEDChannel(nullptr, 0, 0));
         }
       }
-      
+
     } else if (readoutMode() == READOUT_MODE_ZERO_SUPPRESSED) {
       // save current bit index
       int bitOffset = 0;
 
       // loop on input channels of this DTC
-      for (int ife = 0; ife < MAX_FE_PER_FED; ife++) { // Loop inputs of one DTC
+      for (int ife = 0; ife < MAX_FE_PER_FED; ife++) {  // Loop inputs of one DTC
 
         // Fill channels & advance pointer to end of channel if ...
         // IAN: Need to decide if want (1) or (2) ...
@@ -118,7 +120,7 @@ Phase2TrackerFEDBuffer::Phase2TrackerFEDBuffer(const uint8_t* fedBuffer, const s
           int chansize_0 = 0, chansize_1 = 0, chansize_2 = 0, chansize_3 = 0;
           for (int i = 0; i < num_p; i++) {
             iCBC = static_cast<uint8_t>(read_n_at_m_L2R(payloadPointer_, 4, bitOffset + 14));
-            if (iCBC < 8) { // which end of stacked module
+            if (iCBC < 8) {  // which end of stacked module
               chansize_0 += P_CLUSTER_SIZE_BITS;
             } else {
               chansize_1 += P_CLUSTER_SIZE_BITS;
@@ -134,13 +136,13 @@ Phase2TrackerFEDBuffer::Phase2TrackerFEDBuffer(const uint8_t* fedBuffer, const s
             }
             bitOffset += s_cluster_size_bits;
           }
-          
+
           // N.B. Raw2Digi conversion assumes digis on any given DTC input
           // channel sorted (by StackedClus::operator<()) in order
           // lower-left, lower-right, upper-left, upper-right sensor.
           // where lower is p-type in PS modules.
           // This order assumed here.
-          
+
           // p sensor (left & right end) -- size 0 if 2S module.
           channels_[ichan + 0] =
               Phase2TrackerFEDChannel(payloadPointer_, iOffset / 8, (chansize_0 + 8 - 1) / 8, iOffset % 8, DET_PonPS);
@@ -164,12 +166,12 @@ Phase2TrackerFEDBuffer::Phase2TrackerFEDBuffer(const uint8_t* fedBuffer, const s
       // compute byte offset for payload
       offsetBeginningOfChannel = (bitOffset + 8 - 1) / 8;
     }
-    
+
     // round the offset to the next 64 bits word
     // IAN: No option to switch off reading stub data???
     //         Why doesn't this crash if it's not present?
-    std::cout<<"READING STUB DATA???"<<std::endl;
-    
+    std::cout << "READING STUB DATA???" << std::endl;
+
     int words64 = (offsetBeginningOfChannel + 8 - 1) / 8;  // size in 64 bit
     int payloadSize = words64 * 8;                         // size in bytes
     triggerPointer_ = (uint8_t*)(payloadPointer_ + payloadSize);
@@ -177,7 +179,7 @@ Phase2TrackerFEDBuffer::Phase2TrackerFEDBuffer(const uint8_t* fedBuffer, const s
     // register stub channels
     // save current bit index
     int bitOffset = 0;
-    for (int ife = 0; ife < MAX_FE_PER_FED; ife++) { // Loop inputs of one DTC
+    for (int ife = 0; ife < MAX_FE_PER_FED; ife++) {  // Loop inputs of one DTC
       // if the current fronted is on, fill channels and advance pointer to end of channel
       if (connectedInputs[ife]) {
         // read FE stub header (6 bits)

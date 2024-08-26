@@ -25,7 +25,7 @@ namespace Phase2Tracker {
     // merge next clusters if adjacent
     void Merge();
 
-    protected:
+  protected:
     // go to next cluster without merging adjacent clusters
     Phase2TrackerFEDZSChannelUnpacker& advance();
     // raw methods (bitwise operations)

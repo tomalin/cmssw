@@ -1,4 +1,4 @@
-#ifndef  EventFilter_Phase2TrackerRawToDigi_DigiToRaw_H 
+#ifndef EventFilter_Phase2TrackerRawToDigi_DigiToRaw_H
 #define EventFilter_Phase2TrackerRawToDigi_DigiToRaw_H
 
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
@@ -20,7 +20,6 @@ namespace Phase2Tracker {
 
   class Phase2TrackerDigiToRaw {
   public:
-
     typedef edmNew::DetSetVector<Phase2TrackerCluster1D> DetSetVecClus;
     typedef edmNew::DetSet<Phase2TrackerCluster1D> DetSetClus;
 
@@ -53,7 +52,7 @@ namespace Phase2Tracker {
     const TrackerTopology* tTopo_;
     const TrackerGeometry* tGeom_;
     std::map<int, std::pair<int, int> > stackMap_;
-    edm::Handle<DetSetVecClus > clusshandle_;
+    edm::Handle<DetSetVecClus> clusshandle_;
     int mode_;
     // headers
     FEDDAQHeader FedDaqHeader_;

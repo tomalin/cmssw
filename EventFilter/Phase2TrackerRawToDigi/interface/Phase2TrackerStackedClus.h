@@ -1,4 +1,4 @@
-#ifndef  EventFilter_Phase2TrackerRawToDigi_StackedClus_H 
+#ifndef EventFilter_Phase2TrackerRawToDigi_StackedClus_H
 #define EventFilter_Phase2TrackerRawToDigi_StackedClus_H
 
 #include "DataFormats/Phase2TrackerCluster/interface/Phase2TrackerCluster1D.h"
@@ -20,12 +20,12 @@ namespace Phase2Tracker {
     bool operator<(StackedClus) const;
     inline STACK_LAYER getLayer() const { return layer_; }
     inline int getModuleType() const { return moduletype_; }
-    inline int getRawX() const { return rawx_; } // location within single FE chip
+    inline int getRawX() const { return rawx_; }  // location within single FE chip
     inline int getRawY() const { return rawy_; }
-    inline int getDigiX() const { return digix_; } // location within sensor
+    inline int getDigiX() const { return digix_; }  // location within sensor
     inline int getDigiY() const { return digiy_; }
-    inline int getSizeX() const { return sizex_; } // cluster width
-    inline int getSide() const { return side_; } // Which end of module: 0 or 1.
+    inline int getSizeX() const { return sizex_; }  // cluster width
+    inline int getSide() const { return side_; }    // Which end of module: 0 or 1.
     inline int getThreshold() const { return threshold_; }
     // get side and type, to map to concentrators (0 = P-left, 1 = P-right, 2 = S-left, 3 = S-right)
     inline int getSideType() const { return side_ + 2 * (1 - moduletype_) + 2 * layer_ * moduletype_; }
@@ -152,8 +152,8 @@ namespace Phase2Tracker {
     }
   }
 
-// Used for sorting of StackedCluss
-bool StackedClus::operator<(const StackedClus d2) const {
+  // Used for sorting of StackedCluss
+  bool StackedClus::operator<(const StackedClus d2) const {
     // Ensures lower sensor before upper one. (lower is p-type for PS).
     if (layer_ < d2.getLayer()) {
       return true;

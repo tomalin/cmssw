@@ -33,7 +33,7 @@ namespace Phase2Tracker {
   public:
     Phase2TrackerDebugProducer(const edm::ParameterSet& pset);
     ~Phase2TrackerDebugProducer() override = default;
-    void beginRun(const edm::Run& run, const edm::EventSetup& es)  override;
+    void beginRun(const edm::Run& run, const edm::EventSetup& es) override;
     void produce(edm::Event&, const edm::EventSetup&) override;
 
   private:

@@ -16,7 +16,9 @@ namespace Phase2Tracker {
   class Phase2TrackerFEDBuffer {
   public:
     // gets data of one tracker FED to check, analyze and sort it
-    Phase2TrackerFEDBuffer(const uint8_t* fedBuffer, const size_t fedBufferSize, const std::vector<bool>& connectedInputs);
+    Phase2TrackerFEDBuffer(const uint8_t* fedBuffer,
+                           const size_t fedBufferSize,
+                           const std::vector<bool>& connectedInputs);
     ~Phase2TrackerFEDBuffer();
 
     //dump buffer to stream
@@ -58,9 +60,8 @@ namespace Phase2Tracker {
     inline const uint8_t* getPointerToTriggerData() const { return triggerPointer_; }
 
   private:
+    void findChannels(const std::vector<bool>& connectedInputs);
 
-    void findChannels(const std::vector<bool>& connectedInputs);    
-    
   private:
     const uint8_t* buffer_;
     const size_t bufferSize_;

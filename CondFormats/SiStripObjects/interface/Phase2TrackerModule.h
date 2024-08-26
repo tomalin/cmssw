@@ -37,10 +37,10 @@ public:
   void setI2cDevices(const std::vector<unsigned int>& i2cd) { i2cDevices_ = i2cd; }
 
   // getters
-  bool connected() const {return (moduleType_ != DUMMY);}
+  bool connected() const { return (moduleType_ != DUMMY); }
   uint32_t getDetid() const { return detid_; }
   uint32_t getGbtid() const { return gbtid_; }
-  std::pair<unsigned int, unsigned int> getCh() const { return ch_; } // DTC ID & input channel.
+  std::pair<unsigned int, unsigned int> getCh() const { return ch_; }  // DTC ID & input channel.
   uint32_t getCoolingLoop() const { return coolingLoop_; }
   uint32_t getPowerGroup() const { return powerGroup_; }
   ModuleTypes getModuleType() const { return moduleType_; }

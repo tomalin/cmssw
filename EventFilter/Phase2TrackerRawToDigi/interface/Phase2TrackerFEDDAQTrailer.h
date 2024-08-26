@@ -1,4 +1,4 @@
-#ifndef EventFilter_Phase2TrackerRawToDigi_FEDDAQTrailer_H 
+#ifndef EventFilter_Phase2TrackerRawToDigi_FEDDAQTrailer_H
 #define EventFilter_Phase2TrackerRawToDigi_FEDDAQTrailer_H
 
 #include <cstring>

@@ -93,7 +93,7 @@ namespace Phase2Tracker {
 
     // Analyze strip tracker FED buffers in data
     std::vector<int> feds = cabling_->listFeds();
-    
+
     // Loop over DTCs
     for (int fedIndex : feds) {
       const FEDRawData& fed = buffers->FEDData(fedIndex);
