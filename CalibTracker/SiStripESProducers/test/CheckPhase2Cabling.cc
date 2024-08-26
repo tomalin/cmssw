@@ -43,12 +43,12 @@
 class CheckPhase2Cabling : public edm::one::EDAnalyzer<> {
 public:
   explicit CheckPhase2Cabling(const edm::ParameterSet&);
-  ~CheckPhase2Cabling();
+  ~CheckPhase2Cabling() override;
 
   static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
 
 private:
-  virtual void analyze(const edm::Event&, const edm::EventSetup&);
+  void analyze(const edm::Event&, const edm::EventSetup&) override;
 
   // ----------member data ---------------------------
   const edm::ESGetToken<Phase2TrackerCabling, Phase2TrackerCablingRcd> cablingToken_;
@@ -85,12 +85,12 @@ void CheckPhase2Cabling::analyze(const edm::Event& iEvent, const edm::EventSetup
   // look at one subset (based on cooling)
   Phase2TrackerCabling coolingLoop = cablingHandle->filterByCoolingLine(0);
   std::cout << "Subset in cooling line 0:" << std::endl;
-  std::cout << coolingLoop.description(1) << std::endl;
+  std::cout << coolingLoop.description(true) << std::endl;
 
   // look at one subset (based on power)
   Phase2TrackerCabling powerGroup = cablingHandle->filterByPowerGroup(1);
   std::cout << "Subset in power group 1:" << std::endl;
-  std::cout << powerGroup.description(1) << std::endl;
+  std::cout << powerGroup.description(true) << std::endl;
 }
 
 // ------------ method fills 'descriptions' with the allowed parameters for the module  ------------

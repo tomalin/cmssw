@@ -41,7 +41,7 @@ public:
   typedef std::map<uint16_t, Channels> ChannelsMap;
 
   Phase2TrackerFEDTestAnalyzer(const edm::ParameterSet&);
-  ~Phase2TrackerFEDTestAnalyzer() {}
+  ~Phase2TrackerFEDTestAnalyzer() override {}
 
   void beginJob() override {}
   void beginRun(const edm::Run& iRun, const edm::EventSetup& iSetup) override;
@@ -89,7 +89,7 @@ void Phase2TrackerFEDTestAnalyzer::analyze(const edm::Event& event, const edm::E
     // Check which DTC inputs are connected to a module.
     vector<bool> connectedInputs = cabling_->connectedInputs(fedIndex);
     // construct buffer
-    Phase2Tracker::Phase2TrackerFEDBuffer* buffer = 0;
+    Phase2Tracker::Phase2TrackerFEDBuffer* buffer = nullptr;
     buffer = new Phase2Tracker::Phase2TrackerFEDBuffer(fed.data(), fed.size(), connectedInputs);
 
     LOGPRINT << " -------------------------------------------- ";
