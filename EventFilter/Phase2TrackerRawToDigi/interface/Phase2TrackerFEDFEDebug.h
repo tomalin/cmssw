@@ -1,6 +1,5 @@
-
-#ifndef EventFilter_Phase2TrackerRawToDigi_Phase2TrackerPhase2TrackerFEDFEDebug_H  // {
-#define EventFilter_Phase2TrackerRawToDigi_Phase2TrackerPhase2TrackerFEDFEDebug_H
+#ifndef EventFilter_Phase2TrackerRawToDigi_FEDFEDebug_H
+#define EventFilter_Phase2TrackerRawToDigi_FEDFEDebug_H
 
 #include "EventFilter/Phase2TrackerRawToDigi/interface/utils.h"
 #include <stdint.h>

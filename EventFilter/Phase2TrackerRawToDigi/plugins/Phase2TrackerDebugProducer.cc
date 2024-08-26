@@ -33,8 +33,8 @@ namespace Phase2Tracker {
   public:
     Phase2TrackerDebugProducer(const edm::ParameterSet& pset);
     ~Phase2TrackerDebugProducer() override = default;
-    virtual void beginRun(edm::Run const&, edm::EventSetup const&);
-    virtual void produce(edm::Event&, const edm::EventSetup&) override;
+    void beginRun(const edm::Run& run, const edm::EventSetup& es)  override;
+    void produce(edm::Event&, const edm::EventSetup&) override;
 
   private:
     const edm::ESGetToken<Phase2TrackerCabling, Phase2TrackerCablingRcd> ph2CablingESToken_;
@@ -51,7 +51,7 @@ namespace Phase2Tracker {
     token_ = consumes<FEDRawDataCollection>(pset.getParameter<edm::InputTag>("ProductLabel"));
   }
 
-  void Phase2TrackerDebugProducer::beginRun(edm::Run const& run, edm::EventSetup const& es) {
+  void Phase2TrackerDebugProducer::beginRun(const edm::Run& run, const edm::EventSetup& es) {
     cabling_ = &es.getData(ph2CablingESToken_);
   }
 
@@ -65,16 +65,20 @@ namespace Phase2Tracker {
     // Analyze strip tracker FED buffers in data
     std::vector<int> feds = cabling_->listFeds();
     std::vector<int>::iterator fedIndex;
-    for (fedIndex = feds.begin(); fedIndex != feds.end(); ++fedIndex) {
-      const FEDRawData& fed = buffers->FEDData(*fedIndex);
+
+    // Loop over DTCs
+    for (int fedIndex : feds) {
+      const FEDRawData& fed = buffers->FEDData(fedIndex);
       if (fed.size() == 0)
         continue;
+      // Check which DTC inputs are connected to a module.
+      std::vector<bool> connectedInputs = cabling_->connectedInputs(fedIndex);
       // construct buffer
-      Phase2Tracker::Phase2TrackerFEDBuffer buffer(fed.data(), fed.size());
+      Phase2Tracker::Phase2TrackerFEDBuffer buffer(fed.data(), fed.size(), connectedInputs);
       // Skip FED if buffer is not a valid tracker FEDBuffer
       if (buffer.isValid() == 0) {
         LogTrace("Phase2TrackerDebugProducer") << "[Phase2Tracker::Phase2TrackerDebugProducer::" << __func__ << "]: \n";
-        LogTrace("Phase2TrackerDebugProducer") << "Skipping invalid buffer for FED nr " << *fedIndex << endl;
+        LogTrace("Phase2TrackerDebugProducer") << "Skipping invalid buffer for FED nr " << fedIndex << endl;
         continue;
       }
       std::vector<Phase2TrackerFEDFEDebug> all_fed_debugs = buffer.trackerHeader().CBCStatus();
@@ -83,11 +87,13 @@ namespace Phase2Tracker {
       for (int ife = 0; ife < MAX_FE_PER_FED; ife++) {
         if (fe_status[ife]) {
           // get fedid from cabling
-          const Phase2TrackerModule mod = cabling_->findFedCh(std::make_pair(*fedIndex, ife));
-          uint32_t detid = mod.getDetid();
-          // fill one debug using fastfiller
-          edmNew::DetSetVector<Phase2TrackerFEDFEDebug>::FastFiller spct(*debugs, detid);
-          spct.push_back(all_fed_debugs[ife]);
+          const Phase2TrackerModule mod = cabling_->findFedCh(std::make_pair(fedIndex, ife));
+          if (mod.connected()) {
+            uint32_t detid = mod.getDetid();
+            // fill one debug using fastfiller
+            edmNew::DetSetVector<Phase2TrackerFEDFEDebug>::FastFiller spct(*debugs, detid);
+            spct.push_back(all_fed_debugs[ife]);
+          }
         }
       }  // end loop on FE
     }    // en loop on FED

@@ -154,10 +154,16 @@ namespace Phase2Tracker {
     for (sti = status.begin(); sti < status.end(); sti++) {
       if (*sti) {
         index = (sti - status.begin());
-        if (index < 8) {
-          fe_status_0 |= 1LL << (index);
+        // IAN. Think this was significant bug. (Compare to read function). Now fixed.
+        //if (index < 8) {
+        //  fe_status_0 |= 1LL << (index);
+        //} else {
+        //  fe_status_1 |= 1LL << (index - 8);
+        //}
+        if (index < 64) {
+          fe_status_1 |= 1LL << (index);
         } else {
-          fe_status_1 |= 1LL << (index - 8);
+          fe_status_0 |= 1LL << (index - 64);
         }
       }
     }

@@ -19,7 +19,6 @@
 #include "FWCore/Framework/interface/stream/EDProducer.h"
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/EventSetup.h"
-#include "CondFormats/DataRecord/interface/Phase2TrackerCablingRcd.h"
 #include "Geometry/TrackerGeometryBuilder/interface/TrackerGeometry.h"
 #include "Geometry/Records/interface/TrackerDigiGeometryRecord.h"
 #include "DataFormats/TrackerCommon/interface/TrackerTopology.h"
@@ -36,7 +35,7 @@ namespace Phase2Tracker {
     Phase2TrackerDigiProducer(const edm::ParameterSet& pset);
     /// default constructor
     ~Phase2TrackerDigiProducer() override = default;
-    void beginRun(edm::Run const&, edm::EventSetup const&) override;
+    void beginRun(const edm::Run&, const edm::EventSetup&) override;
     void produce(edm::Event&, const edm::EventSetup&) override;
 
   private:
@@ -78,14 +77,13 @@ namespace Phase2Tracker {
 
   Phase2TrackerDigiProducer::Phase2TrackerDigiProducer(const edm::ParameterSet& pset)
       : ph2CablingESToken_(esConsumes<Phase2TrackerCabling, Phase2TrackerCablingRcd, edm::Transition::BeginRun>()),
-        //       : ph2CablingESToken_(esConsumes()),
         geomToken_(esConsumes<TrackerGeometry, TrackerDigiGeometryRecord, edm::Transition::BeginRun>()),
         topoToken_(esConsumes<TrackerTopology, TrackerTopologyRcd, edm::Transition::BeginRun>()),
         token_(consumes<FEDRawDataCollection>(pset.getParameter<edm::InputTag>("ProductLabel"))),
         putToken_(produces<edm::DetSetVector<Phase2TrackerDigi>>("Unsparsified")),
         putTokenSparsified_(produces<edmNew::DetSetVector<Phase2TrackerCluster1D>>("Sparsified")) {}
 
-  void Phase2TrackerDigiProducer::beginRun(edm::Run const& run, edm::EventSetup const& es) {
+  void Phase2TrackerDigiProducer::beginRun(const edm::Run& run, const edm::EventSetup& es) {
     // fetch cabling from event setup
     cabling_ = &es.getData(ph2CablingESToken_);
 
@@ -112,7 +110,6 @@ namespace Phase2Tracker {
     std::vector<Registry> proc_work_registry_;
     std::vector<Phase2TrackerDigi> proc_work_digis_;
 
-    // NEW
     auto clusters = std::make_unique<edmNew::DetSetVector<Phase2TrackerCluster1D>>();
 
     // Retrieve FEDRawData collection
@@ -121,14 +118,16 @@ namespace Phase2Tracker {
 
     // Analyze strip tracker FED buffers in data
     std::vector<int> feds = cabling_->listFeds();
-    // Fix from Ian
-    //for (size_t fedIndex = Phase2Tracker::FED_ID_MIN; fedIndex <= Phase2Tracker::CMS_FED_ID_MAX; ++fedIndex) {
+    
+    // Loop over DTCs
     for (int fedIndex : feds) {
       const FEDRawData& fed = buffers->FEDData(fedIndex);
       if (fed.size() == 0)
         continue;
+      // Check which DTC inputs are connected to a module.
+      std::vector<bool> connectedInputs = cabling_->connectedInputs(fedIndex);
       // construct buffer
-      Phase2Tracker::Phase2TrackerFEDBuffer buffer(fed.data(), fed.size());
+      Phase2Tracker::Phase2TrackerFEDBuffer buffer(fed.data(), fed.size(), connectedInputs);
       // Skip FED if buffer is not a valid tracker FEDBuffer
       if (buffer.isValid() == 0) {
         LogTrace("Phase2TrackerDigiProducer") << "[Phase2Tracker::Phase2TrackerDigiProducer::" << __func__ << "]: \n";
@@ -142,7 +141,7 @@ namespace Phase2Tracker {
       ss << " buffer debug ------------------------------- " << endl;
       ss << " -------------------------------------------- " << endl;
       ss << " buffer size : " << buffer.bufferSize() << endl;
-      ss << " fed id      : " << *fedIndex << endl;
+      ss << " fed id      : " << fedIndex << endl;
       ss << " -------------------------------------------- " << endl;
       ss << " tracker header debug ------------------------" << endl;
       ss << " -------------------------------------------- " << endl;
@@ -194,16 +193,21 @@ namespace Phase2Tracker {
       ss << " -------------------------------------------- " << endl;
 #endif
       // check readout mode
+      //std::cout<<"READOUT MODE "<<(tr_header.getReadoutMode() == READOUT_MODE_PROC_RAW) <<" "<<(tr_header.getReadoutMode() == READOUT_MODE_ZERO_SUPPRESSED) <<std::endl;
       if (tr_header.getReadoutMode() == READOUT_MODE_PROC_RAW) {
-        // loop channels
-        int ichan = 0;
+        // N.B. RAW mode only exists for 2S modules.
+        // loop channels (one per CBC chip)
+        int ichan = -1; 
         for (int ife = 0; ife < MAX_FE_PER_FED; ife++) {
           for (int icbc = 0; icbc < MAX_CBC_PER_FE; icbc++) {
+            ichan++;
             const Phase2TrackerFEDChannel& channel = buffer.channel(ichan);
-            if (channel.length() > 0) {
+            if (channel.length() > 0) { // DTC input channel active
               // get detid from cabling
-              const Phase2TrackerModule mod = cabling_->findFedCh(std::make_pair(fedIndex, ife));
+              const Phase2TrackerModule& mod = cabling_->findFedCh(std::make_pair(fedIndex, ife));
+              if (not mod.connected()) throw cms::Exception("Phase2TrackerDigiProducer")<<"Active DTC input is disconnected in cabling map";
               uint32_t detid = mod.getDetid();
+              
 #ifdef EDM_ML_DEBUG
               ss << dec << " id from cabling : " << detid << endl;
               ss << dec << " reading channel : " << icbc << " on FE " << ife;
@@ -215,17 +219,23 @@ namespace Phase2Tracker {
 
               // unpacking data
               // TODO : set Y position in digi as a function of the side of the CBC
+
+              // IAN: Think this sets y-position (=iside) and avoids x-overflow.
+              // (CBC <= 8 is y-end 0 & >=8 is y-end 1 of module).
+              int icbc8= icbc%(MAX_CBC_PER_FE/2);
+              int iside = icbc/(MAX_CBC_PER_FE/2);
+              
               Phase2TrackerFEDRawChannelUnpacker unpacker = Phase2TrackerFEDRawChannelUnpacker(channel);
               while (unpacker.hasData()) {
                 if (unpacker.stripOn()) {
-                  if (unpacker.stripIndex() % 2) {
-                    stripsTop.push_back(Phase2TrackerDigi((int)(STRIPS_PER_CBC * icbc + unpacker.stripIndex()) / 2, 0));
+                    if (unpacker.stripIndex() % 2) {
+                    stripsTop.push_back(Phase2TrackerDigi((int)(STRIPS_PER_CBC * icbc8 + unpacker.stripIndex()) / 2, iside));
 #ifdef EDM_ML_DEBUG
                     ss << "t";
 #endif
                   } else {
                     stripsBottom.push_back(
-                        Phase2TrackerDigi((int)(STRIPS_PER_CBC * icbc + unpacker.stripIndex()) / 2, 0));
+                        Phase2TrackerDigi((int)(STRIPS_PER_CBC * icbc8 + unpacker.stripIndex()) / 2, iside));
 #ifdef EDM_ML_DEBUG
                     ss << "b";
 #endif
@@ -256,29 +266,19 @@ namespace Phase2Tracker {
               proc_work_registry_.push_back(regItemBottom);
               proc_work_digis_.insert(proc_work_digis_.end(), stripsBottom.begin(), stripsBottom.end());
             }
-            ichan++;
           }
         }  // end loop on channels
 
       } else if (tr_header.getReadoutMode() == READOUT_MODE_ZERO_SUPPRESSED) {
-        // loop channels
-        int ichan = 0;
-        for (int ife = 0; ife < MAX_FE_PER_FED; ife++) {
-          // get fedid from cabling
-          // BODGE FIX from Ian: this crashed, as it assumes all FED input channels are connected to a module. Can we find prettier solution?
-          uint32_t detid = 0;
-          try {
-             const Phase2TrackerModule mod = cabling_->findFedCh(std::make_pair(fedIndex, ife));
-             detid = mod.getDetid();
-          }
-          catch (...) {
-            edm::LogWarning("Phase2TrackerDigiProducer")<<"FED with unconnected input channel found, making code unhappy "<<fedIndex<<" "<<ife;
-          }
+        // loop channels (4 per DTC input channel)
+        int ichan = -1;
+        for (int ife = 0; ife < MAX_FE_PER_FED; ife++) { // Loop inputs of this DTC
 
           // container for this module's digis
           std::vector<Phase2TrackerCluster1D> clustersTop;
           std::vector<Phase2TrackerCluster1D> clustersBottom;
-          // looping over concentrators (4 virtual concentrators in case of PS)
+          
+          // loop over concentrators (4 virtual concentrators in case of PS)
           // N.B. Digis in each DTC input channel assumed ordered in raw data
           // by lower-left, lower-right, upper-left, upper-right sensor.
           // During Raw2Digi conversion, Phase2TrackerFEDBuffer profits
@@ -286,9 +286,20 @@ namespace Phase2Tracker {
           // p-left, p-right, s-left, s-right for each DTC input.
           // (p-left & p-right have zero clusters for 2S module).
 
+          uint32_t detid = 0;          
           for (int iconc = 0; iconc < 4; iconc++) {
+            ichan++;
             const Phase2TrackerFEDChannel& channel = buffer.channel(ichan);
-            if (channel.length() > 0) {
+            std::cout<<"CHANNEL LENGTH "<<fedIndex<<" "<<ife<<" "<<ichan<<" "<<channel.length()<<" "<< tr_header.frontendStatus()[ife]<<std::endl;
+            if (channel.length() > 0) { // DTC input channel active
+
+              // get detid from cabling
+              const Phase2TrackerModule& mod = cabling_->findFedCh(std::make_pair(fedIndex, ife));
+              if (not mod.connected()) throw cms::Exception("Phase2TrackerDigiProducer")<<"Active DTC input is disconnected in cabling map";
+              detid = mod.getDetid();
+
+              std::cout<<"FED channel "<<fedIndex<<" "<<ife<<" "<<iconc<<" ichan "<<ichan<<" detid "<<(uint64_t)detid<<" length "<<channel.length()<<" "<<" status "<< tr_header.frontendStatus()[ife]<<" type "<<int(channel.dettype())<<std::endl;
+
 #ifdef EDM_ML_DEBUG
               ss << dec << " id from cabling : " << detid << endl;
               ss << dec << " reading channel : " << iconc << " on FE " << ife;
@@ -315,7 +326,7 @@ namespace Phase2Tracker {
               } else if (channel.dettype() == DET_SonPS) {
                 Phase2TrackerFEDZSSonPSChannelUnpacker unpacker = Phase2TrackerFEDZSSonPSChannelUnpacker(channel);
                 while (unpacker.hasData()) {
-                  unpacker.Merge();
+                   unpacker.Merge();
 #ifdef EDM_ML_DEBUG
                   ss << std::dec << " SonPS " << (int)unpacker.clusterX() << " " << (int)unpacker.clusterSize() << " "
                      << (int)unpacker.chipId() << endl;
@@ -327,7 +338,7 @@ namespace Phase2Tracker {
               } else if (channel.dettype() == DET_PonPS) {
                 Phase2TrackerFEDZSPonPSChannelUnpacker unpacker = Phase2TrackerFEDZSPonPSChannelUnpacker(channel);
                 while (unpacker.hasData()) {
-                  unpacker.Merge();
+                   unpacker.Merge();
 #ifdef EDM_ML_DEBUG
                   ss << std::dec << " PonPS " << (int)unpacker.clusterX() << " " << (int)unpacker.clusterSize() << " "
                      << (int)unpacker.clusterY() << " " << (int)unpacker.chipId() << endl;
@@ -343,11 +354,11 @@ namespace Phase2Tracker {
               ss.clear();
               ss.str("");
 #endif
-            }  // end reading CBC's channel
-            ichan++;
+            }  // end reading left/right/top/bottom sensor.
           }  // end loop on channels
-          if (detid > 0) {
-            std::vector<Phase2TrackerCluster1D>::iterator it;
+
+          // Store clusters of this FED.
+          std::vector<Phase2TrackerCluster1D>::iterator it;
             {
               // outer detid is defined as inner detid + 1 or module detid + 2
               edmNew::DetSetVector<Phase2TrackerCluster1D>::FastFiller spct(*clusters, stackMap_[detid].second);
@@ -361,14 +372,14 @@ namespace Phase2Tracker {
                 spcb.push_back(*it);
               }
             }
-          }
+          
         }  // end loop on FE
-           // store digis in edm collections
       } else {
-        // readout modes are checked in getreadoutMode(), so we should never end up here
+        throw cms::Exception("Phase2TrackerDigiProducer")<<"Unknown readout mode";
       }
     }
-    // sort and store Unsparsified digis
+    
+    // Sort and store Unsparsified digis. N.B. Here, digis are from all DTCs.
     std::sort(proc_work_registry_.begin(), proc_work_registry_.end());
     std::vector<edm::DetSet<Phase2TrackerDigi>> sorted_and_merged;
     std::vector<Registry>::iterator it = proc_work_registry_.begin(), it2 = it + 1, end = proc_work_registry_.end();
@@ -396,6 +407,6 @@ namespace Phase2Tracker {
     event.emplace(putToken_, sorted_and_merged, true);
 
     // store Sparsified Digis
-    event.emplace(putTokenSparsified_, std::move(*clusters));
+    event.put(putTokenSparsified_, std::move(clusters));
   }
 }  // namespace Phase2Tracker

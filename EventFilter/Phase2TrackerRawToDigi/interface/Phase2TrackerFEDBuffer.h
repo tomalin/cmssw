@@ -1,5 +1,5 @@
-#ifndef EventFilter_Phase2TrackerRawToDigi_Phase2TrackerPhase2TrackerFEDBuffer_H  // {
-#define EventFilter_Phase2TrackerRawToDigi_Phase2TrackerPhase2TrackerFEDBuffer_H
+#ifndef EventFilter_Phase2TrackerRawToDigi_FEDBuffer_H
+#define EventFilter_Phase2TrackerRawToDigi_FEDBuffer_H
 
 #include "EventFilter/Phase2TrackerRawToDigi/interface/Phase2TrackerFEDDAQHeader.h"
 #include "EventFilter/Phase2TrackerRawToDigi/interface/Phase2TrackerFEDDAQTrailer.h"
@@ -9,24 +9,24 @@
 #include <vector>
 #include <map>
 
-// Represents raw data from single DTC.
+// Represents raw data from single DTC. Used to unpack RAW data.
 
 namespace Phase2Tracker {
 
   class Phase2TrackerFEDBuffer {
   public:
     // gets data of one tracker FED to check, analyze and sort it
-    Phase2TrackerFEDBuffer(const uint8_t* fedBuffer, const size_t fedBufferSize);
+    Phase2TrackerFEDBuffer(const uint8_t* fedBuffer, const size_t fedBufferSize, const std::vector<bool>& connectedInputs);
     ~Phase2TrackerFEDBuffer();
 
     //dump buffer to stream
     void dump(std::ostream& os) const { printHex(buffer_, bufferSize_, os); }
 
     //methods to get parts of the buffer
-    FEDDAQHeader daqHeader() const { return daqHeader_; }
-    FEDDAQTrailer daqTrailer() const { return daqTrailer_; }
+    const FEDDAQHeader& daqHeader() const { return daqHeader_; }
+    const FEDDAQTrailer& daqTrailer() const { return daqTrailer_; }
     size_t bufferSize() const { return bufferSize_; }
-    Phase2TrackerFEDHeader trackerHeader() const { return trackerHeader_; }
+    const Phase2TrackerFEDHeader& trackerHeader() const { return trackerHeader_; }
     // Each DTC input channel organised by raw2digi conversion into 4
     // channels, for p-left, p-right, s-left, s-right sensors, so argument here
     // in range 0 to 4*72-1.
@@ -58,6 +58,10 @@ namespace Phase2Tracker {
     inline const uint8_t* getPointerToTriggerData() const { return triggerPointer_; }
 
   private:
+
+    void findChannels(const std::vector<bool>& connectedInputs);    
+    
+  private:
     const uint8_t* buffer_;
     const size_t bufferSize_;
     std::vector<Phase2TrackerFEDChannel> channels_;
@@ -68,7 +72,6 @@ namespace Phase2Tracker {
     const uint8_t* payloadPointer_;
     const uint8_t* condDataPointer_;
     const uint8_t* triggerPointer_;
-    void findChannels();
     int valid_;
 
     //////////////// Deprecated or dummy implemented methods ///////////////////

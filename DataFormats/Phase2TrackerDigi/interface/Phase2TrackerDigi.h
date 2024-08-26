@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <utility>
 #include <cassert>
+#include <iostream>
 
 /**
  * Persistent digi for the Phase 2 tracker 

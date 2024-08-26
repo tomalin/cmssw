@@ -14,6 +14,8 @@
 //
 
 #include <memory>
+#include "CondFormats/DataRecord/interface/Phase2TrackerCablingRcd.h"
+#include "CondFormats/SiStripObjects/interface/Phase2TrackerCabling.h"
 #include "DataFormats/Common/interface/Handle.h"
 #include "DataFormats/FEDRawData/interface/FEDRawDataCollection.h"
 #include "DataFormats/Common/interface/DetSet.h"
@@ -41,15 +43,26 @@ namespace Phase2Tracker {
   public:
     explicit Phase2TrackerHeaderProducer(const edm::ParameterSet&);
     ~Phase2TrackerHeaderProducer() override = default;
-    void produce(edm::Event& event, const edm::EventSetup& es);
+    void beginRun(const edm::Run& run, const edm::EventSetup& es)  override;
+    void produce(edm::Event& event, const edm::EventSetup& es) override;
 
   private:
+    const edm::ESGetToken<Phase2TrackerCabling, Phase2TrackerCablingRcd> ph2CablingESToken_;
     edm::EDGetTokenT<FEDRawDataCollection> token_;
+    const Phase2TrackerCabling* cabling_ = nullptr;
   };
 
-  Phase2Tracker::Phase2TrackerHeaderProducer::Phase2TrackerHeaderProducer(const edm::ParameterSet& pset) {
+  Phase2Tracker::Phase2TrackerHeaderProducer::Phase2TrackerHeaderProducer(const edm::ParameterSet& pset) :
+    ph2CablingESToken_(esConsumes<Phase2TrackerCabling, Phase2TrackerCablingRcd, edm::Transition::BeginRun>())
+  {
     produces<header_map>("TrackerHeader");
     token_ = consumes<FEDRawDataCollection>(pset.getParameter<edm::InputTag>("ProductLabel"));
+  }
+
+
+  void Phase2TrackerHeaderProducer::beginRun(const edm::Run& run, const edm::EventSetup& es) {
+    // fetch cabling from event setup
+    cabling_ = &es.getData(ph2CablingESToken_);
   }
 
   void Phase2Tracker::Phase2TrackerHeaderProducer::produce(edm::Event& event, const edm::EventSetup& es) {
@@ -60,13 +73,19 @@ namespace Phase2Tracker {
     // fill collection
     std::unique_ptr<header_map> hdigis(new header_map);
 
-    size_t fedIndex;
-    for (fedIndex = Phase2Tracker::FED_ID_MIN; fedIndex < Phase2Tracker::CMS_FED_ID_MAX; ++fedIndex) {
+    // Analyze strip tracker FED buffers in data
+    std::vector<int> feds = cabling_->listFeds();
+    
+    // Loop over DTCs
+    for (int fedIndex : feds) {
+    
       const FEDRawData& fed = buffers->FEDData(fedIndex);
       if (fed.size() == 0)
         continue;
+      // Check which DTC inputs are connected to a module.
+      std::vector<bool> connectedInputs = cabling_->connectedInputs(fedIndex);
       // construct buffer
-      Phase2Tracker::Phase2TrackerFEDBuffer buffer(fed.data(), fed.size());
+      Phase2Tracker::Phase2TrackerFEDBuffer buffer(fed.data(), fed.size(), connectedInputs);
       Phase2TrackerHeaderDigi head_digi = Phase2TrackerHeaderDigi(buffer.trackerHeader());
       // store digis
       hdigis->push_back(head_digi);

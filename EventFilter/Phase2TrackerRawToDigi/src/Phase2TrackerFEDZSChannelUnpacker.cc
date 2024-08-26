@@ -11,9 +11,11 @@ namespace Phase2Tracker {
     clusterx_ = unMergedX();
     clustery_ = unMergedY();
     clustersize_ = unMergedSize();
-    while (gluedToNextCluster()) {
-      advance();
-      clustersize_ += unMergedSize();
+    if (MERGE_CLUSTERS) {    
+      while (gluedToNextCluster()) {
+        advance();
+        clustersize_ += unMergedSize();
+      }
     }
   }
 
@@ -34,14 +36,12 @@ namespace Phase2Tracker {
     return *this;
   }
 
-  int Phase2TrackerFEDZSSon2SChannelUnpacker::unMergedX() const {
-    uint8_t id = chipId();
-    if (id > 7)
-      id -= 8;
+  int Phase2TrackerFEDZSSon2SChannelUnpacker::unMergedX() const {    
+    uint8_t id = chipId() % (MAX_CBC_PER_FE/2);
     return (STRIPS_PER_CBC * id + rawX()) / 2;
   }
 
-  int Phase2TrackerFEDZSSon2SChannelUnpacker::unMergedY() const { return (chipId() > 7) ? 1 : 0; }
+  int Phase2TrackerFEDZSSon2SChannelUnpacker::unMergedY() const { return (chipId() >= MAX_CBC_PER_FE/2) ? 1 : 0; }
 
   bool Phase2TrackerFEDZSSon2SChannelUnpacker::gluedToNextCluster() const {
     uint8_t size = rawSize();
@@ -62,13 +62,11 @@ namespace Phase2Tracker {
   }
 
   int Phase2TrackerFEDZSSonPSChannelUnpacker::unMergedX() const {
-    uint8_t id = chipId();
-    if (id > 7)
-      id -= 8;
+    uint8_t id = chipId() % (MAX_CBC_PER_FE/2); // This should be MPA, not CBC!
     return PS_ROWS * id + rawX();
   }
 
-  int Phase2TrackerFEDZSSonPSChannelUnpacker::unMergedY() const { return (chipId() > 7) ? 1 : 0; }
+  int Phase2TrackerFEDZSSonPSChannelUnpacker::unMergedY() const { return (chipId() >= MAX_CBC_PER_FE/2) ? 1 : 0; }
 
   Phase2TrackerFEDZSSonPSChannelUnpacker Phase2TrackerFEDZSSonPSChannelUnpacker::next() const {
     Phase2TrackerFEDZSSonPSChannelUnpacker next(*this);
@@ -90,14 +88,12 @@ namespace Phase2Tracker {
   }
 
   int Phase2TrackerFEDZSPonPSChannelUnpacker::unMergedX() const {
-    uint8_t id = chipId();
-    if (id > 7)
-      id -= 8;
+    uint8_t id = chipId() % (MAX_CBC_PER_FE/2); // This should be MPA, not CBC!
     return PS_ROWS * id + rawX();
   }
 
   int Phase2TrackerFEDZSPonPSChannelUnpacker::unMergedY() const {
-    return (chipId() > 7) ? (rawY() + PS_COLS / 2) : rawY();
+    return (chipId() >= MAX_CBC_PER_FE/2) ? (rawY() + PS_COLS / 2) : rawY();
   }
 
   Phase2TrackerFEDZSPonPSChannelUnpacker Phase2TrackerFEDZSPonPSChannelUnpacker::next() const {

@@ -1,5 +1,5 @@
-#ifndef EventFilter_Phase2TrackerRawToDigi_Phase2TrackerPhase2TrackerFEDHeader_H  // {
-#define EventFilter_Phase2TrackerRawToDigi_Phase2TrackerPhase2TrackerFEDHeader_H
+#ifndef EventFilter_Phase2TrackerRawToDigi_FEDHeader_H  
+#define EventFilter_Phase2TrackerRawToDigi_FEDHeader_H
 
 #include "EventFilter/Phase2TrackerRawToDigi/interface/Phase2TrackerFEDDAQHeader.h"
 #include "EventFilter/Phase2TrackerRawToDigi/interface/Phase2TrackerFEDDAQTrailer.h"
@@ -41,7 +41,7 @@ namespace Phase2Tracker {
     // get pointer to Payload data after tracker head
     const uint8_t* getPointerToData() const { return pointerToData_; }
 
-    // get Front-End Status (up to 72 bits)
+    // Check if each DTC input channel has non-zero data in this event (72 bits)
     std::vector<bool> frontendStatus() const;
     void setFrontendStatus(std::vector<bool>);
 

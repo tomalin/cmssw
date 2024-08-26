@@ -32,16 +32,19 @@
 #include <iomanip>
 #include <ext/algorithm>
 
+// Converts Tracker clusters into ZS Tracker DAQ RAW data.
+
 using namespace std;
 namespace Phase2Tracker {
 
   class Phase2TrackerDigiToRawProducer : public edm::stream::EDProducer<> {
   public:
+    
     /// constructor
     Phase2TrackerDigiToRawProducer(const edm::ParameterSet& pset);
     /// default constructor
     ~Phase2TrackerDigiToRawProducer() override = default;
-    void beginRun(edm::Run const&, edm::EventSetup const&) override;
+    void beginRun(const edm::Run&, const edm::EventSetup&) override;
     void produce(edm::Event&, const edm::EventSetup&) override;
 
   private:
@@ -64,7 +67,7 @@ namespace Phase2Tracker {
     produces<FEDRawDataCollection>();
   }
 
-  void Phase2TrackerDigiToRawProducer::beginRun(edm::Run const& run, edm::EventSetup const& es) {
+  void Phase2TrackerDigiToRawProducer::beginRun(const edm::Run& run, const edm::EventSetup& es) {
     cabling_ = &es.getData(ph2CablingESToken_);
     tGeom_ = &es.getData(geomToken_);
     tTopo_ = &es.getData(topoToken_);
@@ -105,9 +108,9 @@ namespace Phase2Tracker {
 
   void Phase2TrackerDigiToRawProducer::produce(edm::Event& event, const edm::EventSetup& es) {
     std::unique_ptr<FEDRawDataCollection> buffers(new FEDRawDataCollection);
-    edm::Handle<edmNew::DetSetVector<Phase2TrackerCluster1D>> digis_handle;
-    event.getByToken(token_, digis_handle);
-    Phase2TrackerDigiToRaw raw_producer(cabling_, tGeom_, tTopo_, stackMap_, digis_handle, 1);
+    edm::Handle<edmNew::DetSetVector<Phase2TrackerCluster1D>> cluss_handle;
+    event.getByToken(token_, cluss_handle);
+    Phase2TrackerDigiToRaw raw_producer(cabling_, tGeom_, tTopo_, stackMap_, cluss_handle, 1);
     raw_producer.buildFEDBuffers(buffers);
     event.put(std::move(buffers));
   }

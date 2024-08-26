@@ -7,11 +7,11 @@
 #include <algorithm>
 
 class Phase2TrackerCabling {
-  typedef std::vector<Phase2TrackerModule> store;
+  typedef std::vector<Phase2TrackerModule> Store;
 
 public:
-  typedef std::vector<Phase2TrackerModule>::const_iterator key;
-  typedef std::vector<key> cabling;
+  typedef Store::const_iterator key;
+  typedef std::vector<key> Cabling;
 
   // Constructor taking FED channel connection objects as input.
   Phase2TrackerCabling(const std::vector<Phase2TrackerModule>& cons);
@@ -29,10 +29,10 @@ public:
   void initializeCabling();
 
   // get the list of modules
-  const std::vector<Phase2TrackerModule>& connections() const { return connections_; }
+  const Store& connections() const { return connections_; }
 
   // get ordered collections
-  const cabling orderedConnections(int) const;
+  const Cabling& orderedConnections(int) const;
 
   // find a connection for a given fed channel
   const Phase2TrackerModule& findFedCh(std::pair<unsigned int, unsigned int> fedch) const;
@@ -52,6 +52,9 @@ public:
   // return all fedids
   std::vector<int> listFeds() const;
 
+  // Says which of all 72 inputs of specified DTC are connected to a module.
+  std::vector<bool> connectedInputs(unsigned int fedid) const;
+  
   // print a summary of the content
   std::string summaryDescription() const;
 
@@ -59,13 +62,17 @@ public:
   std::string description(bool compact = false) const;
 
 private:
+  
+  // Dummy to represent unconnected channel.
+  Phase2TrackerModule dummyModule_ COND_TRANSIENT; 
+
   // the connections
-  store connections_;
+  Store connections_;
 
   // indices for fast searches
-  cabling fedCabling_ COND_TRANSIENT;
-  cabling gbtCabling_ COND_TRANSIENT;
-  cabling detCabling_ COND_TRANSIENT;
+  Cabling fedCabling_ COND_TRANSIENT;
+  Cabling gbtCabling_ COND_TRANSIENT;
+  Cabling detCabling_ COND_TRANSIENT;
 
 private:
   // sorting functions

@@ -41,6 +41,7 @@ namespace Phase2Tracker {
   static const int CBC_STATUS_SIZE_ERROR = 1;
   static const int STUBS_SIZE_2S = 16;
   static const int STUBS_SIZE_PS = 20;
+  static const bool MERGE_CLUSTERS = false; // Merge clusters during raw2digi.
 
   // Current dataformat does not allow to know how many CBC there are per FE, set it here
   static const int CBC_PER_FE_DEBUG = 2;

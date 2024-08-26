@@ -62,15 +62,17 @@ process.GlobalTag = GlobalTag(process.GlobalTag, '140X_mcRun4_realistic_v3', '')
 # process.Phase2TrackerCommissioningDigiProducer.ProductLabel = cms.InputTag("Phase2TrackerDigiToRawProducer")
 
 
-process.out = cms.OutputModule(
-    "PoolOutputModule",
-    fileName = cms.untracked.string('raw2digi.root'),
+process.out = cms.OutputModule("PoolOutputModule",
+    splitLevel = cms.untracked.int32(0),
+    eventAutoFlushCompressedSize = cms.untracked.int32(5242880),                              
+    outputCommands = cms.untracked.vstring('keep *'),
+    fileName = cms.untracked.string('raw2digi.root')
 )
 
 # process.p = cms.Path(process.Phase2TrackerDigiProducer*process.Phase2TrackerCommissioningDigiProducer)
 #process.p = cms.Path(process.Phase2TrackerDigiProducer*process.Phase2TrackerDebugProducer*process.Phase2TrackerStubProducer)
-process.p = cms.Path(process.Phase2TrackerDigiProducer)
 
+process.p = cms.Path(process.Phase2TrackerDigiProducer)
 process.e = cms.EndPath(process.out)
 
 # # Automatic addition of the customisation function from SLHCUpgradeSimulations.Configuration.combinedCustoms
